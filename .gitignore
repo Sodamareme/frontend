@@ -1,0 +1,16 @@
+# Ignorer les fichiers de build et cache de Next.js
+.next/
+.next/cache/
+
+# Ignorer les fichiers volumineux de Webpack
+*.pack
+*.map
+
+# Ignorer les logs et fichiers temporaires
+node_modules/
+*.log
+
+ODC_INSIDE_BACK/
+
+
+.next/cache/webpack/client-production/0.pack
