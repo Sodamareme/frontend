@@ -32,7 +32,7 @@
     "@tanstack/react-query-devtools": "^5.14.2",
     "@tanstack/react-table": "^8.21.2",
     "@types/papaparse": "^5.3.16",
-    "@zxing/browser": "github:zxing-js/browser",
+    "@zxing/browser": "^0.1.5",
     "@zxing/library": "github:zxing-js/library",
     "axios": "^1.8.4",
     "class-variance-authority": "^0.7.1",
