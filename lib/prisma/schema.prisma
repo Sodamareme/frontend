@@ -1,0 +1,22 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Grade {
+  id         String   @id @default(cuid())
+  value      Float
+  comment    String?
+  moduleId   String
+  learnerId  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("grades")
+  @@index([moduleId])
+  @@index([learnerId])
+}
