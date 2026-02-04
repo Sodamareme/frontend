@@ -1,88 +1,65 @@
-// import { Socket as ClientSocket } from 'socket.io-client';
-// import io from 'socket.io-client';
+// lib/socket.ts
+import { io } from 'socket.io-client';
+import type { Socket as SocketIOClient } from 'socket.io-client';
 
-// interface ServerToClientEvents {
-//   newNotification: (notification: {
-//     date: string;
-//     id: string;
-//     type: 'JUSTIFICATION_SUBMITTED';
-//     message: string;
-//     createdAt: string;
-//     read: boolean;
-//     attendanceId: string;
-//     sender: {
-//       id: string;
-//       email: string;
-//     };
-//     receiver: {
-//       id: string;
-//       email: string;
-//     };
-//   }) => void;
-// }
+class SocketService {
+  private socket: SocketIOClient | null = null;
 
-// interface ClientToServerEvents {
-//   // Add events that client sends to server if any
-// }
+  connect() {
+    if (this.socket?.connected) return;
 
-// class SocketService {
-//   private socket: ReturnType<typeof io> | null = null;
+    this.socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000', {
+      transports: ['websocket'],
+      autoConnect: true,
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
+    });
 
-//   connect(token: string) {
-//     if (this.socket?.connected) {
-//       console.log('Socket already connected');
-//       return;
-//     }
+    this.socket.on('connect', () => {
+      console.log('✅ Socket connected');
+    });
 
-//     console.log('Attempting to connect to WebSocket...');
+    this.socket.on('disconnect', () => {
+      console.log('❌ Socket disconnected');
+    });
 
-//     this.socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000', {
-//       auth: { token },
-//       autoConnect: false,
-//       reconnection: true,
-//       reconnectionAttempts: 5,
-//       reconnectionDelay: 1000,
-//       transports: ['websocket', 'polling'],
-//     });
+    this.socket.on('connect_error', (error) => {
+      console.error('❌ Socket connection error:', error);
+    });
+  }
 
-//     this.socket.on('connect', () => {
-//       console.log('WebSocket connected successfully');
-//     });
+  disconnect() {
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+    }
+  }
 
-//     this.socket.on('connect_error', (error) => {
-//       console.error('WebSocket connection error:', error);
-//     });
+  emit(event: string, data?: any) {
+    if (!this.socket?.connected) {
+      console.warn('⚠️ Socket not connected, attempting to connect...');
+      this.connect();
+    }
+    this.socket?.emit(event, data);
+  }
 
-//     this.socket.on('disconnect', (reason) => {
-//       console.log('WebSocket disconnected:', reason);
-//       if (reason === 'io server disconnect') {
-//         // Server has forcefully disconnected, try to reconnect
-//         this.socket?.connect();
-//       }
-//     });
+  on(event: string, callback: (...args: any[]) => void) {
+    this.socket?.on(event, callback);
+  }
 
-//     this.socket.connect();
-//   }
+  off(event: string, callback?: (...args: any[]) => void) {
+    if (callback) {
+      this.socket?.off(event, callback);
+    } else {
+      this.socket?.off(event);
+    }
+  }
 
-//   disconnect() {
-//     if (this.socket) {
-//       this.socket.removeAllListeners();
-//       this.socket.disconnect();
-//       this.socket = null;
-//       console.log('Socket disconnected and cleaned up');
-//     }
-//   }
+  isConnected(): boolean {
+    return this.socket?.connected ?? false;
+  }
+}
 
-  
-
-//   removeNewNotificationListener() {
-//     this.socket?.off('newNotification');
-//   }
-
-//     onNewNotification(callback: (notification: any) => void) {
-//     this.socket?.on('new-notification', callback);
-//   }
-// }
-
-
-// export const socketService = new SocketService();
+export const socketService = new SocketService();
+export default socketService;

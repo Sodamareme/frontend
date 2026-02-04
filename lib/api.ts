@@ -17,10 +17,15 @@ export interface User {
 }
 
 export interface Promotion {
-  id: string
-  name: string
-  startDate: string
-  endDate: string
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  photoUrl?: string;
+  status: 'ACTIVE' | 'INACTIVE';
+  learnerCount: number;
+  learners?: Learner[];
+  referentials?: ReferentialExtended[];
 }
 
 export interface Referential {
@@ -2167,6 +2172,17 @@ export const promotionsAPI = {
       throw error;
     }
   },
+  updatePromotion: async (id: string, formData: FormData) => {
+  const response = await api.put(`/promotions/${id}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
+  return response.data;
+},
+
+removeReferentialFromPromotion: async (promotionId: string, referentialId: string) => {
+  const response = await api.delete(`/promotions/${promotionId}/referentials/${referentialId}`);
+  return response.data;
+},
 
   getAllPromotionsSimple: async (): Promise<Promotion[]> => {
     return fetchWithAuth('/promotions')
