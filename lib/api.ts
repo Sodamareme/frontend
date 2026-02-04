@@ -3,6 +3,7 @@ import { StudentType } from '@/types/student';
 import axios from 'axios';
 import { ReactNode } from 'react';
 import { AxiosError } from 'axios';
+
 // Types pour les données
 export interface User {
   id: string
@@ -2311,6 +2312,198 @@ export async function findbyQRcode(code: string): Promise<StudentType> {
 export async function getMealScansByLearner(learnerId: string): Promise<MealScan[]> {
   return fetchWithAuth(`/meal-scans/learner/${learnerId}`, { method: 'GET' })
 };
+// 📌 AJOUTEZ CES EXPORTS À LA FIN DE VOTRE FICHIER /lib/api.ts
+
+// ==========================================
+// Schedule API
+// ==========================================
+export interface ScheduleEvent {
+  id: string;
+  title: string;
+  description?: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  promotionId: string;
+  moduleId?: string;
+  coachId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const scheduleAPI = {
+  /**
+   * Récupérer le planning d'une promotion
+   */
+  getScheduleByPromotionId: async (promotionId: string): Promise<ScheduleEvent[]> => {
+    try {
+      console.log('📅 Fetching schedule for promotion:', promotionId);
+      const response = await api.get(`/schedules/promotion/${promotionId}`);
+      console.log('✅ Schedule received:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Error fetching schedule:', error);
+      
+      // Si l'endpoint n'existe pas encore, retourner un tableau vide
+      if (error.response?.status === 404) {
+        console.warn('⚠️ Schedule endpoint not found, returning empty array');
+        return [];
+      }
+      
+      throw error;
+    }
+  },
+
+  /**
+   * Créer un événement dans le planning
+   */
+  createScheduleEvent: async (eventData: Omit<ScheduleEvent, 'id' | 'createdAt' | 'updatedAt'>): Promise<ScheduleEvent> => {
+    try {
+      const response = await api.post('/schedules', eventData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating schedule event:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Mettre à jour un événement
+   */
+  updateScheduleEvent: async (id: string, eventData: Partial<ScheduleEvent>): Promise<ScheduleEvent> => {
+    try {
+      const response = await api.put(`/schedules/${id}`, eventData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating schedule event:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Supprimer un événement
+   */
+  deleteScheduleEvent: async (id: string): Promise<void> => {
+    try {
+      await api.delete(`/schedules/${id}`);
+    } catch (error) {
+      console.error('Error deleting schedule event:', error);
+      throw error;
+    }
+  },
+};
+
+// ==========================================
+// Projects API
+// ==========================================
+export interface Project {
+  id: string;
+  title: string;
+  description?: string;
+  startDate: string;
+  endDate: string;
+  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  promotionId: string;
+  moduleId?: string;
+  referentialId?: string;
+  createdAt: string;
+  updatedAt: string;
+  learners?: Array<{
+    id: string;
+    firstName: string;
+    lastName: string;
+    matricule: string;
+  }>;
+}
+
+export const projectsAPI = {
+  /**
+   * Récupérer tous les projets d'une promotion
+   */
+  getProjectsByPromotionId: async (promotionId: string): Promise<Project[]> => {
+    try {
+      console.log('📂 Fetching projects for promotion:', promotionId);
+      const response = await api.get(`/projects/promotion/${promotionId}`);
+      console.log('✅ Projects received:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Error fetching projects:', error);
+      
+      // Si l'endpoint n'existe pas encore, retourner un tableau vide
+      if (error.response?.status === 404) {
+        console.warn('⚠️ Projects endpoint not found, returning empty array');
+        return [];
+      }
+      
+      throw error;
+    }
+  },
+
+  /**
+   * Récupérer un projet par ID
+   */
+  getProjectById: async (id: string): Promise<Project> => {
+    try {
+      const response = await api.get(`/projects/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching project:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Créer un nouveau projet
+   */
+  createProject: async (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>): Promise<Project> => {
+    try {
+      const response = await api.post('/projects', projectData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating project:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Mettre à jour un projet
+   */
+  updateProject: async (id: string, projectData: Partial<Project>): Promise<Project> => {
+    try {
+      const response = await api.put(`/projects/${id}`, projectData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating project:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Supprimer un projet
+   */
+  deleteProject: async (id: string): Promise<void> => {
+    try {
+      await api.delete(`/projects/${id}`);
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Assigner des apprenants à un projet
+   */
+  assignLearnersToProject: async (projectId: string, learnerIds: string[]): Promise<Project> => {
+    try {
+      const response = await api.post(`/projects/${projectId}/learners`, { learnerIds });
+      return response.data;
+    } catch (error) {
+      console.error('Error assigning learners to project:', error);
+      throw error;
+    }
+  },
+};
 // Ajout des fonctions utilitaires exportées
 export { getAuthToken, setAuthToken, removeAuthToken };
+
 export default api;

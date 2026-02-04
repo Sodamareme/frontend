@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { promotionsAPI } from '@/lib/api';
+
 import { 
   ArrowLeft, 
   Calendar, 

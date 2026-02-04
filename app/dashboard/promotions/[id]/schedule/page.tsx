@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { AlertCircle, ArrowLeft, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { scheduleAPI } from '@/lib/api';
-
 export default function SchedulePage() {
   const { id } = useParams();
   const router = useRouter();
