@@ -109,7 +109,7 @@ const ScanHistory: React.FC = () => {
   const fetchAllReferentials = async () => {
     try {
       const token = getAuthToken();
-      const response = await fetch("http://localhost:3000/referentials", {
+      const response = await fetch("https://api.gestionecoleodc.com/referentials", {
         headers: {
           accept: "*/*",
           Authorization: `Bearer ${token}`,
@@ -143,7 +143,7 @@ const ScanHistory: React.FC = () => {
     setError(null);
     try {
       const token = getAuthToken();
-      const response = await fetch("http://localhost:3000/meals/scans/latest", {
+      const response = await fetch("https://api.gestionecoleodc.com/meals/scans/latest", {
         headers: {
           accept: "*/*",
           Authorization: `Bearer ${token}`,

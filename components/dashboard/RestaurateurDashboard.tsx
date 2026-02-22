@@ -96,7 +96,7 @@ interface ApiMealResponse {
 }
 
 // Configuration API
-const API_BASE_URL = 'http://localhost:3000';
+const NEXT_PUBLIC_API_URL = 'https://api.gestionecoleodc.com';
 
 // Interface pour les référentiels
 interface Referential {
@@ -121,7 +121,7 @@ const mealsAPI = {
   // Récupérer les derniers scans
   async getLatestScans(): Promise<ApiMealResponse[]> {
     const token = getAuthToken();
-    const response = await fetch(`${API_BASE_URL}/meals/scans/latest`, {
+    const response = await fetch(`${NEXT_PUBLIC_API_URL}/meals/scans/latest`, {
       method: 'GET',
       headers: {
         'accept': '*/*',
@@ -139,7 +139,7 @@ const mealsAPI = {
   // Enregistrer un scan de repas
   async recordMeal(matricule: string, mealType: 'petit-dejeuner' | 'repas'): Promise<ApiMealResponse> {
     const token = getAuthToken();
-    const response = await fetch(`${API_BASE_URL}/meals/scan/${matricule}/${mealType}`, {
+    const response = await fetch(`${NEXT_PUBLIC_API_URL}/meals/scan/${matricule}/${mealType}`, {
       method: 'POST',
       headers: {
         'accept': '*/*',
@@ -162,7 +162,7 @@ const referentialsAPI = {
   // Récupérer tous les référentiels
   async getAllReferentials(): Promise<Referential[]> {
     const token = getAuthToken();
-    const response = await fetch(`${API_BASE_URL}/referentials/all`, {
+    const response = await fetch(`${NEXT_PUBLIC_API_URL}/referentials/all`, {
       method: 'GET',
       headers: {
         'accept': '*/*',
@@ -183,7 +183,7 @@ const learnersAPI = {
   // Récupérer tous les apprenants
   async getAllLearners(): Promise<any[]> {
     const token = getAuthToken();
-    const response = await fetch(`${API_BASE_URL}/learners`, {
+    const response = await fetch(`${NEXT_PUBLIC_API_URL}/learners`, {
       method: 'GET',
       headers: {
         'accept': '*/*',

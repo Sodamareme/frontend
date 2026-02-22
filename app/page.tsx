@@ -425,14 +425,15 @@ export default function LoginPage() {
                 whileHover={{ scale: 1.05, rotate: [0, -1, 1, -1, 0] }}
                 transition={{ duration: 0.5 }}
               >
-                <Image 
-                  src="https://res.cloudinary.com/drxouwbms/image/upload/v1743507686/image_27_qtiin4.png" 
-                  alt="Sonatel Logo" 
-                  width={130} 
-                  height={35} 
-                  className="drop-shadow-sm"
-                />
-              </motion.div>
+               <Image
+                src="https://res.cloudinary.com/drxouwbms/image/upload/v1743507686/image_27_qtiin4.png"
+                alt="Sonatel Logo"
+                width={130}
+                height={35}
+                priority  
+                style={{ width: 'auto', height: 'auto' }} 
+              />
+                            </motion.div>
             </motion.div>
             
             <motion.div 

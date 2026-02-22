@@ -1,6 +1,9 @@
-/** @type {import('next').NextConfig} */
 const nextConfig = {
+   experimental: {
+    https: true, // ← active HTTPS en local
+  },
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',

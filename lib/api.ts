@@ -81,10 +81,8 @@ export interface LearnerDetails {
 }
 
 // Configuration de l'API
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://your-production-api.com/api'
-  : 'http://localhost:3000'
-
+// Correct :
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
 // Fonction utilitaire pour récupérer le token (standardisée)
 const getAuthToken = () => {
   return localStorage.getItem('accessToken') || localStorage.getItem('authToken') || localStorage.getItem('token');
