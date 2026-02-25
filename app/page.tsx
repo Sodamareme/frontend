@@ -155,89 +155,68 @@ export default function LoginPage() {
     }
   };
 
- async function handleRegisterSubmit(data: LearnerFormSubmitData) {
+async function handleRegisterSubmit(data: LearnerFormSubmitData) {
   try {
     setIsSubmitting(true);
     
     const formData = new FormData();
     
-    const birthDate = new Date(data.birthDate);
-    const formattedBirthDate = birthDate.toISOString();
-
-    if (data.photoFile && data.photoFile instanceof File) {
+    if (data.photoFile instanceof File) {
       formData.append('photoFile', data.photoFile);
     }
 
-    formData.append('firstName', data.firstName);
-    formData.append('lastName', data.lastName);
-    formData.append('email', data.email);
-    formData.append('phone', data.phone);
-    formData.append('address', data.address);
+    formData.append('firstName', data.firstName?.trim() || '');
+    formData.append('lastName', data.lastName?.trim() || '');
+    formData.append('email', data.email?.trim() || '');
+    formData.append('phone', data.phone?.trim() || '');
+    formData.append('address', data.address?.trim() || '');
     formData.append('gender', data.gender);
-    formData.append('birthDate', formattedBirthDate);
-    formData.append('birthPlace', data.birthPlace);
+    formData.append('birthDate', new Date(data.birthDate).toISOString());
+    formData.append('birthPlace', data.birthPlace?.trim() || '');
     formData.append('promotionId', data.promotionId);
     formData.append('refId', data.refId);
-    formData.append('status', data.status);
+    
+    if (data.status?.trim()) {
+      formData.append('status', data.status);
+    }
 
-    formData.append('tutor[firstName]', data.tutor.firstName);
-    formData.append('tutor[lastName]', data.tutor.lastName);
-    formData.append('tutor[phone]', data.tutor.phone);
-    formData.append('tutor[email]', data.tutor.email || '');
-    formData.append('tutor[address]', data.tutor.address);
+    formData.append('tutor[firstName]', data.tutor?.firstName?.trim() || '');
+    formData.append('tutor[lastName]', data.tutor?.lastName?.trim() || '');
+    formData.append('tutor[phone]', data.tutor?.phone?.trim() || '');
+    formData.append('tutor[email]', data.tutor?.email?.trim() || '');
+    formData.append('tutor[address]', data.tutor?.address?.trim() || '');
+
+    // ✅ LOG COMPLET DU FORMDATA
+    console.log('=== FORMDATA AVANT ENVOI ===');
+    const debugObj: any = {};
+    for (const [key, value] of formData.entries()) {
+      debugObj[key] = value instanceof File ? `FILE: ${value.name} (${value.size}b)` : value;
+    }
+    console.table(debugObj);
+    // ✅ Vérification des champs critiques
+    console.log('tutor[firstName]:', formData.get('tutor[firstName]'));
+    console.log('tutor[lastName]:', formData.get('tutor[lastName]'));
+    console.log('tutor[phone]:', formData.get('tutor[phone]'));
+    console.log('promotionId:', formData.get('promotionId'));
+    console.log('refId:', formData.get('refId'));
 
     const response = await learnersAPI.createLearner(formData);
     
     if (response) {
       toast.success('Inscription réussie !', {
-        description: 'Vous recevrez vos identifiants de connexion par email dans quelques instants.',
+        description: 'Vous recevrez vos identifiants par email.',
         duration: 5000,
       });
       setIsRegisterModalOpen(false);
     }
   } catch (error: any) {
-    console.error('Error details:', error);
-
-    const serverMessage = error.response?.data?.message || '';
-    const statusCode = error.response?.status;
-
-    // Email ou téléphone déjà utilisé
-    const isDuplicateEmail =
-      statusCode === 409 ||
-      serverMessage.toLowerCase().includes('email') ||
-      serverMessage.toLowerCase().includes('unique constraint');
-
-    const isDuplicatePhone =
-      statusCode === 409 ||
-      serverMessage.toLowerCase().includes('phone') ||
-      serverMessage.toLowerCase().includes('téléphone');
-
-    if (isDuplicateEmail && serverMessage.toLowerCase().includes('email')) {
-      toast.error('Email déjà utilisé', {
-        description: 'Un apprenant avec cet email existe déjà. Veuillez utiliser une autre adresse email.',
-        duration: 6000,
-      });
-    } else if (isDuplicatePhone && serverMessage.toLowerCase().includes('phone')) {
-      toast.error('Numéro de téléphone déjà utilisé', {
-        description: 'Un apprenant avec ce numéro existe déjà. Veuillez utiliser un autre numéro.',
-        duration: 6000,
-      });
-    } else if (statusCode === 400) {
-      toast.error('Données invalides', {
-        description: serverMessage || 'Veuillez vérifier les informations saisies.',
-        duration: 6000,
-      });
-    } else if (statusCode === 500) {
-      toast.error("Erreur serveur", {
-        description: "Une erreur est survenue. L'email ou le téléphone est peut-être déjà utilisé.",
-        duration: 6000,
-      });
-    } else {
-      toast.error("Erreur lors de l'ajout de l'apprenant", {
-        description: serverMessage || 'Veuillez réessayer.',
-        duration: 5000,
-      });
-    }
+    const serverMessage = Array.isArray(error.response?.data?.message)
+      ? error.response.data.message.join(' | ')
+      : error.response?.data?.message || 'Erreur inconnue';
+    
+    console.error('=== ERREUR SERVEUR ===', serverMessage);
+    
+    toast.error('Erreur', { description: serverMessage, duration: 8000 });
   } finally {
     setIsSubmitting(false);
   }

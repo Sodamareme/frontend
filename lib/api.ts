@@ -770,46 +770,27 @@ removeReferentialFromPromotion: async (promotionId: string, referentialId: strin
     return stats;
   },
 
-  createLearner: async (formData: FormData) => {
-    try {
-      const config = {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`
-        },
-        transformRequest: [function (data) {
-          return data;
-        }],
-        timeout: 30000
-      };
+createLearner: async (formData: FormData) => {
+  try {
+    // ✅ NE PAS forcer Content-Type — laisser le browser le générer avec le boundary
+    const config = {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`
+        // ❌ Supprimer 'Content-Type': 'multipart/form-data'
+      },
+      timeout: 30000
+    };
 
-      console.log('Envoi de la requête avec les données :', 
-        Array.from(formData.entries()).reduce((acc, [key, value]) => {
-          acc[key] = value;
-          return acc;
-        }, {})
-      );
-
-      const response = await api.post('/learners', formData, config);
-      
-      if (!response.data) {
-        throw new Error('Pas de données reçues du serveur');
-      }
-      
-      return response.data;
-    } catch (error: any) {
-      console.error('Error creating learner:', error);
-      if (error.response) {
-        console.error('Server error details:', {
-          status: error.response.status,
-          data: error.response.data,
-          headers: error.response.headers
-        });
-      }
-      throw error;
+    const response = await api.post('/learners', formData, config);
+    return response.data;
+    
+  } catch (error: any) {
+    if (error.response) {
+      console.error('Backend error:', JSON.stringify(error.response.data, null, 2));
     }
-  },
+    throw error;
+  }
+},
    async validateBulkImport(formData: FormData) {
     try {
       const response = await fetch('/api/learners/validate-bulk-import', {
