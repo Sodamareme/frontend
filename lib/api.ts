@@ -240,29 +240,29 @@ api.interceptors.response.use(
 
 // Auth API calls
 export const authAPI = {
-  login: async (email: string, password: string) => {
-    try {
-      console.log('API call: Attempting login with:', { email });
-      console.log('API URL being used:', process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000');
-      
-      const response = await axios.post('/api/auth/login', { email, password });
-      console.log('API response received:', response.status);
-      
-      if (response.data && response.status === 200) {
-        // Standardiser le stockage du token
-        if (response.data.token) {
-          setAuthToken(response.data.token);
-        }
-        return response.data;
-      } else {
-        console.error('Unexpected API response format:', response);
-        throw new Error('Invalid response format from server');
+ login: async (email: string, password: string) => {
+  try {
+    console.log('API call: Attempting login with:', { email });
+    
+    const response = await api.post('/auth/login', { email, password });
+    console.log('API response received:', response.status);
+    console.log('API response data:', response.data); // ← pour voir la structure exacte
+    
+    if (response.data) {
+      // Supporter accessToken ET token selon ce que renvoie le backend
+      const token = response.data.accessToken || response.data.token;
+      if (token) {
+        setAuthToken(token);
       }
-    } catch (error) {
-      console.error('Login API error:', error);
-      throw error;
+      return response.data;
+    } else {
+      throw new Error('Invalid response format from server');
     }
-  },
+  } catch (error) {
+    console.error('Login API error:', error);
+    throw error;
+  }
+},
 
   loginSimple: async (email: string, password: string): Promise<{ token: string, user: User }> => {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
