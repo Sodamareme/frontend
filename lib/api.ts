@@ -244,10 +244,8 @@ export const authAPI = {
   try {
     console.log('API call: Attempting login with:', { email });
     
-    const response = await api.post('/auth/login', { email, password });
-    console.log('API response received:', response.status);
-    console.log('API response data:', response.data); // ← pour voir la structure exacte
-    
+    const response = await axios.post('/api/auth/login', { email, password });
+      console.log('API response received:', response.status);
     if (response.data) {
       // Supporter accessToken ET token selon ce que renvoie le backend
       const token = response.data.accessToken || response.data.token;
