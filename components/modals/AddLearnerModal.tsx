@@ -75,6 +75,7 @@ interface AddLearnerModalProps {
   promotions: Promotion[];
   referentials: Referential[];
   onSubmit: (data: LearnerFormData) => Promise<void>;
+  onPhotoChange?: (file: File | null) => void;
 }
 
 // Composants réutilisables
@@ -113,7 +114,8 @@ const LearnerForm = ({
   activePromotion, 
   availableReferentials, 
   watch,
-  setValue 
+  setValue,
+  onPhotoChange 
 }) => {
   const selectedRefId = watch("refId");
   const selectedRef = availableReferentials.find(ref => ref.id === selectedRefId);
@@ -157,6 +159,7 @@ const LearnerForm = ({
 
   const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    console.log('Photo sélectionnée:', file?.name, file?.size); 
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
         toast.error("La photo ne doit pas dépasser 5MB");
@@ -166,7 +169,9 @@ const LearnerForm = ({
         toast.error("Le fichier doit être une image");
         return;
       }
-      setValue('photoFile', file);
+      setValue('photoFile', file, { shouldDirty: true });
+    onPhotoChange?.(file);  
+    
       const reader = new FileReader();
       reader.onload = () => {
         setPreviewUrl(reader.result as string);
@@ -462,7 +467,8 @@ export default function AddLearnerModal({
   onClose,
   promotions,
   referentials,
-  onSubmit
+  onSubmit,
+  onPhotoChange,
 }: AddLearnerModalProps) {
   const [step, setStep] = useState(1);
   const [activePromotion, setActivePromotion] = useState<Promotion | null>(null);
@@ -653,6 +659,7 @@ useEffect(() => {
                     availableReferentials={availableReferentials}
                     watch={watch}
                     setValue={setValue}
+                    onPhotoChange={onPhotoChange}
                   />
                 </motion.div>
               ) : (

@@ -204,12 +204,34 @@ interface ReplacementResponse {
 
 // Configure axios
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
-  timeout: 10000,
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 30000,
 });
+
+// Request interceptor to add auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = getAuthToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    // 👇 AJOUTER CES LIGNES
+    // Si c'est un FormData, supprimer le Content-Type
+    // pour que le browser génère automatiquement le boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 // Request interceptor to add auth token
 api.interceptors.request.use(

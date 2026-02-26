@@ -33,7 +33,8 @@ export default function LoginPage() {
   const [referentials, setReferentials] = useState<Referential[]>([]);
   const [loadingData, setLoadingData] = useState(false);
   const [dataError, setDataError] = useState<string>('');
-
+// page.tsx — ajouter ce state en haut du composant, avec les autres useState
+const [photoFile, setPhotoFile] = useState<File | null>(null);
   useEffect(() => {
     const loadData = async () => {
       if (!isRegisterModalOpen) return;
@@ -156,14 +157,19 @@ export default function LoginPage() {
   };
 
 async function handleRegisterSubmit(data: LearnerFormSubmitData) {
+  
+  
   try {
     setIsSubmitting(true);
     
     const formData = new FormData();
-    
-    if (data.photoFile instanceof File) {
-      formData.append('photoFile', data.photoFile);
-    }
+    if (photoFile instanceof File) {
+    formData.append('photoFile', photoFile, photoFile.name);
+    console.log('=== PHOTO DANS FORMDATA ===', photoFile.name);
+  } else {
+    console.log('=== PAS DE PHOTO - photoFile state =', photoFile);
+  }
+
 
     formData.append('firstName', data.firstName?.trim() || '');
     formData.append('lastName', data.lastName?.trim() || '');
@@ -176,11 +182,12 @@ async function handleRegisterSubmit(data: LearnerFormSubmitData) {
     formData.append('promotionId', data.promotionId);
     formData.append('refId', data.refId);
     if (data.sessionId) {
-  formData.append('sessionId', data.sessionId); 
+  formData.append('sessionId', data.sessionId);  
 }
     if (data.status?.trim()) {
       formData.append('status', data.status);
     }
+    
 
     formData.append('tutor[firstName]', data.tutor?.firstName?.trim() || '');
     formData.append('tutor[lastName]', data.tutor?.lastName?.trim() || '');
@@ -188,20 +195,22 @@ async function handleRegisterSubmit(data: LearnerFormSubmitData) {
     formData.append('tutor[email]', data.tutor?.email?.trim() || '');
     formData.append('tutor[address]', data.tutor?.address?.trim() || '');
    
-    // ✅ LOG COMPLET DU FORMDATA
-    console.log('=== FORMDATA AVANT ENVOI ===');
-    const debugObj: any = {};
-    for (const [key, value] of formData.entries()) {
-      debugObj[key] = value instanceof File ? `FILE: ${value.name} (${value.size}b)` : value;
-    }
-    console.table(debugObj);
+
     // ✅ Vérification des champs critiques
     console.log('tutor[firstName]:', formData.get('tutor[firstName]'));
     console.log('tutor[lastName]:', formData.get('tutor[lastName]'));
     console.log('tutor[phone]:', formData.get('tutor[phone]'));
     console.log('promotionId:', formData.get('promotionId'));
     console.log('refId:', formData.get('refId'));
-
+       // ✅ LOG COMPLET DU FORMDATA
+    console.log('=== FORMDATA AVANT ENVOI ===');
+    const debugObj: any = {};
+for (const [key, value] of formData.entries()) {
+  debugObj[key] = value instanceof File 
+    ? `FILE: ${value.name} (${value.size}b)`  // ← ça devrait afficher ça
+    : value;
+}
+console.table(debugObj);
     const response = await learnersAPI.createLearner(formData);
     
     if (response) {
@@ -567,10 +576,15 @@ async function handleRegisterSubmit(data: LearnerFormSubmitData) {
 
       <AddLearnerModal
         isOpen={isRegisterModalOpen && !loadingData && !dataError}
-        onClose={() => setIsRegisterModalOpen(false)}
+        onClose={() => {
+          setIsRegisterModalOpen(false);
+          setPhotoFile(null);
+        }}
         promotions={promotions}
         referentials={referentials}
         onSubmit={handleRegisterSubmit}
+  
+        onPhotoChange={setPhotoFile}
       />
     </div>
   );
