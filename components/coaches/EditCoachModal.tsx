@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { AlertCircle, User, Image, UserCircle } from 'lucide-react';
+import { AlertCircle, User, Image, UserCircle, BookOpen } from 'lucide-react';
 import { toast } from "sonner";
 import { getImageUrl } from '@/lib/utils/imageUrl';
-
+import { Referential as ReferentialType } from '@/lib/api';
+import { ReferentialBasic } from '@/lib/api';
 interface Coach {
   id: string;
   matricule: string;
@@ -17,27 +18,24 @@ interface Coach {
   phone?: string;
   photoUrl?: string;
   refId?: string;
-  referential?: {
-    id: string;
-    name: string;
-  };
+  // ✅ Support multi-référentiels
+  referentials?: Array<{ id: string; name: string }>;
+  referential?: { id: string; name: string };
   user: {
     email: string;
   };
 }
 
-interface Referential {
-  id: string;
-  name: string;
-}
+
 
 interface EditCoachModalProps {
   isOpen: boolean;
   onClose: () => void;
   coach: Coach | null;
-  referentials: Referential[];
+  referentials: ReferentialBasic[];  // ← utiliser ReferentialType
   onSubmit: (id: string, data: any) => Promise<void>;
 }
+
 
 const editCoachSchema = z.object({
   firstName: z.string().min(2, "Le prénom doit contenir au moins 2 caractères"),
@@ -45,7 +43,7 @@ const editCoachSchema = z.object({
   phone: z.string()
     .min(9, "Le numéro doit contenir au moins 9 chiffres")
     .regex(/^[0-9+]+$/, "Format de numéro invalide"),
-  refId: z.string().optional(),
+  refIds: z.array(z.string()).optional(), // ✅ tableau de référentiels
   photoFile: z.any().optional(),
 });
 
@@ -76,13 +74,14 @@ export default function EditCoachModal({
 }: EditCoachModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedRefIds, setSelectedRefIds] = useState<string[]>([]);
 
-  const { 
-    register, 
-    handleSubmit, 
-    formState: { errors }, 
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
     setValue,
-    reset
+    reset,
   } = useForm<EditCoachFormData>({
     resolver: zodResolver(editCoachSchema),
     mode: 'onBlur',
@@ -90,15 +89,26 @@ export default function EditCoachModal({
 
   useEffect(() => {
     if (isOpen && coach) {
+      // ✅ Récupérer les référentiels existants du coach
+      const existingRefIds = coach.referentials
+        ? coach.referentials.map(r => r.id)
+        : coach.refId
+          ? [coach.refId]
+          : [];
+
+      setSelectedRefIds(existingRefIds);
+      setValue('refIds', existingRefIds);
+
       reset({
         firstName: coach.firstName,
         lastName: coach.lastName,
         phone: coach.phone || '',
-        refId: coach.refId || '',
+        refIds: existingRefIds,
       });
+
       setPreviewUrl(coach.photoUrl ? getImageUrl(coach.photoUrl) : null);
     }
-  }, [isOpen, coach, reset]);
+  }, [isOpen, coach, reset, setValue]);
 
   const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -113,19 +123,24 @@ export default function EditCoachModal({
       }
       setValue('photoFile', file);
       const reader = new FileReader();
-      reader.onload = () => {
-        setPreviewUrl(reader.result as string);
-      };
+      reader.onload = () => setPreviewUrl(reader.result as string);
       reader.readAsDataURL(file);
     }
   };
 
+  const toggleReferential = (refId: string) => {
+    const updated = selectedRefIds.includes(refId)
+      ? selectedRefIds.filter(id => id !== refId)
+      : [...selectedRefIds, refId];
+    setSelectedRefIds(updated);
+    setValue('refIds', updated);
+  };
+
   const onSubmitForm = async (data: EditCoachFormData) => {
     if (!coach) return;
-    
     try {
       setIsSubmitting(true);
-      await onSubmit(coach.id, data);
+      await onSubmit(coach.id, { ...data, refIds: selectedRefIds });
       onClose();
     } catch (error: any) {
       console.error('Form submission error:', error);
@@ -139,11 +154,15 @@ export default function EditCoachModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-orange-600">
-            Modifier le coach
-          </DialogTitle>
-        </DialogHeader>
+  <DialogHeader>
+    <DialogTitle className="text-2xl font-bold text-orange-600">
+      Modifier le coach
+    </DialogTitle>
+    {/* ✅ Ajouter DialogDescription pour supprimer le warning */}
+    <DialogDescription className="sr-only">
+      Formulaire de modification du coach
+    </DialogDescription>
+  </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
           {/* Photo */}
@@ -152,22 +171,18 @@ export default function EditCoachModal({
               <Image className="w-5 h-5 mr-2 text-orange-500" />
               <h3 className="text-lg font-medium text-gray-800">Photo de profil</h3>
             </div>
-            
+
             <div className="flex items-start space-x-4">
               <div className="flex-shrink-0">
                 <div className="w-32 h-32 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50 relative overflow-hidden">
                   {previewUrl ? (
-                    <img 
-                      src={previewUrl} 
-                      alt="Preview" 
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
                   ) : (
                     <UserCircle className="h-12 w-12 text-gray-400" />
                   )}
                 </div>
               </div>
-              
+
               <div className="flex-grow">
                 <input
                   type="file"
@@ -180,9 +195,7 @@ export default function EditCoachModal({
                     file:bg-orange-50 file:text-orange-600
                     hover:file:bg-orange-100"
                 />
-                <p className="mt-2 text-xs text-gray-500">
-                  JPG, PNG ou GIF. Taille maximale 5MB.
-                </p>
+                <p className="mt-2 text-xs text-gray-500">JPG, PNG ou GIF. Taille maximale 5MB.</p>
               </div>
             </div>
           </div>
@@ -196,33 +209,33 @@ export default function EditCoachModal({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Field label="Prénom" error={errors.firstName?.message} required>
-                <Input 
-                  {...register("firstName")} 
+                <Input
+                  {...register("firstName")}
                   placeholder="Prénom du coach"
                   className={errors.firstName ? "border-red-300" : ""}
                 />
               </Field>
-              
+
               <Field label="Nom" error={errors.lastName?.message} required>
-                <Input 
-                  {...register("lastName")} 
+                <Input
+                  {...register("lastName")}
                   placeholder="Nom du coach"
                   className={errors.lastName ? "border-red-300" : ""}
                 />
               </Field>
 
               <Field label="Email" required>
-                <Input 
+                <Input
                   value={coach.user.email}
                   disabled
                   className="bg-gray-100 cursor-not-allowed"
                 />
                 <p className="text-xs text-gray-500 mt-1">L'email ne peut pas être modifié</p>
               </Field>
-              
+
               <Field label="Téléphone" error={errors.phone?.message} required>
-                <Input 
-                  {...register("phone")} 
+                <Input
+                  {...register("phone")}
                   placeholder="+221 XX XXX XX XX"
                   className={errors.phone ? "border-red-300" : ""}
                 />
@@ -230,33 +243,89 @@ export default function EditCoachModal({
             </div>
           </div>
 
-          {/* Référentiel */}
+          {/* ✅ Référentiels multi-sélection */}
           <div className="bg-white rounded-lg p-6 border border-gray-200">
-            <h3 className="text-lg font-medium text-gray-800 mb-4">Référentiel</h3>
-            
-            <Field label="Référentiel d'affectation" error={errors.refId?.message}>
-              <select
-                {...register("refId")}
-                className="w-full h-10 px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              >
-                <option value="">Aucun référentiel assigné</option>
-                {referentials.map(ref => (
-                  <option key={ref.id} value={ref.id}>
-                    {ref.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
+            <div className="flex items-center mb-2">
+              <BookOpen className="w-5 h-5 mr-2 text-orange-500" />
+              <h3 className="text-lg font-medium text-gray-800">Référentiels d'affectation</h3>
+            </div>
+
+            <p className="text-sm text-gray-500 mb-4">
+              Sélectionnez un ou plusieurs référentiels pour ce coach.
+            </p>
+
+            {/* Badge compteur */}
+            {selectedRefIds.length > 0 && (
+              <div className="mb-3 flex flex-wrap gap-2">
+                {selectedRefIds.map(id => {
+                  const ref = referentials.find(r => r.id === id);
+                  return ref ? (
+                    <span
+                      key={id}
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 text-xs font-medium rounded-full"
+                    >
+                      {ref.name}
+                      <button
+                        type="button"
+                        onClick={() => toggleReferential(id)}
+                        className="ml-1 hover:text-orange-900 font-bold"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ) : null;
+                })}
+              </div>
+            )}
+
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+              {referentials.length === 0 ? (
+                <p className="text-sm text-gray-400 italic text-center py-4">
+                  Aucun référentiel disponible
+                </p>
+              ) : (
+                referentials.map(ref => {
+                  const isSelected = selectedRefIds.includes(ref.id);
+                  return (
+                    <label
+                      key={ref.id}
+                      className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all
+                        ${isSelected
+                          ? 'border-orange-500 bg-orange-50'
+                          : 'border-gray-200 hover:border-orange-200 hover:bg-orange-50/30'
+                        }`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 accent-orange-500"
+                        checked={isSelected}
+                        onChange={() => toggleReferential(ref.id)}
+                      />
+                      <div className="flex-1">
+                        <span className="text-sm font-medium text-gray-700">{ref.name}</span>
+                        {ref.description && (
+                          <p className="text-xs text-gray-400 mt-0.5">{ref.description}</p>
+                        )}
+                      </div>
+                      {isSelected && (
+                        <span className="text-xs text-orange-500 font-semibold">✓ Sélectionné</span>
+                      )}
+                    </label>
+                  );
+                })
+              )}
+            </div>
+
+            {selectedRefIds.length === 0 && (
+              <p className="mt-3 text-xs text-gray-400 italic">
+                Aucun référentiel sélectionné — le coach ne sera affecté à aucun référentiel.
+              </p>
+            )}
           </div>
 
           {/* Boutons */}
           <div className="flex justify-end space-x-3 pt-4 border-t">
-            <Button
-              type="button"
-              onClick={onClose}
-              variant="outline"
-              disabled={isSubmitting}
-            >
+            <Button type="button" onClick={onClose} variant="outline" disabled={isSubmitting}>
               Annuler
             </Button>
             <Button

@@ -11,11 +11,17 @@ interface Coach {
   phone?: string;
   photoUrl?: string;
   qrCode?: string;
+  // ✅ Support des deux formats possibles du backend
   referential?: {
     id: string;
     name: string;
     description?: string;
   };
+  referentials?: Array<{
+    id: string;
+    name: string;
+    description?: string;
+  }>;
   user: {
     id: string;
     email: string;
@@ -146,33 +152,43 @@ export default function ViewCoachModal({ isOpen, onClose, coach }: ViewCoachModa
               </div>
             </div>
 
-            {/* Référentiel */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <BookOpen className="w-5 h-5 mr-2 text-orange-500" />
-                Référentiel
-              </h3>
-              <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200">
-                {coach.referential ? (
-                  <div>
-                    <p className="font-semibold text-green-900">
-                      {coach.referential.name}
-                    </p>
-                    {coach.referential.description && (
-                      <p className="text-sm text-green-700 mt-1">
-                        {coach.referential.description}
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center py-2">
-                    <p className="text-gray-500 italic">
-                      Aucun référentiel assigné
-                    </p>
-                  </div>
+{/* Référentiel */}
+<div>
+  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+    <BookOpen className="w-5 h-5 mr-2 text-orange-500" />
+    Référentiel(s)
+  </h3>
+  <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200">
+    {(() => {
+      // ✅ Normaliser : accepter referentials[] OU referential{}
+      const refs = coach.referentials && coach.referentials.length > 0
+        ? coach.referentials
+        : coach.referential
+          ? [coach.referential]
+          : [];
+
+      return refs.length > 0 ? (
+        <div className="space-y-2">
+          {refs.map(ref => (
+            <div key={ref.id} className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
+              <div>
+                <p className="font-semibold text-green-900">{ref.name}</p>
+                {ref.description && (
+                  <p className="text-xs text-green-700">{ref.description}</p>
                 )}
               </div>
             </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-center text-gray-500 italic py-2">
+          Aucun référentiel assigné
+        </p>
+      );
+    })()}
+  </div>
+</div>
 
             {/* QR Code */}
             {coach.qrCode && (

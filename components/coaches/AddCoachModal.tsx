@@ -5,10 +5,10 @@ import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Referential } from '@/lib/api';
+
 import { AlertCircle, User, Image, UserCircle, Check } from 'lucide-react';
 import { toast } from "sonner";
-
+import { ReferentialBasic } from '@/lib/api';
 // Schéma de validation pour le coach
 const coachSchema = z.object({
   firstName: z.string().min(2, "Le prénom doit contenir au moins 2 caractères"),
@@ -17,7 +17,7 @@ const coachSchema = z.object({
   phone: z.string()
     .min(9, "Le numéro doit contenir au moins 9 chiffres")
     .regex(/^[0-9+]+$/, "Format de numéro invalide"),
-  refId: z.string().optional(), // Référentiel optionnel
+   refIds: z.array(z.string()).optional(),
   photoFile: z.any().optional(), // Pour le fichier de photo
 });
 
@@ -27,7 +27,7 @@ type CoachFormData = z.infer<typeof coachSchema>;
 interface AddCoachModalProps {
   isOpen: boolean;
   onClose: () => void;
-  referentials: Referential[];
+  referentials: ReferentialBasic[];
   onSubmit: (data: CoachFormData) => Promise<void>;
 }
 
@@ -81,7 +81,7 @@ export default function AddCoachModal({
       lastName: "",
       email: "",
       phone: "",
-      refId: "",
+      refIds: [],
     }
   });
 
@@ -300,58 +300,67 @@ export default function AddCoachModal({
                 </div>
               </div>
             ) : (
-              /* Étape 2: Référentiel */
               <div className="space-y-6">
-                <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-                  <div className="flex items-center mb-4 pb-3 border-b border-gray-100">
-                    <div className="bg-teal-50 p-2 rounded-md text-teal-600 mr-3">
-                      <User size={18} />
-                    </div>
-                    <h3 className="text-lg font-medium text-gray-800">Référentiel d'affectation</h3>
-                  </div>
+    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+      <div className="flex items-center mb-4 pb-3 border-b border-gray-100">
+        <div className="bg-teal-50 p-2 rounded-md text-teal-600 mr-3">
+          <User size={18} />
+        </div>
+        <h3 className="text-lg font-medium text-gray-800">
+          Référentiels d'affectation
+        </h3>
+      </div>
 
-                  <Field label="Référentiel" error={errors.refId?.message}>
-                    <select
-                      {...register("refId")}
-                      className={`w-full h-10 px-3 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.refId ? "border-red-300" : "border-gray-300"}`}
-                    >
-                      <option value="">Aucun référentiel assigné</option>
-                      {referentials.map(ref => (
-                        <option key={ref.id} value={ref.id}>
-                          {ref.name}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
+      <div className="space-y-2">
+        {referentials.map(ref => {
+          const selected = (watch('refIds') || []).includes(ref.id);
+          return (
+            <label
+              key={ref.id}
+              className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all
+                ${selected ? 'border-teal-500 bg-teal-50' : 'border-gray-200 hover:border-teal-200'}`}
+            >
+              <input
+                type="checkbox"
+                className="w-4 h-4 accent-teal-500"
+                checked={selected}
+                onChange={(e) => {
+                  const current = watch('refIds') || [];
+                  if (e.target.checked) {
+                    setValue('refIds', [...current, ref.id]);
+                  } else {
+                    setValue('refIds', current.filter(id => id !== ref.id));
+                  }
+                }}
+              />
+              <span className="text-sm font-medium text-gray-700">{ref.name}</span>
+              {ref.description && (
+                <span className="text-xs text-gray-400 ml-auto">{ref.description}</span>
+              )}
+            </label>
+          );
+        })}
+      </div>
 
-                  <div className="mt-4 p-3 bg-blue-50 rounded-md text-blue-800 text-sm">
-                    <div className="font-medium mb-1">Information</div>
-                    <div>
-                      Le référentiel peut être assigné plus tard si nécessaire. 
-                      Le coach pourra être affecté à un ou plusieurs modules selon ses compétences.
-                    </div>
-                  </div>
-
-                  {/* Résumé des informations saisies */}
-                  <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-medium text-gray-800 mb-3">Résumé des informations</h4>
-                    <div className="space-y-2 text-sm text-gray-600">
-                      <div><span className="font-medium">Nom complet:</span> {watch('firstName')} {watch('lastName')}</div>
-                      <div><span className="font-medium">Email:</span> {watch('email')}</div>
-                      <div><span className="font-medium">Téléphone:</span> {watch('phone')}</div>
-                      <div>
-                        <span className="font-medium">Référentiel:</span> {
-                          watch('refId') 
-                            ? referentials.find(ref => ref.id === watch('refId'))?.name || 'Non trouvé'
-                            : 'Aucun'
-                        }
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
+      <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+        <h4 className="font-medium text-gray-800 mb-3">Résumé</h4>
+        <div className="space-y-2 text-sm text-gray-600">
+          <div><span className="font-medium">Nom:</span> {watch('firstName')} {watch('lastName')}</div>
+          <div><span className="font-medium">Email:</span> {watch('email')}</div>
+          <div>
+            <span className="font-medium">Référentiels:</span>{' '}
+            {(watch('refIds') || []).length === 0
+              ? 'Aucun'
+              : (watch('refIds') || [])
+                  .map(id => referentials.find(r => r.id === id)?.name)
+                  .join(', ')
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
             {/* Boutons de navigation */}
             <div className="flex justify-between pt-6 border-t border-gray-200">
               {step === 1 ? (

@@ -38,6 +38,7 @@ export interface Referential {
   status: string
   modules?: Module[]
 }
+export type ReferentialBasic = Pick<Referential, 'id' | 'name' | 'description'>;
 export interface Kit {
   laptop?: boolean
   charger?: boolean
@@ -1448,6 +1449,11 @@ export interface Coach {
     name: string;
     description?: string;
   };
+   referentials?: Array<{       // ← AJOUTER CES 4 LIGNES
+    id: string;
+    name: string;
+    description?: string;
+  }>;
   user: {
     id: string;
     email: string;
@@ -1593,39 +1599,44 @@ export const coachesAPI = {
    * 🆕 Obtenir le profil du coach connecté (avec QR Code)
    */
  
-  createCoach: async (formData: FormData): Promise<Coach> => {
-    try {
-      console.log('🚀 Sending coach creation request...');
-      
-      // Log FormData contents
-      console.log('📋 FormData contents:');
-      for (let [key, value] of formData.entries()) {
-        if (value instanceof File) {
-          console.log(`  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
-        } else {
-          console.log(`  ${key}: ${value}`);
-        }
+ createCoach: async (formData: FormData): Promise<Coach> => {
+  try {
+    console.log('🚀 Sending coach creation request...');
+
+    // ✅ Déplacé DANS le try
+    const refIds = formData.getAll('refIds');
+    formData.delete('refIds'); // Supprimer l'ancienne clé
+    refIds.forEach((id) => {
+      formData.append('refIds[]', id as string);
+    });
+
+    // Log FormData contents
+    console.log('📋 FormData contents:');
+    for (let [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        console.log(`  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
+      } else {
+        console.log(`  ${key}: ${value}`);
       }
-      
-      const response = await api.post('/coaches', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      
-      console.log('✅ Coach created successfully:', response.data);
-      return response.data;
-    } catch (error) {
-      const apiError = handleApiError(error);
-      console.error('❌ Failed to create coach:', apiError);
-      throw new Error(apiError.message);
     }
-  },
+
+    const response = await api.post('/coaches', formData);
+    // ✅ Supprimer 'Content-Type': 'multipart/form-data' — axios le gère automatiquement
+
+    console.log('✅ Coach created successfully:', response.data);
+    return response.data;
+  } catch (error) {
+    const apiError = handleApiError(error);
+    console.error('❌ Failed to create coach:', apiError);
+    throw new Error(apiError.message);
+  }
+},
 
   updateCoach: async (id: string, formData: FormData): Promise<Coach> => {
     try {
       console.log('🔄 Updating coach:', id);
       const response = await api.put(`/coaches/${id}`, formData, {
+        timeout: 60000,
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -2042,6 +2053,15 @@ async updateJustificationStatus(
     `/attendance/absence/${attendanceId}/status`,
     { status, comment } // ✅ Assurez-vous que le body est correct
   );
+  return response.data;
+},
+async forceApprove(attendanceId: string) {
+  const response = await api.put(`/attendance/absence/${attendanceId}/force-approve`);
+  return response.data;
+},
+// Dans attendanceAPI
+updateAttendanceStatus: async (id: string, status: 'present' | 'late' | 'absent') => {
+  const response = await api.patch(`/attendance/${id}/status`, { status });
   return response.data;
 },
 
