@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Promotion, Referential } from '@/lib/api';
+import { Promotion, Referential,Session, referentialsAPI } from '@/lib/api';
 import { CheckCircle2, Circle, ArrowLeft, ArrowRight, User, Users, AlertCircle, Image, UserCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -35,6 +35,7 @@ const learnerSchema = z.object({
   birthPlace: z.string().min(2, "Le lieu de naissance est requis"),
   promotionId: z.string().min(1, "La promotion est requise"),
   refId: z.string().min(1, "Le référentiel est requis"),
+  sessionId: z.string().optional(),
   status: z.enum(["ACTIVE", "WAITING"], {
     required_error: "Le statut est requis"
   }),
@@ -47,11 +48,12 @@ const learnerSchema = z.object({
     email: z.string().email("Format d'email invalide").optional().or(z.literal('')),
     address: z.string().min(5, "L'adresse est requise")
   }),
-  photoFile: z.any().optional(), // Pour le fichier de photo
+  photoFile: z.any().optional(),
 });
 
 // Type pour les données du formulaire
 type LearnerFormData = z.infer<typeof learnerSchema>;
+
 
 // Props pour les composants
 interface FormSectionProps {
@@ -116,6 +118,42 @@ const LearnerForm = ({
   const selectedRefId = watch("refId");
   const selectedRef = availableReferentials.find(ref => ref.id === selectedRefId);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // États pour la gestion des sessions
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
+
+  // Fetch les sessions quand le référentiel change
+  useEffect(() => {
+    if (!selectedRefId) {
+      setSessions([]);
+      setValue('sessionId', undefined);
+      return;
+    }
+
+    const fetchSessions = async () => {
+      try {
+        setLoadingSessions(true);
+        setValue('sessionId', undefined);
+
+        const ref = await referentialsAPI.getReferentialById(selectedRefId);
+        const refSessions: Session[] = ref.sessions || [];
+        setSessions(refSessions);
+
+        // Auto-sélection si une seule session
+        if (refSessions.length === 1) {
+          setValue('sessionId', refSessions[0].id);
+        }
+      } catch (err) {
+        console.error('Erreur chargement sessions:', err);
+        setSessions([]);
+      } finally {
+        setLoadingSessions(false);
+      }
+    };
+
+    fetchSessions();
+  }, [selectedRefId, setValue]);
 
   const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -292,7 +330,6 @@ const LearnerForm = ({
             </div>
           </div>
 
-          {/* SECTION CORRIGÉE: Utilisation d'un vrai select HTML au lieu d'un composant personnalisé */}
           <Field label="Référentiel" error={errors.refId?.message} required>
             <select
               {...register("refId")}
@@ -307,26 +344,61 @@ const LearnerForm = ({
             </select>
           </Field>
 
-          {selectedRef && (
+          {/* Indicateur de chargement des sessions */}
+          {loadingSessions && (
+            <div className="flex items-center gap-2 text-sm text-gray-500 mt-3">
+              <div className="w-4 h-4 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
+              Chargement des sessions...
+            </div>
+          )}
+
+          {/* Select session — affiché uniquement si plusieurs sessions disponibles */}
+          {!loadingSessions && sessions.length > 1 && (
+            <div className="mt-4">
+              <Field label="Session" error={errors.sessionId?.message} required>
+                <select
+                  {...register("sessionId")}
+                  className={`w-full h-10 px-3 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.sessionId ? "border-red-300" : "border-gray-300"}`}
+                >
+                  <option value="">Sélectionner une session</option>
+                  {sessions.map(session => (
+                    <option key={session.id} value={session.id}>
+                      {session.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+          )}
+
+          {/* Info sur le référentiel sélectionné */}
+          {selectedRef && !loadingSessions && (
             <div className="mt-4 p-3 bg-blue-50 rounded-md text-blue-800 text-sm">
               <div className="font-medium mb-1">Détails du référentiel</div>
               <div>{selectedRef.description}</div>
               <div className="mt-2">
                 <span className="font-medium">Durée:</span> {selectedRef.duration} mois
               </div>
+              {sessions.length > 0 && (
+                <div className="mt-1">
+                  <span className="font-medium">Sessions disponibles:</span> {sessions.length}
+                </div>
+              )}
             </div>
           )}
 
-          <Field label="Statut" error={errors.status?.message} required>
-            <select
-              {...register("status")}
-              className={`w-full h-10 px-3 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.status ? "border-red-300" : "border-gray-300"}`}
-            >
-              <option value="">Sélectionner un statut</option>
-              <option value="ACTIVE">Actif</option>
-              <option value="WAITING">En attente</option>
-            </select>
-          </Field>
+          <div className="mt-4">
+            <Field label="Statut" error={errors.status?.message} required>
+              <select
+                {...register("status")}
+                className={`w-full h-10 px-3 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.status ? "border-red-300" : "border-gray-300"}`}
+              >
+                <option value="">Sélectionner un statut</option>
+                <option value="ACTIVE">Actif</option>
+                <option value="WAITING">En attente</option>
+              </select>
+            </Field>
+          </div>
         </div>
       </FormSection>
     </div>
@@ -413,6 +485,7 @@ export default function AddLearnerModal({
       gender: undefined,
       promotionId: "",
       refId: "",
+      sessionId: undefined,
       tutor: {
         firstName: "",
         lastName: "",
@@ -440,22 +513,28 @@ export default function AddLearnerModal({
     if (active && active.referentials) {
       setAvailableReferentials(active.referentials);
     } else if (active) {
-      // Si la promotion n'a pas de référentiels associés, utiliser tous les référentiels
       setAvailableReferentials(referentials);
     } else {
       setAvailableReferentials([]);
     }
   }, [promotions, referentials]);
 
-  // Définir automatiquement l'ID de promotion
-  useEffect(() => {
-    if (activePromotion) {
-      reset({
-        ...watch(),
-        promotionId: activePromotion.id
-      });
-    }
-  }, [activePromotion, reset, watch]);
+// ✅ Remplacer ce useEffect
+useEffect(() => {
+  if (activePromotion) {
+    reset({
+      ...watch(),
+      promotionId: activePromotion.id
+    });
+  }
+}, [activePromotion, reset, watch]);
+
+// Par celui-ci — setValue ciblé, ne touche pas aux autres champs
+useEffect(() => {
+  if (activePromotion) {
+    setValue('promotionId', activePromotion.id);
+  }
+}, [activePromotion]);
 
   // Fonction pour passer à l'étape suivante
   const handleNext = async () => {
@@ -482,17 +561,14 @@ export default function AddLearnerModal({
       setIsSubmitting(true);
       setError(null);
       
-      // Vérifiez que tous les champs requis sont remplis
       const isValid = await trigger();
       if (!isValid) {
         throw new Error("Veuillez remplir tous les champs requis");
       }
 
       await onSubmit(data);
-      // Le modal sera fermé par le composant parent après succès
     } catch (error) {
       setError(error.message || "Une erreur est survenue lors de l'enregistrement");
-      // Ne pas fermer le modal en cas d'erreur
       console.error('Form submission error:', error);
     } finally {
       setIsSubmitting(false);

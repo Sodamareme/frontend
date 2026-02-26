@@ -197,21 +197,22 @@ export default function KitsPage() {
   ];
 
   // First, add this helper function after your status options
-  const getReferentials = () => {
-    const uniqueReferentials = Array.from(
-      new Set(
-        learners
-          .filter(l => l.referential)
-          .map(l => ({
-            id: l.referential?.id,
-            name: l.referential?.name
-          }))
-      )
-    ).filter(ref => ref.id && ref.name);
+const getReferentials = () => {
+  const referentialMap = new Map();
+  
+  learners
+    .filter(l => l.referential?.id && l.referential?.name)
+    .forEach(l => {
+      if (!referentialMap.has(l.referential!.id)) {
+        referentialMap.set(l.referential!.id, {
+          id: l.referential!.id,
+          name: l.referential!.name
+        });
+      }
+    });
 
-    return uniqueReferentials;
-  };
-
+  return Array.from(referentialMap.values());
+};
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}

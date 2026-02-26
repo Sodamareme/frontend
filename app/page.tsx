@@ -175,7 +175,9 @@ async function handleRegisterSubmit(data: LearnerFormSubmitData) {
     formData.append('birthPlace', data.birthPlace?.trim() || '');
     formData.append('promotionId', data.promotionId);
     formData.append('refId', data.refId);
-    
+    if (data.sessionId) {
+  formData.append('sessionId', data.sessionId); 
+}
     if (data.status?.trim()) {
       formData.append('status', data.status);
     }
@@ -185,7 +187,7 @@ async function handleRegisterSubmit(data: LearnerFormSubmitData) {
     formData.append('tutor[phone]', data.tutor?.phone?.trim() || '');
     formData.append('tutor[email]', data.tutor?.email?.trim() || '');
     formData.append('tutor[address]', data.tutor?.address?.trim() || '');
-
+   
     // ✅ LOG COMPLET DU FORMDATA
     console.log('=== FORMDATA AVANT ENVOI ===');
     const debugObj: any = {};

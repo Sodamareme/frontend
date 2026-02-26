@@ -201,6 +201,7 @@ export interface LearnerFormSubmitData {
     email?: string;
     address: string;
   };
+  sessionId?: string;
 }
 
 export interface ScanResponse {

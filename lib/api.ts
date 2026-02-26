@@ -442,8 +442,12 @@ export interface ReferentialExtended {
     lastName: string;
     photoUrl?: string;
   }>;
+  sessions?: Session[];
 }
-
+export type Session = {
+  id: string;
+  name: string;
+};
 export interface Module {
   id: string;
   name: string;
