@@ -935,7 +935,19 @@ createLearner: async (formData: FormData) => {
       console.error('Regenerate QR code error:', error);
       throw error;
     }
+  },
+  uploadPhoto: async (id: string, file: File): Promise<{ photoUrl: string }> => {
+  try {
+    const formData = new FormData()
+    formData.append('photo', file)
+
+    const response = await api.post(`/learners/${id}/photo`, formData)
+    return response.data
+  } catch (error) {
+    const apiError = handleApiError(error)
+    throw new Error(apiError.message)
   }
+},
 };
 
 // Types pour TypeScript

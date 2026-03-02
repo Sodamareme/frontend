@@ -59,6 +59,28 @@ class SocketService {
   isConnected(): boolean {
     return this.socket?.connected ?? false;
   }
+
+  // ── Méthodes dédiées aux notifications ──────────────────────────────────────
+
+  onNewNotification(callback: (notification: any) => void) {
+    this.socket?.on('notification', callback);
+  }
+
+  offNewNotification(callback?: (notification: any) => void) {
+    if (callback) {
+      this.socket?.off('notification', callback);
+    } else {
+      this.socket?.off('notification');
+    }
+  }
+
+  joinRoom(room: string) {
+    this.emit('join-room', { room });
+  }
+
+  leaveRoom(room: string) {
+    this.emit('leave-room', { room });
+  }
 }
 
 export const socketService = new SocketService();
