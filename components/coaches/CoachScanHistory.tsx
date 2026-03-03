@@ -7,13 +7,14 @@ import { getImageUrl } from '@/lib/utils/imageUrl';
 interface AttendanceRecord {
   id: string;
   date: string;
-  checkIn: string | null;  // ✅ Changé
-  checkOut: string | null; // ✅ Changé
+  checkIn: { time: string; isLate: boolean } | null;
+  checkOut: { time: string } | null;
   isPresent: boolean;
   isLate: boolean;
-  coachId: string;
-  createdAt: string;
-  updatedAt: string;
+  duration?: string | null;
+  coachId?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface CoachData {
@@ -115,29 +116,28 @@ export default function CoachScanHistory({ coachId, onBack }: CoachScanHistoryPr
     }
   };
 
-  const formatTime = (dateString: string | null) => {
-    if (!dateString) return '-';
-    try {
-      return new Date(dateString).toLocaleTimeString('fr-FR', {
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (error) {
-      return 'Heure invalide';
-    }
-  };
+  const formatTime = (val: { time: string } | string | null) => {
+  if (!val) return '-';
+  const dateStr = typeof val === 'object' ? val.time : val;
+  try {
+    return new Date(dateStr).toLocaleTimeString('fr-FR', {
+      hour: '2-digit', minute: '2-digit'
+    });
+  } catch { return 'Heure invalide'; }
+};
 
-  const calculateWorkDuration = (checkIn: string | null, checkOut: string | null) => {
-    if (!checkIn || !checkOut) return null;
-    
-    const start = new Date(checkIn);
-    const end = new Date(checkOut);
-    const diff = end.getTime() - start.getTime();
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    
-    return `${hours}h ${minutes}min`;
-  };
+const calculateWorkDuration = (
+  checkIn: { time: string } | string | null,
+  checkOut: { time: string } | string | null
+) => {
+  if (!checkIn || !checkOut) return null;
+  const start = new Date(typeof checkIn === 'object' ? checkIn.time : checkIn);
+  const end = new Date(typeof checkOut === 'object' ? checkOut.time : checkOut);
+  const diff = end.getTime() - start.getTime();
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  return `${hours}h ${minutes}min`;
+};
 
   const calculateStats = () => {
     const total = attendance.length;

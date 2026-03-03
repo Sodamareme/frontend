@@ -5,14 +5,58 @@ import { Calendar, Clock, TrendingUp, LogIn, LogOut, Download, ArrowLeft, Filter
 import { coachesAPI } from '@/lib/api';
 import { toast } from 'sonner';
 
+interface CheckInInfo {
+  time: string;
+  isLate: boolean;
+}
+
+interface CheckOutInfo {
+  time: string;
+}
+
+interface TodayAttendance {
+  id: string;
+  date: string;
+  checkIn: CheckInInfo | null;
+  checkOut: CheckOutInfo | null;
+  isPresent: boolean;
+  isLate: boolean;
+}
+
+interface AttendanceRecord {
+  id: string;
+  date: string;
+  checkIn: CheckInInfo | null;
+  checkOut: CheckOutInfo | null;
+  isPresent: boolean;
+  isLate: boolean;
+  duration: string | null;
+}
+
+interface CoachProfile {
+  id: string;
+  firstName: string;
+  lastName: string;
+  matricule: string;
+  qrCode?: string;
+}
+
+interface AttendanceStats {
+  attendanceRate: string;
+  completedDays: number;
+  lateDays: number;
+  averageHoursPerDay: string;
+  totalHoursWorked: string;
+}
 export default function CoachPersonalAttendance() {
-  const [attendances, setAttendances] = useState([]);
-  const [stats, setStats] = useState(null);
+const [attendances, setAttendances] = useState<AttendanceRecord[]>([]);
+const [stats, setStats] = useState<AttendanceStats | null>(null);
+const [todayAttendance, setTodayAttendance] = useState<TodayAttendance | null>(null);
+const [coachProfile, setCoachProfile] = useState<CoachProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [todayAttendance, setTodayAttendance] = useState(null);
-  const [coachProfile, setCoachProfile] = useState(null);
+  const [showCalendar, setShowCalendar] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
   
   // États pour les filtres
@@ -21,70 +65,69 @@ export default function CoachPersonalAttendance() {
     lateOnly: false,
     searchDate: ''
   });
+  // Ajouter ces interfaces en haut du fichier, avant le composant
+
 
   useEffect(() => {
     loadData();
   }, [selectedMonth, selectedYear]);
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      console.log('🔄 Chargement des données du coach...');
-      
-      const [profileData, attendanceData, statsData, todayData] = await Promise.all([
-        coachesAPI.getMyProfile().catch(err => {
-          console.error('❌ Erreur profile:', err);
-          return null;
-        }),
-        coachesAPI.getMyAttendance().catch(err => {
-          console.error('❌ Erreur attendance:', err);
-          return [];
-        }),
-        coachesAPI.getMyAttendanceStats(selectedMonth, selectedYear).catch(err => {
-          console.error('❌ Erreur stats:', err);
-          return null;
-        }),
-        coachesAPI.getMyTodayAttendance().catch(err => {
-          console.error('❌ Erreur today:', err);
-          return null;
-        })
-      ]);
+const loadData = async () => {
+  try {
+    setLoading(true);
+    
+    const [profileData, attendanceData, statsData, todayData] = await Promise.all([
+      coachesAPI.getMyProfile().catch(() => null),
+      coachesAPI.getMyAttendance().catch(() => []),
+      coachesAPI.getMyAttendanceStats(selectedMonth, selectedYear).catch(() => null),
+      coachesAPI.getMyTodayAttendance().catch(() => null),
+    ]);
 
-      console.log('✅ Données chargées:', { 
-        profile: profileData ? `${profileData.firstName} ${profileData.lastName}` : 'null',
-        attendances: attendanceData?.length || 0,
-        hasStats: !!statsData,
-        hasToday: !!todayData 
-      });
-      
-      setCoachProfile(profileData);
-      setAttendances(attendanceData || []);
-      setStats(statsData);
-      setTodayAttendance(todayData);
-    } catch (error) {
-      console.error('❌ Erreur chargement données:', error);
-      toast.error(`Erreur lors du chargement des données: ${error.message || 'Erreur inconnue'}`);
-    } finally {
-      setLoading(false);
-    }
-  };
+    // 👇 Ajoute ce log pour voir le format exact
+    console.log('=== ATTENDANCE[0] RAW ===', JSON.stringify(attendanceData?.[0], null, 2));
+    console.log('=== TODAY RAW ===', JSON.stringify(todayData, null, 2));
 
-  const formatTime = (dateString) => {
-    return new Date(dateString).toLocaleTimeString('fr-FR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+    setCoachProfile(profileData);
+    setAttendances(attendanceData || []);
+    setStats(statsData);
+    setTodayAttendance(todayData);
+  } catch (error) {
+    toast.error(`Erreur: ${error.message}`);
+  } finally {
+    setLoading(false);
+  }
+};
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
-      weekday: 'long',
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
-    });
-  };
+ const formatTime = (dateInput: any) => {
+  if (!dateInput) return '--:--';
+  
+  // Gérer { time: string } ou string directe
+  const dateStr = typeof dateInput === 'object' && dateInput?.time 
+    ? dateInput.time 
+    : dateInput;
+  
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return '--:--';
+  
+  return date.toLocaleTimeString('fr-FR', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
 
+const formatDate = (dateInput: any) => {
+  if (!dateInput) return 'N/A';
+  
+  const date = new Date(dateInput);
+  if (isNaN(date.getTime())) return 'N/A';
+  
+  return date.toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric'
+  });
+};
   // Fonction de filtrage
   const getFilteredAttendances = () => {
     let filtered = [...attendances];
