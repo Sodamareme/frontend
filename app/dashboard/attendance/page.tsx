@@ -700,12 +700,13 @@ const handleStatusChange = async (id: string, newStatus: EditableStatus) => {
               </Select>
             </div>
 
-            <Pagination
-              totalItems={filteredRecords.length}
-              initialItemsPerPage={itemsPerPage}
-              onPageChange={(page) => setCurrentPage(page)}
-              onItemsPerPageChange={(n) => { setItemsPerPage(n); setCurrentPage(1) }}
-            />
+          <Pagination
+  totalItems={filteredRecords.length}
+  currentPage={currentPage}        // ✅ Contrôlé par le parent
+  itemsPerPage={itemsPerPage}      // ✅ Contrôlé par le parent
+  onPageChange={(page) => setCurrentPage(page)}
+  onItemsPerPageChange={(n) => { setItemsPerPage(n); setCurrentPage(1) }}
+/>
           </div>
         </div>
       )}
