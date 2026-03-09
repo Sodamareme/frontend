@@ -38,6 +38,7 @@ export default function CoachAttendanceHistory({ onClose }: CoachAttendanceHisto
   useEffect(() => {
     loadTodayAttendances();
   }, []);
+  
 
   const loadTodayAttendances = async () => {
     try {

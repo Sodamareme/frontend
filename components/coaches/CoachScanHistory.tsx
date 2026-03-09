@@ -44,7 +44,11 @@ export default function CoachScanHistory({ coachId, onBack }: CoachScanHistoryPr
   useEffect(() => {
     loadData();
   }, [coachId]);
-
+useEffect(() => {
+  if (attendance.length > 0) {
+    console.log('Premier record frontend:', JSON.stringify(attendance[0]));
+  }
+}, [attendance]);
   const loadData = async () => {
     try {
       setLoading(true);

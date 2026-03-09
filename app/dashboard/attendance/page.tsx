@@ -257,7 +257,9 @@ export default function AttendancePage() {
 
   const [selectedAttendance, setSelectedAttendance] = useState<AttendanceRecord | null>(null)
   const [showJustificationModal, setShowJustificationModal] = useState(false)
-
+useEffect(() => {
+  setCurrentPage(1)
+}, [searchQuery, statusFilter, dateFilter, selectedDate])
   // ── Actions ────────────────────────────────────────────────────────────────
 
   const handleCloseModal = useCallback(() => {
@@ -622,12 +624,29 @@ const handleStatusChange = async (id: string, newStatus: EditableStatus) => {
                       {record.learner.firstName} {record.learner.lastName}
                     </td>
 
-                    {/* Date & Heure */}
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                      {record.scanTime
-                        ? new Date(record.scanTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-                        : '—'}
-                    </td>
+                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+  <div className="flex flex-col">
+    {/* Date — toujours depuis record.date */}
+    <span className="font-medium text-gray-700">
+      {record.date
+        ? new Date(record.date).toLocaleDateString('fr-FR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          })
+        : '—'}
+    </span>
+    {/* Heure — seulement si présent */}
+    <span className="text-xs text-gray-400">
+      {record.scanTime
+        ? new Date(record.scanTime).toLocaleTimeString('fr-FR', {
+            hour: '2-digit',
+            minute: '2-digit'
+          })
+        : 'Absent'}
+    </span>
+  </div>
+</td>
 
                     {/* Référentiel */}
                     <td className="px-4 py-3 whitespace-nowrap">
@@ -682,32 +701,32 @@ const handleStatusChange = async (id: string, newStatus: EditableStatus) => {
           </div>
 
           {/* Pagination */}
-          <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200">
-            <div className="flex items-center text-sm text-gray-700">
-              <span>Apprenants/page</span>
-              <Select
-                value={itemsPerPage.toString()}
-                onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1) }}
-              >
-                <SelectTrigger className="w-[70px] h-8 ml-2">
-                  <SelectValue placeholder="10" />
-                </SelectTrigger>
-                <SelectContent>
-                  {[5, 10, 20, 50].map(v => (
-                    <SelectItem key={v} value={v.toString()}>{v}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200">
+  <div className="flex items-center text-sm text-gray-700">
+    <span>Apprenants/page</span>
+    <Select
+      value={itemsPerPage.toString()}
+      onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1) }}
+    >
+      <SelectTrigger className="w-[70px] h-8 ml-2">
+        <SelectValue placeholder="10" />
+      </SelectTrigger>
+      <SelectContent>
+        {[5, 10, 20, 50].map(v => (
+          <SelectItem key={v} value={v.toString()}>{v}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
 
-          <Pagination
-  totalItems={filteredRecords.length}
-  currentPage={currentPage}        // ✅ Contrôlé par le parent
-  itemsPerPage={itemsPerPage}      // ✅ Contrôlé par le parent
-  onPageChange={(page) => setCurrentPage(page)}
-  onItemsPerPageChange={(n) => { setItemsPerPage(n); setCurrentPage(1) }}
-/>
-          </div>
+  <Pagination
+    totalItems={filteredRecords.length}
+    currentPage={currentPage}
+    itemsPerPage={itemsPerPage}
+    onPageChange={(page) => setCurrentPage(page)}
+    onItemsPerPageChange={(n) => { setItemsPerPage(n); setCurrentPage(1) }}
+  />
+</div>
         </div>
       )}
 

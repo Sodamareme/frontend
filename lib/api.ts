@@ -1737,15 +1737,15 @@ export const coachesAPI = {
       console.log('✅ Attendance data received:', response.data.length, 'records');
       
       // S'assurer que les données sont au bon format
-      return response.data.map((att: any) => ({
-        id: att.id,
-        date: att.date,
-        checkIn: att.checkIn,
-        checkOut: att.checkOut,
-        isPresent: att.isPresent ?? true, // Par défaut true si non défini
-        isLate: att.isLate ?? false,      // Par défaut false si non défini
-        duration: att.duration
-      }));
+   return response.data.map((att: any) => ({
+  id: att.id,
+  date: att.date,
+  checkIn: att.checkIn,   // ✅ passe tel quel
+  checkOut: att.checkOut, // ✅ passe tel quel
+  isPresent: att.isPresent ?? true,
+  isLate: att.isLate ?? false,
+  duration: att.duration
+}));
     } catch (error: any) {
       console.error('❌ Error in getMyAttendance:', error.response?.data || error.message);
       // Retourner un tableau vide en cas d'erreur plutôt que de throw
