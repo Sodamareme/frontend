@@ -58,6 +58,8 @@ export default function Dashboard() {
       
     case 'RESTAURATEUR':
       return <RestaurateurDashboard />;
+    case 'SURVEILLANT': // ✅ Ajout
+      return <RestaurateurDashboard />;  // Vue lecture seule (même dashboard, bouton scanner masqué)
       
     default:
       return (

@@ -23,7 +23,7 @@ import {
 interface SidebarProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
-  userRole?: 'ADMIN' | 'COACH' | 'APPRENANT' | 'RESTAURATEUR' | 'VIGIL';
+  userRole?: 'ADMIN' | 'COACH' | 'APPRENANT' | 'RESTAURATEUR' | 'VIGIL'| 'SURVEILLANT';
 }
 
 export default function DashboardSidebar({ isOpen, setIsOpen, userRole = 'ADMIN' }: SidebarProps) {
@@ -67,6 +67,11 @@ export default function DashboardSidebar({ isOpen, setIsOpen, userRole = 'ADMIN'
         { href: '/dashboard', label: 'Tableau de bord', icon: <Home size={20} /> },
        // href: '/dashboard/meals/scan', label: 'Scanner', icon: <QrCode size={20} /> },
         { href: '/dashboard/meals/history', label: 'Historique', icon: <Coffee size={20} /> },
+      ],
+       SURVEILLANT: [ 
+        { href: '/dashboard', label: 'Tableau de bord', icon: <Home size={20} /> },
+        { href: '/dashboard/restaurateurs', label: 'Historique des Scans', icon: <FileText size={20} /> },
+        { href: '/dashboard/kits', label: 'Kits & Laptops', icon: <Laptop size={20} /> },
       ],
     };
     
