@@ -3,13 +3,13 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY package.json pnpm-lock.yaml ./
 
-RUN npm install --legacy-peer-deps
+RUN corepack enable && pnpm install --no-frozen-lockfile
 
 COPY . .
 
-RUN npm run build
+RUN pnpm run build
 
 
 # ---------- STAGE 2 : PRODUCTION ----------
@@ -17,9 +17,9 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY package.json pnpm-lock.yaml ./
 
-RUN npm install --omit=dev --legacy-peer-deps
+RUN corepack enable && pnpm install --prod --no-frozen-lockfile
 
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
@@ -30,4 +30,4 @@ EXPOSE 3000
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 
-CMD ["npm", "start"]
+CMD ["pnpm", "start"]
