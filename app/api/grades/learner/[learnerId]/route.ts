@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
+import prisma from '@/lib/prisma';
 
 // Fonction pour vérifier le token JWT
 function verifyToken(request: NextRequest) {
@@ -24,7 +25,7 @@ function verifyToken(request: NextRequest) {
 // GET - Récupérer toutes les notes d'un apprenant
 export async function GET(
   request: NextRequest,
-  { params }: { params: { learnerId: string } }
+  context: { params: Promise<{ learnerId: string }> }
 ) {
   try {
     // Vérifier l'authentification
@@ -36,7 +37,7 @@ export async function GET(
       );
     }
 
-    const { learnerId } = params;
+    const { learnerId } = await context.params;
 
     // Vérifier si l'apprenant existe
     const learner = await prisma.learner.findUnique({
