@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
+import prisma from '@/lib/prisma';
 
 // Fonction pour vérifier le token JWT
 function verifyToken(request: NextRequest) {
@@ -24,7 +25,7 @@ function verifyToken(request: NextRequest) {
 // GET - Récupérer toutes les notes d'un module
 export async function GET(
   request: NextRequest,
-  { params }: { params: { moduleId: string } }
+  context: { params: Promise<{ moduleId: string }> }
 ) {
   try {
     // Vérifier l'authentification
@@ -36,7 +37,7 @@ export async function GET(
       );
     }
 
-    const { moduleId } = params;
+    const { moduleId } = await context.params;
 
     // Vérifier si le module existe
     const module = await prisma.module.findUnique({

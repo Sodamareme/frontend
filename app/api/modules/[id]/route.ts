@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
+import prisma from '@/lib/prisma';
 
 // Fonction pour vérifier le token JWT
 function verifyToken(request: NextRequest) {
@@ -23,7 +24,7 @@ function verifyToken(request: NextRequest) {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     // Vérifier l'authentification
@@ -35,7 +36,7 @@ export async function GET(
       );
     }
 
-    const { id } = params;
+    const { id } = await context.params;
 
     const module = await prisma.module.findUnique({
       where: { id },
@@ -92,7 +93,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     // Vérifier l'authentification
@@ -104,7 +105,7 @@ export async function PUT(
       );
     }
 
-    const { id } = params;
+    const { id } = await context.params;
     const body = await request.json();
     const { name, description, startDate, endDate, refId, coachId, photoUrl } = body;
 
@@ -205,7 +206,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     // Vérifier l'authentification
@@ -217,7 +218,7 @@ export async function DELETE(
       );
     }
 
-    const { id } = params;
+    const { id } = await context.params;
     
     console.log('DELETE request reçue pour module ID:', id);
     console.log('Utilisateur authentifié:', user);
