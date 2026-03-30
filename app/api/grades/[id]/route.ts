@@ -6,7 +6,6 @@ import prisma from '@/lib/prisma';
 // Fonction pour vérifier le token JWT
 function verifyToken(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
-  const jwt = require('jsonwebtoken');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null;
   }
@@ -97,6 +96,7 @@ export async function PUT(
     const { id } = await context.params;
     const body = await request.json();
     const { value, comment } = body;
+    const numericValue = Number(value);
 
     console.log('PUT /api/grades/[id] - Données reçues:', { id, value, comment });
 
@@ -108,7 +108,7 @@ export async function PUT(
       );
     }
 
-    if (value < 0 || value > 20) {
+    if (Number.isNaN(numericValue) || numericValue < 0 || numericValue > 20) {
       return NextResponse.json(
         { message: 'La note doit être comprise entre 0 et 20' },
         { status: 400 }
@@ -131,8 +131,8 @@ export async function PUT(
     const updatedGrade = await prisma.grade.update({
       where: { id },
       data: {
-        value: parseFloat(value),
-        comment: comment || '',
+        value: numericValue,
+        comment: typeof comment === 'string' ? comment.trim() : '',
       },
       include: {
         module: {
