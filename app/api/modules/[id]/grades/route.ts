@@ -1,31 +1,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
-
-// Fonction pour vérifier le token JWT
-function verifyToken(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null;
-  }
-  
-  const token = authHeader.substring(7);
-  
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    return decoded;
-  } catch (error) {
-    console.error('Token verification failed:', error);
-    return null;
-  }
-}
+import { verifyRequestToken } from '@/lib/auth/jwt';
 
 // GET - Récupérer tous les modules
 export async function GET(request: NextRequest) {
   try {
     // Vérifier l'authentification
-    const user = verifyToken(request);
+    const user = verifyRequestToken(request);
     if (!user) {
       return NextResponse.json(
         { message: 'Token d\'authentification manquant ou invalide' },
@@ -79,7 +60,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Vérifier l'authentification
-    const user = verifyToken(request);
+    const user = verifyRequestToken(request);
     if (!user) {
       return NextResponse.json(
         { message: 'Token d\'authentification manquant ou invalide' },
