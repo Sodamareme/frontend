@@ -65,6 +65,8 @@ interface ScanResult {
   mealType: "BREAKFAST" | "LUNCH";
 }
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+
 const ScanHistory: React.FC = () => {
   const [apiHistory, setApiHistory] = useState<ScanResult[]>([]);
   const [filteredHistory, setFilteredHistory] = useState<ScanResult[]>([]);
@@ -109,7 +111,7 @@ const ScanHistory: React.FC = () => {
   const fetchAllReferentials = async () => {
     try {
       const token = getAuthToken();
-      const response = await fetch("https://api.gestionecoleodc.com/referentials", {
+      const response = await fetch(`${API_BASE_URL}/referentials`, {
         headers: {
           accept: "*/*",
           Authorization: `Bearer ${token}`,
@@ -143,7 +145,7 @@ const ScanHistory: React.FC = () => {
     setError(null);
     try {
       const token = getAuthToken();
-      const response = await fetch("https://api.gestionecoleodc.com/meals/scans/latest", {
+      const response = await fetch(`${API_BASE_URL}/meals/scans/latest`, {
         headers: {
           accept: "*/*",
           Authorization: `Bearer ${token}`,
