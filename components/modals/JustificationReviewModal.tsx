@@ -50,6 +50,7 @@ export default function JustificationReviewModal({
 }: JustificationReviewModalProps) {
   const [comment, setComment] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const hasJustification = Boolean(attendance?.justification?.trim() || attendance?.documentUrl)
 
   // Reset state when modal closes
   useEffect(() => {
@@ -164,7 +165,7 @@ export default function JustificationReviewModal({
                 <h4 className="font-medium">Justification</h4>
                 <div className="bg-gray-50 rounded-lg p-4">
                   <p className="text-sm text-gray-600 whitespace-pre-wrap">
-                    {attendance.justification}
+                    {attendance.justification?.trim() || 'Aucune justification soumise pour le moment.'}
                   </p>
                 </div>
               </motion.div>
@@ -230,7 +231,7 @@ export default function JustificationReviewModal({
                   variant="ghost"
                   className="bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700"
                   onClick={() => handleAction('reject')}
-                  disabled={submitting}
+                  disabled={submitting || !hasJustification}
                   aria-label="Rejeter la justification"
                 >
                   <X className="mr-2 h-4 w-4" />
@@ -241,7 +242,7 @@ export default function JustificationReviewModal({
                   variant="ghost"
                   className="bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700"
                   onClick={() => handleAction('approve')}
-                  disabled={submitting}
+                  disabled={submitting || !hasJustification}
                   aria-label="Approuver la justification"
                 >
                   <Check className="mr-2 h-4 w-4" />
