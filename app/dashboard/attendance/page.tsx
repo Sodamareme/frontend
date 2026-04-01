@@ -105,6 +105,78 @@ interface AttendanceRecord {
 
 type EditableStatus = 'present' | 'late' | 'absent'
 
+interface AttendanceViewData extends AttendanceStats {
+  attendance: LearnerAttendance[]
+}
+
+const normalizeAttendanceStats = (data: any): AttendanceViewData => {
+  const attendance = Array.isArray(data?.attendance) ? data.attendance : []
+
+  if (typeof data?.present === 'number' || typeof data?.late === 'number' || typeof data?.absent === 'number') {
+    const present = data.present || 0
+    const late = data.late || 0
+    const absent = data.absent || 0
+
+    return {
+      present,
+      late,
+      absent,
+      total: data.total || present + late + absent,
+      attendance,
+    }
+  }
+
+  if (Array.isArray(data?.days)) {
+    const present = data.days.reduce((sum: number, day: { present?: number }) => sum + (day.present || 0), 0)
+    const late = data.days.reduce((sum: number, day: { late?: number }) => sum + (day.late || 0), 0)
+    const absent = data.days.reduce((sum: number, day: { absent?: number }) => sum + (day.absent || 0), 0)
+
+    return {
+      present,
+      late,
+      absent,
+      total: present + late + absent,
+      attendance,
+    }
+  }
+
+  if (Array.isArray(data?.weeks)) {
+    const present = data.weeks.reduce((sum: number, week: { present?: number }) => sum + (week.present || 0), 0)
+    const late = data.weeks.reduce((sum: number, week: { late?: number }) => sum + (week.late || 0), 0)
+    const absent = data.weeks.reduce((sum: number, week: { absent?: number }) => sum + (week.absent || 0), 0)
+
+    return {
+      present,
+      late,
+      absent,
+      total: present + late + absent,
+      attendance,
+    }
+  }
+
+  if (Array.isArray(data?.months)) {
+    const present = data.months.reduce((sum: number, month: { present?: number }) => sum + (month.present || 0), 0)
+    const late = data.months.reduce((sum: number, month: { late?: number }) => sum + (month.late || 0), 0)
+    const absent = data.months.reduce((sum: number, month: { absent?: number }) => sum + (month.absent || 0), 0)
+
+    return {
+      present,
+      late,
+      absent,
+      total: present + late + absent,
+      attendance,
+    }
+  }
+
+  return {
+    present: 0,
+    late: 0,
+    absent: 0,
+    total: 0,
+    attendance,
+  }
+}
+
 // ── StatusBadge ───────────────────────────────────────────────────────────────
 
 function getStatusStyle(isPresent: boolean, isLate: boolean) {
@@ -306,6 +378,9 @@ const handleStatusChange = async (id: string, date: string, newStatus: EditableS
       )
     );
 
+    // Resynchronise les cartes et les données agrégées sans recharger la page.
+    await fetchStats();
+
     const labels = { present: 'Présent', late: 'Retard', absent: 'Absent' };
     toast.success(`Statut mis à jour : ${labels[newStatus]}`);
     
@@ -387,13 +462,7 @@ const handleStatusChange = async (id: string, date: string, newStatus: EditableS
           data = await attendanceAPI.getDailyStats(selectedDate)
       }
 
-      const processedStats = {
-        present: data.present || 0,
-        late:    data.late    || 0,
-        absent:  data.absent  || 0,
-        total:   data.total   || (data.present + data.late + data.absent) || 0,
-        attendance: data.attendance || [],
-      }
+      const processedStats = normalizeAttendanceStats(data)
 
       setStats(processedStats)
       setAttendanceRecords(processedStats.attendance)
