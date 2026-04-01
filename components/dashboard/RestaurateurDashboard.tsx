@@ -89,7 +89,7 @@ interface LocalMeal {
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const NEXT_PUBLIC_API_URL = 'https://api.gestionecoleodc.com';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 const TOTAL_LEARNERS = 250;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -141,7 +141,7 @@ const findStudentByQRData = async (qrData: string): Promise<StudentType | null> 
 
 const mealsAPI = {
   async getLatestScans(): Promise<ApiMealResponse[]> {
-    const res = await fetch(`${NEXT_PUBLIC_API_URL}/meals/scans/latest`, {
+    const res = await fetch(`${API_BASE_URL}/meals/scans/latest`, {
       headers: { accept: '*/*', Authorization: `Bearer ${getAuthToken()}` },
     });
     if (!res.ok) throw new Error(`Erreur API: ${res.status}`);
@@ -149,7 +149,7 @@ const mealsAPI = {
   },
 
   async recordMeal(matricule: string, mealType: 'petit-dejeuner' | 'repas'): Promise<ApiMealResponse> {
-    const res = await fetch(`${NEXT_PUBLIC_API_URL}/meals/scan/${matricule}/${mealType}`, {
+    const res = await fetch(`${API_BASE_URL}/meals/scan/${matricule}/${mealType}`, {
       method: 'POST',
       headers: {
         accept: '*/*',
@@ -165,7 +165,7 @@ const mealsAPI = {
 
 const referentialsAPI = {
   async getAllReferentials(): Promise<Referential[]> {
-    const res = await fetch(`${NEXT_PUBLIC_API_URL}/referentials/all`, {
+    const res = await fetch(`${API_BASE_URL}/referentials/all`, {
       headers: { accept: '*/*', Authorization: `Bearer ${getAuthToken()}` },
     });
     if (!res.ok) throw new Error(`Erreur API: ${res.status}`);
@@ -175,7 +175,7 @@ const referentialsAPI = {
 
 const learnersAPI = {
   async getAllLearners(): Promise<any[]> {
-    const res = await fetch(`${NEXT_PUBLIC_API_URL}/learners`, {
+    const res = await fetch(`${API_BASE_URL}/learners`, {
       headers: { accept: '*/*', Authorization: `Bearer ${getAuthToken()}` },
     });
     if (!res.ok) throw new Error(`Erreur API: ${res.status}`);

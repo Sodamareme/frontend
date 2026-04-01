@@ -1,33 +1,15 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
-
-// Fonction pour vérifier le token JWT
-function verifyToken(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  const jwt = require('jsonwebtoken');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null;
-  }
-  
-  const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-  
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    return decoded;
-  } catch (error) {
-    console.error('Token verification failed:', error);
-    return null;
-  }
-}
+import prisma from '@/lib/prisma';
+import { verifyRequestToken } from '@/lib/auth/jwt';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     // Vérifier l'authentification
-    const user = verifyToken(request);
+    const user = verifyRequestToken(request);
     if (!user) {
       return NextResponse.json(
         { message: 'Token d\'authentification manquant ou invalide' },
@@ -35,7 +17,7 @@ export async function GET(
       );
     }
 
-    const { id } = params;
+    const { id } = await context.params;
 
     const grade = await prisma.grade.findUnique({
       where: { id },
@@ -81,11 +63,11 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     // Vérifier l'authentification
-    const user = verifyToken(request);
+    const user = verifyRequestToken(request);
     if (!user) {
       return NextResponse.json(
         { message: 'Token d\'authentification manquant ou invalide' },
@@ -93,9 +75,10 @@ export async function PUT(
       );
     }
 
-    const { id } = params;
+    const { id } = await context.params;
     const body = await request.json();
     const { value, comment } = body;
+    const numericValue = Number(value);
 
     console.log('PUT /api/grades/[id] - Données reçues:', { id, value, comment });
 
@@ -107,7 +90,7 @@ export async function PUT(
       );
     }
 
-    if (value < 0 || value > 20) {
+    if (Number.isNaN(numericValue) || numericValue < 0 || numericValue > 20) {
       return NextResponse.json(
         { message: 'La note doit être comprise entre 0 et 20' },
         { status: 400 }
@@ -130,8 +113,8 @@ export async function PUT(
     const updatedGrade = await prisma.grade.update({
       where: { id },
       data: {
-        value: parseFloat(value),
-        comment: comment || '',
+        value: numericValue,
+        comment: typeof comment === 'string' ? comment.trim() : '',
       },
       include: {
         module: {
@@ -170,11 +153,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     // Vérifier l'authentification
-    const user = verifyToken(request);
+    const user = verifyRequestToken(request);
     if (!user) {
       return NextResponse.json(
         { message: 'Token d\'authentification manquant ou invalide' },
@@ -182,7 +165,7 @@ export async function DELETE(
       );
     }
 
-    const { id } = params;
+    const { id } = await context.params;
 
     // Vérifier que la note existe
     const existingGrade = await prisma.grade.findUnique({

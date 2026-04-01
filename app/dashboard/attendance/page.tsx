@@ -117,13 +117,14 @@ function getStatusStyle(isPresent: boolean, isLate: boolean) {
 
 interface StatusDropdownProps {
   recordId: string
+  recordDate: string
   isPresent: boolean
   isLate: boolean
   updating: boolean
-  onUpdate: (id: string, newStatus: EditableStatus) => Promise<void>
+  onUpdate: (id: string, date: string, newStatus: EditableStatus) => Promise<void>
 }
 
-function StatusDropdown({ recordId, isPresent, isLate, updating, onUpdate }: StatusDropdownProps) {
+function StatusDropdown({ recordId, recordDate, isPresent, isLate, updating, onUpdate }: StatusDropdownProps) {
   const style = getStatusStyle(isPresent, isLate)
 
   return (
@@ -151,7 +152,7 @@ function StatusDropdown({ recordId, isPresent, isLate, updating, onUpdate }: Sta
         {EDITABLE_STATUS_OPTIONS.map(opt => (
           <DropdownMenuItem
             key={opt.value}
-            onClick={() => onUpdate(recordId, opt.value)}
+            onClick={() => onUpdate(recordId, recordDate, opt.value)}
             className={`flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer text-sm font-medium
               ${opt.text} ${opt.hoverBg} transition-colors`}
           >
@@ -174,12 +175,14 @@ function JustificationBadge({
 }: {
   record: AttendanceRecord
   onReview: (r: AttendanceRecord) => void
-  onAuthorize: (id: string) => Promise<void>
+  onAuthorize: (record: AttendanceRecord) => Promise<void>
   authorizing: boolean
 }) {
   if (record.isPresent && !record.isLate) {
     return <span className="text-gray-300 text-xs">—</span>
   }
+
+  const hasJustification = Boolean(record.justification?.trim() || record.documentUrl)
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -201,7 +204,7 @@ function JustificationBadge({
       )}
 
       <div className="flex gap-1 flex-wrap">
-        {(record.status === 'PENDING' || record.status === 'TO_JUSTIFY') && (
+        {(record.status === 'PENDING' || record.status === 'TO_JUSTIFY') && hasJustification && (
           <button
             onClick={() => onReview(record)}
             className="text-xs px-2 py-0.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors font-medium"
@@ -210,9 +213,15 @@ function JustificationBadge({
           </button>
         )}
 
+        {(record.status === 'PENDING' || record.status === 'TO_JUSTIFY') && !hasJustification && (
+          <span className="text-xs px-2 py-0.5 rounded-md border border-gray-200 text-gray-500 bg-gray-50 font-medium">
+            Aucun justificatif
+          </span>
+        )}
+
         {record.status !== 'APPROVED' && (
           <button
-            onClick={() => onAuthorize(record.id)}
+            onClick={() => onAuthorize(record)}
             disabled={authorizing}
             className="text-xs px-2 py-0.5 rounded-md border border-emerald-200 text-emerald-600 hover:bg-emerald-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -274,11 +283,11 @@ useEffect(() => {
 
   // ✅ FIX : handleStatusChange — utilise forceApprove pour les absences/retards
   // et mise à jour optimiste locale pour présent (pas d'endpoint dédié nécessaire)
-const handleStatusChange = async (id: string, newStatus: EditableStatus) => {
+const handleStatusChange = async (id: string, date: string, newStatus: EditableStatus) => {
   setUpdatingStatus(prev => ({ ...prev, [id]: true }));
   try {
     // ✅ Persister en base de données
-    await attendanceAPI.updateAttendanceStatus(id, newStatus);
+    await attendanceAPI.updateAttendanceStatus(id, newStatus, date);
 
     // ✅ Mise à jour locale après succès
     const isPresent = newStatus !== 'absent';
@@ -308,12 +317,12 @@ const handleStatusChange = async (id: string, newStatus: EditableStatus) => {
 };
 
   // ✅ Autoriser directement via /force-approve
-  const handleAuthorize = async (id: string) => {
-    setAuthorizingId(id)
+  const handleAuthorize = async (record: AttendanceRecord) => {
+    setAuthorizingId(record.id)
     try {
-      await (attendanceAPI as any).forceApprove(id)
+      await attendanceAPI.forceApprove(record.id, record.date)
       setAttendanceRecords(prev =>
-        prev.map(r => r.id === id ? { ...r, status: 'APPROVED' as const } : r)
+        prev.map(r => r.id === record.id ? { ...r, status: 'APPROVED' as const } : r)
       )
       toast.success('Absence autorisée ✓')
     } catch (err: any) {
@@ -325,7 +334,8 @@ const handleStatusChange = async (id: string, newStatus: EditableStatus) => {
 
   const handleStatusUpdate = async (attendanceId: string, status: 'APPROVED' | 'REJECTED', comment?: string) => {
     try {
-      await attendanceAPI.updateJustificationStatus(attendanceId, status, comment)
+      const attendanceDate = selectedAttendance?.id === attendanceId ? selectedAttendance.date : undefined
+      await attendanceAPI.updateJustificationStatus(attendanceId, status, comment, attendanceDate)
       setIsLoadingRecords(true)
       await fetchStats()
       toast.success(status === 'APPROVED' ? 'Justification approuvée' : 'Justification rejetée')
@@ -663,6 +673,7 @@ const handleStatusChange = async (id: string, newStatus: EditableStatus) => {
                     <td className="px-4 py-3 whitespace-nowrap">
                       <StatusDropdown
                         recordId={record.id}
+                        recordDate={record.date}
                         isPresent={record.isPresent}
                         isLate={record.isLate}
                         updating={!!updatingStatus[record.id]}
