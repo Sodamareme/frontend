@@ -119,13 +119,13 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
     headers,
   })
 
-  if (!response.ok) {
-    if (response.status === 401) {
-      // Token expiré ou invalide
-      removeAuthToken();
-      window.location.href = '/login';
-      return;
-    }
+    if (!response.ok) {
+      if (response.status === 401) {
+        // Token expiré ou invalide
+        removeAuthToken();
+        window.location.href = '/';
+        return;
+      }
     
     let errorMessage = `Erreur HTTP ${response.status}`;
     try {
@@ -255,7 +255,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       removeAuthToken();
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      window.location.href = '/';
     }
     return Promise.reject(error);
   }
@@ -2059,21 +2059,22 @@ export const attendanceAPI = {
 async updateJustificationStatus(
   attendanceId: string,
   status: 'APPROVED' | 'REJECTED',
-  comment?: string
+  comment?: string,
+  date?: string
 ) {
   const response = await api.put(
     `/attendance/absence/${attendanceId}/status`,
-    { status, comment } // ✅ Assurez-vous que le body est correct
+    { status, comment, date }
   );
   return response.data;
 },
-async forceApprove(attendanceId: string) {
-  const response = await api.put(`/attendance/absence/${attendanceId}/force-approve`);
+async forceApprove(attendanceId: string, date?: string) {
+  const response = await api.put(`/attendance/absence/${attendanceId}/force-approve`, { date });
   return response.data;
 },
 // Dans attendanceAPI
-updateAttendanceStatus: async (id: string, status: 'present' | 'late' | 'absent') => {
-  const response = await api.patch(`/attendance/${id}/status`, { status });
+updateAttendanceStatus: async (id: string, status: 'present' | 'late' | 'absent', date?: string) => {
+  const response = await api.patch(`/attendance/${id}/status`, { status, date });
   return response.data;
 },
 
