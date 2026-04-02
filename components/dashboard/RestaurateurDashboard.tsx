@@ -88,10 +88,17 @@ interface LocalMeal {
   timestamp: string;
 }
 
+type MealServiceMode = 'BREAKFAST' | 'LUNCH';
+type ScannableStudent = StudentType & {
+  referential?: { name?: string };
+  promotion?: { name?: string };
+};
+
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 const TOTAL_LEARNERS = 250;
+const MEAL_SERVICE_MODE_STORAGE_KEY = 'restaurateur_active_meal_service_mode';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -129,7 +136,7 @@ const convertApiToLocal = (apiData: ApiMealResponse[]): LocalMeal[] =>
     timestamp: item.scannedAt || item.createdAt || new Date().toISOString(),
   }));
 
-const findStudentByQRData = async (qrData: string): Promise<StudentType | null> => {
+const findStudentByQRData = async (qrData: string): Promise<ScannableStudent | null> => {
   try {
     const parsed = JSON.parse(qrData);
     if (parsed.id) return await findbyQRcode(parsed.id);
@@ -143,31 +150,17 @@ const findStudentByQRData = async (qrData: string): Promise<StudentType | null> 
   }
 };
 
-const getCurrentMealType = (now: Date = new Date()): 'BREAKFAST' | 'LUNCH' | null => {
-  const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
-
-  if (currentTimeInMinutes < 6 * 60) {
-    return null;
-  }
-
-  if (currentTimeInMinutes < 11 * 60 + 30) {
-    return 'BREAKFAST';
-  }
-
-  return 'LUNCH';
-};
-
-const getCurrentMealLabel = (mealType: 'BREAKFAST' | 'LUNCH' | null) => {
+const getCurrentMealLabel = (mealType: MealServiceMode) => {
   if (mealType === 'BREAKFAST') return 'Petit déjeuner';
-  if (mealType === 'LUNCH') return 'Déjeuner';
-  return 'Scan indisponible';
+  return 'Déjeuner';
 };
 
 // ─── API Services ─────────────────────────────────────────────────────────────
 
 const mealsAPI = {
-  async getLatestScans(): Promise<ApiMealResponse[]> {
-    const res = await fetch(`${API_BASE_URL}/meal-scans/today`, {
+  async getMealHistory(date: string): Promise<ApiMealResponse[]> {
+    const query = new URLSearchParams({ date }).toString();
+    const res = await fetch(`${API_BASE_URL}/meal-scans/history?${query}`, {
       headers: { accept: '*/*', Authorization: `Bearer ${getAuthToken()}` },
     });
     if (!res.ok) throw new Error(`Erreur API: ${res.status}`);
@@ -246,7 +239,7 @@ const QRScannerModal = ({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  currentMealType: 'BREAKFAST' | 'LUNCH' | null;
+  currentMealType: MealServiceMode;
   alreadyScannedLearnerIds: Set<string>;
   onMealRecorded: (optimistic: LocalMeal, promise: Promise<ApiMealResponse>) => void;
 }) => {
@@ -263,7 +256,7 @@ const QRScannerModal = ({
 
   // Dernier scan — affiché dans le bandeau
   const [lastScanned, setLastScanned] = useState<{
-    student: StudentType;
+    student: ScannableStudent;
     status: 'pending' | 'ok' | 'duplicate' | 'network_error' | 'error';
     message?: string;
   } | null>(null);
@@ -297,7 +290,7 @@ const QRScannerModal = ({
 
     const qrData = result?.data ?? result;
 
-    let student: StudentType | null = null;
+    let student: ScannableStudent | null = null;
     try {
       student = await findStudentByQRData(qrData);
     } catch {
@@ -316,29 +309,24 @@ const QRScannerModal = ({
 
     const lastSuccessAt = recentSuccessfulScansRef.current.get(student.id);
     if (lastSuccessAt && now - lastSuccessAt < 15000) {
+      setToastState(null);
       setLastScanned({
         student,
         status: 'duplicate',
         message: 'Ce QR code a deja ete scanne il y a quelques secondes. Inutile de repasser.',
       });
-      showToast('Déjà scanné', 'Ce QR code vient déjà d’être traité. Attendez avant de le repasser.', 'duplicate');
       return;
     }
 
     const mealType = currentMealTypeRef.current;
-    if (!mealType) {
-      setError('Le scan repas commence à 06:00.');
-      showToast('Scan indisponible', 'Le scan repas commence à 06:00.', 'error');
-      return;
-    }
     if (alreadyScannedLearnerIdsRef.current.has(student.id)) {
       recentSuccessfulScansRef.current.set(student.id, Date.now());
+      setToastState(null);
       setLastScanned({
         student,
         status: 'duplicate',
         message: 'Cet apprenant a deja ete scanne pour ce repas aujourd\'hui.',
       });
-      showToast('Déjà scanné', 'Cet apprenant a déjà été scanné pour ce repas aujourd’hui.', 'duplicate');
       return;
     }
     // Feedback visuel immédiat
@@ -384,12 +372,12 @@ const QRScannerModal = ({
       .catch((err) => {
         if (err instanceof Error && err.message.includes('409')) {
           recentSuccessfulScansRef.current.set(student.id, Date.now());
+          setToastState(null);
           setLastScanned(prev => prev ? {
             ...prev,
             status: 'duplicate',
             message: 'Cet apprenant a deja ete scanne pour ce repas aujourd\'hui.',
           } : null);
-          showToast('Déjà scanné', 'Cet apprenant a déjà été scanné pour ce repas aujourd’hui.', 'duplicate');
           return;
         }
 
@@ -462,23 +450,9 @@ const QRScannerModal = ({
           maxScansPerSecond: 2,
           preferredCamera: facingMode,
           returnDetailedScanResult: true,
-          onDecodeError: (scanError: unknown) => {
-            if (
-              scanError === 'No QR code found' ||
-              (scanError instanceof Error && scanError.message === 'No QR code found')
-            ) {
-              return;
-            }
-            console.warn('Scanner error:', scanError);
-          },
         });
         setIsInitialized(true);
         setError(null);
-
-        if (!currentMealTypeRef.current) {
-          setError('Le scan repas commence à 06:00.');
-          return;
-        }
 
         await scannerRef.current.start();
         setIsScanning(true);
@@ -516,33 +490,6 @@ const QRScannerModal = ({
     lastScanned.status === 'network_error' ? <AlertCircle className="h-4 w-4 text-orange-500 flex-shrink-0" /> :
     <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />;
 
-  const prominentAlert =
-    !lastScanned ? null :
-    lastScanned.status === 'pending' ? {
-      title: 'Scan en cours',
-      message: 'QR detecte. Enregistrement du repas en cours...',
-      className: 'border-yellow-300 bg-yellow-100 text-yellow-900',
-    } :
-    lastScanned.status === 'ok' ? {
-      title: 'Repas enregistre',
-      message: 'Le repas a bien ete enregistre pour cet apprenant.',
-      className: 'border-green-300 bg-green-100 text-green-900',
-    } :
-    lastScanned.status === 'duplicate' ? {
-      title: 'Deja scanne',
-      message: lastScanned.message || 'Cet apprenant a deja ete scanne pour ce repas.',
-      className: 'border-blue-300 bg-blue-100 text-blue-900',
-    } :
-    lastScanned.status === 'network_error' ? {
-      title: 'Probleme reseau',
-      message: lastScanned.message || 'Le QR a ete lu, mais le serveur n’a pas pu enregistrer le repas.',
-      className: 'border-orange-300 bg-orange-100 text-orange-900',
-    } : {
-      title: 'Echec d’enregistrement',
-      message: lastScanned.message || 'Le QR a ete capture, mais l’enregistrement a echoue.',
-      className: 'border-red-300 bg-red-100 text-red-900',
-    };
-
   const toastClassName =
     !toastState ? '' :
     toastState.tone === 'pending' ? 'border-yellow-300 bg-yellow-100 text-yellow-900' :
@@ -577,7 +524,7 @@ const QRScannerModal = ({
             <div>
               <h2 className="text-xl font-bold text-gray-900">Scanner QR Code</h2>
               <p className="text-sm text-gray-500">
-                {currentMealType === 'BREAKFAST' ? '☕ Petit déjeuner' : currentMealType === 'LUNCH' ? '🍽 Déjeuner' : 'Scan indisponible'} — scan continu
+                {currentMealType === 'BREAKFAST' ? '☕ Petit déjeuner' : '🍽 Déjeuner'} — scan continu
               </p>
             </div>
             <button onClick={() => { cleanup(); onClose(); }}
@@ -596,17 +543,6 @@ const QRScannerModal = ({
 
           {hasCamera ? (
             <div className="space-y-3">
-              {prominentAlert && (
-                <div className={`rounded-xl border px-4 py-3 ${prominentAlert.className}`}>
-                  <p className="text-sm font-bold uppercase tracking-wide">
-                    {prominentAlert.title}
-                  </p>
-                  <p className="mt-1 text-sm font-medium">
-                    {prominentAlert.message}
-                  </p>
-                </div>
-              )}
-
               {/* Vidéo */}
               <div className="relative rounded-xl overflow-hidden border-4 border-orange-300">
                 <video ref={videoRef}
@@ -692,6 +628,7 @@ export default function RestaurateurDashboard() {
   const [referentials, setReferentials] = useState<Referential[]>([]);
   const [totalLearners, setTotalLearners] = useState<number>(TOTAL_LEARNERS);
   const [mealStats, setMealStats] = useState({ breakfast: 0, lunch: 0 });
+  const [activeMealType, setActiveMealType] = useState<MealServiceMode>('BREAKFAST');
 
   const [loading, setLoading] = useState({
     meals: true, referentials: true, learners: true,
@@ -701,15 +638,15 @@ export default function RestaurateurDashboard() {
   const [selectedMealTypeFilter, setSelectedMealTypeFilter] = useState<'ALL' | 'BREAKFAST' | 'LUNCH'>('ALL');
   const [selectedDate, setSelectedDate] = useState(formatDateToString(new Date()));
   const [showScanner, setShowScanner] = useState(false);
-  const currentMealType = getCurrentMealType();
+  const currentMealType = activeMealType;
   const currentMealLabel = getCurrentMealLabel(currentMealType);
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
 
-  const fetchMealsData = async () => {
+  const fetchMealsData = async (date: string = selectedDate) => {
     setLoading(prev => ({ ...prev, meals: true }));
     try {
-      const data = await mealsAPI.getLatestScans();
+      const data = await mealsAPI.getMealHistory(date);
       const converted = convertApiToLocal(data);
       setRecentMeals(converted);
       setMealStats({
@@ -742,10 +679,24 @@ export default function RestaurateurDashboard() {
   };
 
   useEffect(() => {
-    fetchMealsData();
     fetchReferentials();
     fetchTotalLearners();
   }, []);
+
+  useEffect(() => {
+    fetchMealsData(selectedDate);
+  }, [selectedDate]);
+
+  useEffect(() => {
+    const savedMealType = localStorage.getItem(MEAL_SERVICE_MODE_STORAGE_KEY);
+    if (savedMealType === 'BREAKFAST' || savedMealType === 'LUNCH') {
+      setActiveMealType(savedMealType);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(MEAL_SERVICE_MODE_STORAGE_KEY, activeMealType);
+  }, [activeMealType]);
 
   // ── Callback appelé par le scanner ────────────────────────────────────────
 
@@ -798,7 +749,7 @@ export default function RestaurateurDashboard() {
   const availablePrograms = referentials.map(r => r.name).sort();
   const alreadyScannedLearnerIds = new Set(
     recentMeals
-      .filter(meal => isSameDay(new Date(meal.timestamp), new Date()) && currentMealType !== null && meal.type === currentMealType)
+      .filter(meal => isSameDay(new Date(meal.timestamp), new Date()) && meal.type === currentMealType)
       .map(meal => meal.learner.id)
   );
 
@@ -814,7 +765,7 @@ export default function RestaurateurDashboard() {
             <h1 className="text-3xl font-bold text-gray-800">Dashboard Restaurateur</h1>
             <p className="text-gray-500 text-sm">Gestion des repas étudiants</p>
           </div>
-          <button onClick={fetchMealsData} disabled={loading.meals}
+          <button onClick={() => fetchMealsData(selectedDate)} disabled={loading.meals}
             className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50">
             <RefreshCw className={`h-4 w-4 ${loading.meals ? 'animate-spin' : ''}`} />
             Actualiser
@@ -829,12 +780,36 @@ export default function RestaurateurDashboard() {
         )}
 
         {/* Bouton scanner */}
-        <div className="mb-6">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <button onClick={() => setShowScanner(true)}
             className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors text-lg font-semibold shadow-md">
             <QrCode className="h-6 w-6" />
-            Scanner un repas
+            Scanner le service actif
           </button>
+          <div className="inline-flex items-center rounded-xl border border-orange-200 bg-orange-50 p-1 text-sm font-medium text-orange-900">
+            <button
+              type="button"
+              onClick={() => setActiveMealType('BREAKFAST')}
+              className={`rounded-lg px-4 py-2 transition-colors ${
+                activeMealType === 'BREAKFAST'
+                  ? 'bg-white text-orange-700 shadow-sm'
+                  : 'text-orange-900 hover:bg-orange-100'
+              }`}
+            >
+              Petit déjeuner
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveMealType('LUNCH')}
+              className={`rounded-lg px-4 py-2 transition-colors ${
+                activeMealType === 'LUNCH'
+                  ? 'bg-white text-orange-700 shadow-sm'
+                  : 'text-orange-900 hover:bg-orange-100'
+              }`}
+            >
+              Déjeuner
+            </button>
+          </div>
         </div>
 
         {/* Filtres */}
@@ -869,10 +844,15 @@ export default function RestaurateurDashboard() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Repas du jour
+              Service actif
             </label>
-            <div className="block w-full px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg text-orange-800 font-medium">
-              {currentMealLabel}
+            <div className="space-y-2">
+              <div className="block w-full px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg text-orange-800 font-medium">
+                {currentMealLabel}
+              </div>
+              <p className="text-xs text-gray-500">
+                Tous les scans ouverts dans cette session seront enregistrés comme {currentMealLabel.toLowerCase()}.
+              </p>
             </div>
           </div>
         </div>
