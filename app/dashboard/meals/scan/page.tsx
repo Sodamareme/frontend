@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import QrScanner from 'qr-scanner';
 import { Camera, CameraOff, RotateCcw, CheckCircle, AlertCircle, X, User } from 'lucide-react';
-import { findbyQRcode } from '../../../../lib/api'
+import { findbyQRcode, scanMeal } from '../../../../lib/api'
 import { StudentType } from '@/types/student';
 
 // Types
@@ -94,7 +94,7 @@ const findStudentByQRData = async (qrData: string): Promise<StudentType | null> 
     
     // Si c'est un objet étudiant complet valide
     if (parsedData.firstName && parsedData.lastName && parsedData.studentNumber) {
-      return parsedData as Student;
+      return parsedData as StudentType;
     }
     
     return null;
@@ -110,6 +110,36 @@ const findStudentByQRData = async (qrData: string): Promise<StudentType | null> 
   }
 };
 
+const getCurrentMealWindow = (now: Date = new Date()): {
+  type: 'BREAKFAST' | 'LUNCH' | null;
+  label: string;
+  helpText: string;
+} => {
+  const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
+
+  if (currentTimeInMinutes < 6 * 60) {
+    return {
+      type: null,
+      label: 'Scan indisponible',
+      helpText: 'Les scans repas commencent a 06:00.',
+    };
+  }
+
+  if (currentTimeInMinutes < 11 * 60 + 30) {
+    return {
+      type: 'BREAKFAST',
+      label: 'Petit dejeuner',
+      helpText: 'De 06:00 a 11:29, tous les scans sont en petit dejeuner.',
+    };
+  }
+
+  return {
+    type: 'LUNCH',
+    label: 'Dejeuner',
+    helpText: 'A partir de 11:30, tous les scans sont en dejeuner.',
+  };
+};
+
 export default function ScanPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -121,7 +151,9 @@ export default function ScanPage() {
   const [error, setError] = useState<string | null>(null);
   const [scannedStudent, setScannedStudent] = useState<StudentType | null>(null);
   const [scanTime, setScanTime] = useState<Date | null>(null);
-  const [selectedMealType, setSelectedMealType] = useState<'BREAKFAST' | 'LUNCH'>('BREAKFAST');
+  const [isSubmittingMeal, setIsSubmittingMeal] = useState(false);
+  const currentMealWindow = getCurrentMealWindow();
+  const selectedMealType = currentMealWindow.type;
 
   useEffect(() => {
     initCamera();
@@ -255,6 +287,11 @@ export default function ScanPage() {
 };
 
   const startScanning = async () => {
+    if (!selectedMealType) {
+      setError(currentMealWindow.helpText);
+      return;
+    }
+
     if (!hasCamera) {
       setError('Caméra non disponible');
       return;
@@ -347,25 +384,27 @@ export default function ScanPage() {
     }
   };
 
-  const validateMeal = () => {
-    if (!scannedStudent) return;
-    
-    // Ici vous pouvez envoyer les données vers votre API
-    const mealData = {
-      studentId: scannedStudent.id,
-      mealType: selectedMealType,
-      timestamp: scanTime,
-      studentInfo: scannedStudent
-    };
-    
-    console.log('Données du repas à enregistrer:', mealData);
-    
-    // Simuler l'enregistrement
-    alert(`Repas ${selectedMealType === 'BREAKFAST' ? 'petit déjeuner' : 'déjeuner'} validé pour ${scannedStudent.firstName} ${scannedStudent.lastName}!`);
-    
-    // Réinitialiser
-    setScannedStudent(null);
-    setScanTime(null);
+  const validateMeal = async () => {
+    if (!scannedStudent || !selectedMealType) return;
+
+    try {
+      setIsSubmittingMeal(true);
+      await scanMeal(scannedStudent.id, selectedMealType);
+      alert(
+        `Repas ${selectedMealType === 'BREAKFAST' ? 'petit dejeuner' : 'dejeuner'} valide pour ${scannedStudent.firstName} ${scannedStudent.lastName} !`,
+      );
+      setScannedStudent(null);
+      setScanTime(null);
+      setError(null);
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Une erreur s'est produite lors de l'enregistrement du repas";
+      setError(message);
+    } finally {
+      setIsSubmittingMeal(false);
+    }
   };
 
   return (
@@ -381,18 +420,12 @@ export default function ScanPage() {
           <div className="bg-white rounded-2xl shadow-xl p-6">
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Scanner QR Code</h2>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Type de repas
-                </label>
-                <select
-                  value={selectedMealType}
-                  onChange={(e) => setSelectedMealType(e.target.value as 'BREAKFAST' | 'LUNCH')}
-                  className="block w-full pl-3 pr-10 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                >
-                  <option value="BREAKFAST">Petit déjeuner</option>
-                  <option value="LUNCH">Déjeuner</option>
-                </select>
+              <div className="mb-4 rounded-lg border border-orange-200 bg-orange-50 p-4">
+                <p className="text-sm font-medium text-orange-900">Repas du jour</p>
+                <p className="mt-1 text-lg font-bold text-orange-700">
+                  {currentMealWindow.label}
+                </p>
+                <p className="mt-1 text-sm text-orange-800">{currentMealWindow.helpText}</p>
               </div>
             </div>
 
@@ -432,6 +465,7 @@ export default function ScanPage() {
                   {!isScanning ? (
                     <button
                       onClick={startScanning}
+                      disabled={!selectedMealType}
                       className="flex items-center px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium"
                     >
                       <Camera className="mr-2 h-5 w-5" />
@@ -519,7 +553,7 @@ export default function ScanPage() {
                   Scanné le {scanTime.toLocaleDateString('fr-FR')} à {scanTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                 </p>
                 <p className="text-sm font-medium text-orange-600">
-                  {selectedMealType === 'BREAKFAST' ? 'Petit déjeuner' : 'Déjeuner'}
+                  {selectedMealType === 'BREAKFAST' ? 'Petit dejeuner' : 'Dejeuner'}
                 </p>
               </div>
 
@@ -570,9 +604,10 @@ export default function ScanPage() {
               <div className="flex space-x-4">
                 <button 
                   onClick={validateMeal}
+                  disabled={isSubmittingMeal || !selectedMealType}
                   className="flex-1 bg-green-500 text-white py-3 px-4 rounded-lg hover:bg-green-600 transition-colors font-medium"
                 >
-                  Valider le repas
+                  {isSubmittingMeal ? 'Validation...' : 'Valider le repas'}
                 </button>
                 <button 
                   onClick={() => {

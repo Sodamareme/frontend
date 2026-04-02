@@ -6,7 +6,6 @@ import {
   User,
   Calendar,
   RefreshCw,
-  Coffee,
   Filter,
   ChevronDown,
   BookOpen,
@@ -74,9 +73,6 @@ const ScanHistory: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
 
-  const [selectedMealType, setSelectedMealType] = useState<
-    "ALL" | "BREAKFAST" | "LUNCH"
-  >("ALL");
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   );
@@ -88,7 +84,11 @@ const ScanHistory: React.FC = () => {
 
   const getAuthToken = () =>
     typeof window !== "undefined"
-      ? localStorage.getItem("auth_token") || ""
+      ? localStorage.getItem("accessToken") ||
+        localStorage.getItem("authToken") ||
+        localStorage.getItem("token") ||
+        localStorage.getItem("auth_token") ||
+        ""
       : "";
 
   const convertApiToScanResult = (apiData: ApiScanResponse[]): ScanResult[] => {
@@ -173,10 +173,6 @@ const ScanHistory: React.FC = () => {
   useEffect(() => {
     let filtered = [...apiHistory];
 
-    if (selectedMealType !== "ALL") {
-      filtered = filtered.filter((s) => s.mealType === selectedMealType);
-    }
-
     filtered = filtered.filter((s) => {
       const scanDate = new Date(s.scanTime).toISOString().split("T")[0];
       return scanDate === selectedDate;
@@ -199,9 +195,8 @@ const ScanHistory: React.FC = () => {
     filtered.sort(
       (a, b) => new Date(b.scanTime).getTime() - new Date(a.scanTime).getTime()
     );
-
     setFilteredHistory(filtered);
-  }, [apiHistory, selectedMealType, selectedDate, searchQuery, selectedProgram]);
+  }, [apiHistory, selectedDate, searchQuery, selectedProgram]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-teal-50 p-8 transition-all duration-500">
@@ -235,7 +230,7 @@ const ScanHistory: React.FC = () => {
           <h3 className="text-lg font-semibold text-gray-900 mb-5 flex items-center gap-2">
             <Filter className="h-5 w-5 text-teal-600" /> Filtres
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {/* Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -248,30 +243,6 @@ const ScanHistory: React.FC = () => {
                 onChange={(e) => setSelectedDate(e.target.value)}
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
               />
-            </div>
-
-            {/* Type de repas */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Coffee className="inline h-4 w-4 mr-1 text-gray-500" />
-                Type de repas
-              </label>
-              <div className="relative">
-                <select
-                  value={selectedMealType}
-                  onChange={(e) =>
-                    setSelectedMealType(
-                      e.target.value as "ALL" | "BREAKFAST" | "LUNCH"
-                    )
-                  }
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none appearance-none"
-                >
-                  <option value="ALL">Tous les repas</option>
-                  <option value="BREAKFAST">Petit déjeuner</option>
-                  <option value="LUNCH">Déjeuner</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-3 text-gray-500 h-5 w-5 pointer-events-none" />
-              </div>
             </div>
 
             {/* Programme/Référentiel */}
