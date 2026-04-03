@@ -13,11 +13,12 @@ import {
 
 interface ApiScanResponse {
   id: string;
-  date: string;
+  date?: string;
   type: string;
   learnerId: string;
   createdAt: string;
   updatedAt: string;
+  scannedAt?: string;
   learner: {
     id: string;
     matricule: string;
@@ -103,15 +104,15 @@ const ScanHistory: React.FC = () => {
         photoUrl: item.learner.photoUrl,
         promotion: item.learner.promotion?.name,
       },
-      scanTime: new Date(item.createdAt),
-      mealType: item.type === "petit-dejeuner" ? "BREAKFAST" : "LUNCH",
+      scanTime: new Date(item.scannedAt || item.createdAt),
+      mealType: item.type === "BREAKFAST" || item.type === "petit-dejeuner" ? "BREAKFAST" : "LUNCH",
     }));
   };
 
   const fetchAllReferentials = async () => {
     try {
       const token = getAuthToken();
-      const response = await fetch(`${API_BASE_URL}/referentials`, {
+      const response = await fetch(`${API_BASE_URL}/referentials/all`, {
         headers: {
           accept: "*/*",
           Authorization: `Bearer ${token}`,
@@ -140,12 +141,13 @@ const ScanHistory: React.FC = () => {
     }
   };
 
-  const fetchScanHistory = async () => {
+  const fetchScanHistory = async (date: string = selectedDate) => {
     setIsLoading(true);
     setError(null);
     try {
       const token = getAuthToken();
-      const response = await fetch(`${API_BASE_URL}/meals/scans/latest`, {
+      const query = new URLSearchParams({ date }).toString();
+      const response = await fetch(`${API_BASE_URL}/meal-scans/history?${query}`, {
         headers: {
           accept: "*/*",
           Authorization: `Bearer ${token}`,
@@ -166,17 +168,12 @@ const ScanHistory: React.FC = () => {
   useEffect(() => {
     if (isClient) {
       fetchAllReferentials();
-      fetchScanHistory();
+      fetchScanHistory(selectedDate);
     }
-  }, [isClient]);
+  }, [isClient, selectedDate]);
 
   useEffect(() => {
     let filtered = [...apiHistory];
-
-    filtered = filtered.filter((s) => {
-      const scanDate = new Date(s.scanTime).toISOString().split("T")[0];
-      return scanDate === selectedDate;
-    });
 
     if (selectedProgram !== "ALL") {
       filtered = filtered.filter((s) => s.student.program === selectedProgram);
@@ -215,7 +212,7 @@ const ScanHistory: React.FC = () => {
           <button
             onClick={() => {
               fetchAllReferentials();
-              fetchScanHistory();
+              fetchScanHistory(selectedDate);
             }}
             disabled={isLoading}
             className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all duration-200"

@@ -12,6 +12,9 @@ export type PendingMealScan = {
   scannedAtClient: string;
   deviceId: string;
   clientScanId: string;
+  detectedType: 'BREAKFAST' | 'LUNCH';
+  timezone: string;
+  manualOverrideConfirmed: boolean;
   createdAt: string;
 };
 
