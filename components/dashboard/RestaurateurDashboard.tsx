@@ -6,6 +6,13 @@ import {
   RotateCcw, X, User, Calendar, Filter, RefreshCw, CheckCircle, AlertCircle
 } from 'lucide-react';
 import { findbyQRcode } from '@/lib/api';
+import { getOrCreateMealScanDeviceId } from '@/lib/offline/device-id';
+import {
+  enqueuePendingMealScan,
+  getPendingMealScans,
+  PendingMealScan,
+  removePendingMealScans,
+} from '@/lib/offline/meal-scan-queue';
 import { StudentType } from '@/types/student';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -86,6 +93,7 @@ interface LocalMeal {
   };
   type: 'BREAKFAST' | 'LUNCH';
   timestamp: string;
+  syncStatus?: 'pending_sync';
 }
 
 type MealServiceMode = 'BREAKFAST' | 'LUNCH';
@@ -180,6 +188,38 @@ const mealsAPI = {
     if (!res.ok) throw new Error(`Erreur enregistrement: ${res.status}`);
     return res.json();
   },
+
+  async syncMeals(scans: PendingMealScan[]) {
+    const res = await fetch(`${API_BASE_URL}/meal-scans/sync`, {
+      method: 'POST',
+      headers: {
+        accept: '*/*',
+        Authorization: `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        scans: scans.map((scan) => ({
+          localId: scan.localId,
+          learnerId: scan.learnerId,
+          type: scan.type,
+          serviceDate: scan.serviceDate,
+          scannedAtClient: scan.scannedAtClient,
+          deviceId: scan.deviceId,
+          clientScanId: scan.clientScanId,
+        })),
+      }),
+    });
+
+    if (!res.ok) throw new Error(`Erreur synchronisation: ${res.status}`);
+    return res.json() as Promise<
+      Array<{
+        localId: string;
+        status: 'created' | 'duplicate' | 'rejected';
+        message: string;
+        serverId?: string;
+      }>
+    >;
+  },
 };
 
 const referentialsAPI = {
@@ -235,13 +275,14 @@ const StatCard = ({
 // ─── QR Scanner Modal (scan continu, sans modal de confirmation) ───────────────
 
 const QRScannerModal = ({
-  isOpen, onClose, currentMealType, alreadyScannedLearnerIds, onMealRecorded,
+  isOpen, onClose, currentMealType, alreadyScannedLearnerIds, onMealRecorded, onMealQueued,
 }: {
   isOpen: boolean;
   onClose: () => void;
   currentMealType: MealServiceMode;
   alreadyScannedLearnerIds: Set<string>;
   onMealRecorded: (optimistic: LocalMeal, promise: Promise<ApiMealResponse>) => void;
+  onMealQueued: (queuedMeal: LocalMeal) => void;
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -257,13 +298,13 @@ const QRScannerModal = ({
   // Dernier scan — affiché dans le bandeau
   const [lastScanned, setLastScanned] = useState<{
     student: ScannableStudent;
-    status: 'pending' | 'ok' | 'duplicate' | 'network_error' | 'error';
+    status: 'pending' | 'ok' | 'duplicate' | 'network_error' | 'pending_sync' | 'error';
     message?: string;
   } | null>(null);
   const [toastState, setToastState] = useState<{
     title: string;
     message: string;
-    tone: 'pending' | 'ok' | 'duplicate' | 'network_error' | 'error';
+    tone: 'pending' | 'ok' | 'duplicate' | 'network_error' | 'pending_sync' | 'error';
   } | null>(null);
 
   const [error, setError] = useState<string | null>(null);
@@ -277,7 +318,7 @@ const QRScannerModal = ({
   const showToast = useCallback((
     title: string,
     message: string,
-    tone: 'pending' | 'ok' | 'duplicate' | 'network_error' | 'error',
+    tone: 'pending' | 'ok' | 'duplicate' | 'network_error' | 'pending_sync' | 'error',
   ) => {
     setToastState({ title, message, tone });
   }, []);
@@ -369,7 +410,7 @@ const QRScannerModal = ({
         } : null);
         showToast('Repas enregistré', `Le repas de ${student.firstName} ${student.lastName} a bien été enregistré.`, 'ok');
       })
-      .catch((err) => {
+      .catch(async (err) => {
         if (err instanceof Error && err.message.includes('409')) {
           recentSuccessfulScansRef.current.set(student.id, Date.now());
           setToastState(null);
@@ -382,13 +423,54 @@ const QRScannerModal = ({
         }
 
         if (err instanceof Error && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
-          setLastScanned(prev => prev ? {
-            ...prev,
-            status: 'network_error',
-            message: 'Le scan a ete lu, mais l\'enregistrement a echoue a cause du reseau.',
-          } : null);
-          setError('Problème réseau pendant l’enregistrement. Le QR a été capturé mais le repas n’a pas pu être sauvegardé.');
-          showToast('Problème réseau', 'Le QR a été lu, mais le repas n’a pas pu être sauvegardé.', 'network_error');
+          const scannedAtClient = optimisticMeal.timestamp;
+          const deviceId = getOrCreateMealScanDeviceId();
+          const localId = `offline-${Date.now()}-${student!.id}`;
+          const clientScanId = `${deviceId}:${localId}`;
+          const queuedMeal: LocalMeal = {
+            ...optimisticMeal,
+            id: localId,
+            syncStatus: 'pending_sync',
+          };
+
+          try {
+            await enqueuePendingMealScan({
+              localId,
+              learnerId: student!.id,
+              learnerFirstName: student!.firstName,
+              learnerLastName: student!.lastName,
+              learnerMatricule: student!.matricule,
+              learnerPhotoUrl: student!.photoUrl || '',
+              learnerReferentialName: student!.referential?.name || 'N/A',
+              learnerPromotionName: student!.promotion?.name || 'N/A',
+              type: mealType,
+              serviceDate: formatDateToString(new Date(scannedAtClient)),
+              scannedAtClient,
+              deviceId,
+              clientScanId,
+              createdAt: new Date().toISOString(),
+            });
+
+            onMealQueued(queuedMeal);
+            setLastScanned(prev => prev ? {
+              ...prev,
+              status: 'pending_sync',
+              message: 'Le scan est enregistre hors ligne et sera synchronise automatiquement.',
+            } : null);
+            showToast(
+              'Scan en attente',
+              'Le reseau est indisponible. Ce scan sera synchronise automatiquement.',
+              'pending_sync',
+            );
+          } catch {
+            setLastScanned(prev => prev ? {
+              ...prev,
+              status: 'network_error',
+              message: 'Le scan a ete lu, mais l\'enregistrement hors ligne a echoue.',
+            } : null);
+            setError('Problème réseau pendant l’enregistrement. Le QR a été capturé mais le repas n’a pas pu être sauvegardé.');
+            showToast('Problème réseau', 'Le QR a été lu, mais le repas n’a pas pu être sauvegardé.', 'network_error');
+          }
           return;
         }
 
@@ -401,7 +483,7 @@ const QRScannerModal = ({
         showToast('Échec d’enregistrement', `Le repas de ${student!.firstName} ${student!.lastName} n’a pas pu être enregistré.`, 'error');
       });
 
-  }, [onMealRecorded, showToast]);
+  }, [onMealQueued, onMealRecorded, showToast]);
 
   const cleanup = useCallback(() => {
     streamRef.current?.getTracks().forEach(t => t.stop());
@@ -479,6 +561,7 @@ const QRScannerModal = ({
     lastScanned.status === 'pending' ? 'bg-yellow-50 border-yellow-200' :
     lastScanned.status === 'ok' ? 'bg-green-50 border-green-200' :
     lastScanned.status === 'duplicate' ? 'bg-blue-50 border-blue-200' :
+    lastScanned.status === 'pending_sync' ? 'bg-amber-50 border-amber-200' :
     lastScanned.status === 'network_error' ? 'bg-orange-50 border-orange-200' :
     'bg-red-50 border-red-200';
 
@@ -487,6 +570,7 @@ const QRScannerModal = ({
     lastScanned.status === 'pending' ? <RefreshCw className="h-4 w-4 text-yellow-500 animate-spin flex-shrink-0" /> :
     lastScanned.status === 'ok' ? <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" /> :
     lastScanned.status === 'duplicate' ? <AlertCircle className="h-4 w-4 text-blue-500 flex-shrink-0" /> :
+    lastScanned.status === 'pending_sync' ? <Clock className="h-4 w-4 text-amber-500 flex-shrink-0" /> :
     lastScanned.status === 'network_error' ? <AlertCircle className="h-4 w-4 text-orange-500 flex-shrink-0" /> :
     <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />;
 
@@ -495,6 +579,7 @@ const QRScannerModal = ({
     toastState.tone === 'pending' ? 'border-yellow-300 bg-yellow-100 text-yellow-900' :
     toastState.tone === 'ok' ? 'border-green-300 bg-green-100 text-green-900' :
     toastState.tone === 'duplicate' ? 'border-blue-300 bg-blue-100 text-blue-900' :
+    toastState.tone === 'pending_sync' ? 'border-amber-300 bg-amber-100 text-amber-900' :
     toastState.tone === 'network_error' ? 'border-orange-300 bg-orange-100 text-orange-900' :
     'border-red-300 bg-red-100 text-red-900';
 
@@ -586,6 +671,7 @@ const QRScannerModal = ({
                         (lastScanned.status === 'pending' ? 'Enregistrement…' :
                         lastScanned.status === 'ok' ? 'Repas enregistre avec succes.' :
                         lastScanned.status === 'duplicate' ? 'Deja scanne.' :
+                        lastScanned.status === 'pending_sync' ? 'En attente de synchronisation.' :
                         lastScanned.status === 'network_error' ? 'Probleme reseau.' :
                         'Echec enregistrement')}
                     </p>
@@ -625,10 +711,14 @@ const QRScannerModal = ({
 
 export default function RestaurateurDashboard() {
   const [recentMeals, setRecentMeals] = useState<LocalMeal[]>([]);
+  const [pendingMeals, setPendingMeals] = useState<LocalMeal[]>([]);
   const [referentials, setReferentials] = useState<Referential[]>([]);
   const [totalLearners, setTotalLearners] = useState<number>(TOTAL_LEARNERS);
   const [mealStats, setMealStats] = useState({ breakfast: 0, lunch: 0 });
   const [activeMealType, setActiveMealType] = useState<MealServiceMode>('BREAKFAST');
+  const [isOnline, setIsOnline] = useState(true);
+  const [isSyncingPending, setIsSyncingPending] = useState(false);
+  const [syncFeedback, setSyncFeedback] = useState<string>('');
 
   const [loading, setLoading] = useState({
     meals: true, referentials: true, learners: true,
@@ -640,6 +730,27 @@ export default function RestaurateurDashboard() {
   const [showScanner, setShowScanner] = useState(false);
   const currentMealType = activeMealType;
   const currentMealLabel = getCurrentMealLabel(currentMealType);
+
+  const loadPendingMeals = useCallback(async () => {
+    const queuedScans = await getPendingMealScans();
+    setPendingMeals(
+      queuedScans.map((scan) => ({
+        id: scan.localId,
+        learner: {
+          id: scan.learnerId,
+          firstName: scan.learnerFirstName,
+          lastName: scan.learnerLastName,
+          matricule: scan.learnerMatricule,
+          photoUrl: scan.learnerPhotoUrl,
+          referential: { name: scan.learnerReferentialName || 'N/A', description: '' },
+          promotion: { name: scan.learnerPromotionName || 'N/A' },
+        },
+        type: scan.type,
+        timestamp: scan.scannedAtClient,
+        syncStatus: 'pending_sync',
+      })),
+    );
+  }, []);
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
 
@@ -687,6 +798,68 @@ export default function RestaurateurDashboard() {
     fetchMealsData(selectedDate);
   }, [selectedDate]);
 
+  const syncPendingScans = useCallback(async () => {
+    if (!navigator.onLine) {
+      setIsOnline(false);
+      return;
+    }
+
+    const queuedScans = await getPendingMealScans();
+    if (!queuedScans.length) {
+      setSyncFeedback('');
+      return;
+    }
+
+    setIsSyncingPending(true);
+
+    try {
+      const results = await mealsAPI.syncMeals(queuedScans);
+      const processedLocalIds = results.map((result) => result.localId);
+      await removePendingMealScans(processedLocalIds);
+      await loadPendingMeals();
+      await fetchMealsData(selectedDate);
+
+      const createdCount = results.filter((result) => result.status === 'created').length;
+      const duplicateCount = results.filter((result) => result.status === 'duplicate').length;
+      const rejectedCount = results.filter((result) => result.status === 'rejected').length;
+      const feedbackParts: string[] = [];
+
+      if (createdCount) feedbackParts.push(`${createdCount} synchronise(s)`);
+      if (duplicateCount) feedbackParts.push(`${duplicateCount} doublon(s)`);
+      if (rejectedCount) feedbackParts.push(`${rejectedCount} refuse(s)`);
+
+      setSyncFeedback(feedbackParts.join(' · '));
+      setError('');
+    } catch {
+      setError('Impossible de synchroniser les scans en attente pour le moment.');
+    } finally {
+      setIsSyncingPending(false);
+    }
+  }, [loadPendingMeals, selectedDate]);
+
+  useEffect(() => {
+    setIsOnline(navigator.onLine);
+    loadPendingMeals();
+
+    const handleOnline = () => {
+      setIsOnline(true);
+      void syncPendingScans();
+    };
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    if (navigator.onLine) {
+      void syncPendingScans();
+    }
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [loadPendingMeals, syncPendingScans]);
+
   useEffect(() => {
     const savedMealType = localStorage.getItem(MEAL_SERVICE_MODE_STORAGE_KEY);
     if (savedMealType === 'BREAKFAST' || savedMealType === 'LUNCH') {
@@ -732,9 +905,17 @@ export default function RestaurateurDashboard() {
     []
   );
 
+  const handleMealQueued = useCallback((queuedMeal: LocalMeal) => {
+    setPendingMeals((prev) => [queuedMeal, ...prev]);
+    setSyncFeedback('1 scan en attente de synchronisation');
+    setError('');
+  }, []);
+
   // ── Filtres ───────────────────────────────────────────────────────────────
 
-  const dateFilteredMeals = recentMeals.filter(meal => {
+  const mealsForDisplay = [...pendingMeals, ...recentMeals];
+
+  const dateFilteredMeals = mealsForDisplay.filter(meal => {
     const dateMatch = isSameDay(new Date(meal.timestamp), parseDateString(selectedDate));
     const programMatch = selectedProgram === 'all' || meal.learner.referential?.name === selectedProgram;
     const typeMatch = selectedMealTypeFilter === 'ALL' || meal.type === selectedMealTypeFilter;
@@ -748,7 +929,7 @@ export default function RestaurateurDashboard() {
 
   const availablePrograms = referentials.map(r => r.name).sort();
   const alreadyScannedLearnerIds = new Set(
-    recentMeals
+    mealsForDisplay
       .filter(meal => isSameDay(new Date(meal.timestamp), new Date()) && meal.type === currentMealType)
       .map(meal => meal.learner.id)
   );
@@ -765,11 +946,29 @@ export default function RestaurateurDashboard() {
             <h1 className="text-3xl font-bold text-gray-800">Dashboard Restaurateur</h1>
             <p className="text-gray-500 text-sm">Gestion des repas étudiants</p>
           </div>
-          <button onClick={() => fetchMealsData(selectedDate)} disabled={loading.meals}
+          <button
+            onClick={async () => {
+              await syncPendingScans();
+              await fetchMealsData(selectedDate);
+            }}
+            disabled={loading.meals || isSyncingPending}
             className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50">
-            <RefreshCw className={`h-4 w-4 ${loading.meals ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 ${loading.meals || isSyncingPending ? 'animate-spin' : ''}`} />
             Actualiser
           </button>
+        </div>
+
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium ${
+            isOnline ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-700'
+          }`}>
+            <span className={`h-2.5 w-2.5 rounded-full ${isOnline ? 'bg-green-500' : 'bg-orange-500'}`} />
+            {isOnline ? 'Connexion active' : 'Mode hors ligne'}
+          </div>
+          <div className="text-sm text-gray-600">
+            {pendingMeals.length > 0 ? `${pendingMeals.length} scan(s) en attente` : 'Aucun scan en attente'}
+            {syncFeedback ? <span className="ml-2 text-gray-500">· {syncFeedback}</span> : null}
+          </div>
         </div>
 
         {/* Erreur globale */}
@@ -937,6 +1136,9 @@ export default function RestaurateurDashboard() {
                           {meal.id.startsWith('temp-') && (
                             <RefreshCw className="h-3 w-3 text-gray-400 animate-spin" />
                           )}
+                          {meal.syncStatus === 'pending_sync' && (
+                            <Clock className="h-3 w-3 text-amber-500" />
+                          )}
                         </div>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
@@ -955,11 +1157,17 @@ export default function RestaurateurDashboard() {
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                          meal.type === 'BREAKFAST'
-                            ? 'bg-orange-100 text-orange-700'
-                            : 'bg-green-100 text-green-700'
+                          meal.syncStatus === 'pending_sync'
+                            ? 'bg-amber-100 text-amber-700'
+                            : meal.type === 'BREAKFAST'
+                              ? 'bg-orange-100 text-orange-700'
+                              : 'bg-green-100 text-green-700'
                         }`}>
-                          {meal.type === 'BREAKFAST' ? 'Petit déj.' : 'Déjeuner'}
+                          {meal.syncStatus === 'pending_sync'
+                            ? 'En attente sync'
+                            : meal.type === 'BREAKFAST'
+                              ? 'Petit déj.'
+                              : 'Déjeuner'}
                         </span>
                       </td>
                     </tr>
@@ -977,6 +1185,7 @@ export default function RestaurateurDashboard() {
           currentMealType={currentMealType}
           alreadyScannedLearnerIds={alreadyScannedLearnerIds}
           onMealRecorded={handleMealRecorded}
+          onMealQueued={handleMealQueued}
         />
       </div>
     </div>
