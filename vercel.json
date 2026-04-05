@@ -1,4 +1,4 @@
 {
   "installCommand": "pnpm install --no-frozen-lockfile",
-  "buildCommand": "pnpm build"
+  "buildCommand": "pnpm exec prisma generate --schema=lib/prisma/schema.prisma && pnpm build"
 }
