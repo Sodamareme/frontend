@@ -14,6 +14,17 @@ import { LearnerFormSubmitData } from "@/lib/types"
 import BulkImportModal from "../../../components/modals/BulkImportModal"
 
 const DEFAULT_STATUS_FILTER = ["ACTIVE", "REPLACEMENT"]
+const LEARNERS_FILTERS_STORAGE_KEY = "dashboard.learners.filters"
+
+type LearnerFiltersState = {
+  view: "grid" | "list"
+  searchQuery: string
+  statusFilter: string[]
+  promotionFilter: string
+  referentialFilter: string
+  currentPage: number
+  itemsPerPage: number
+}
 
 const parseStatusFilter = (rawValue: string | null) => {
   if (!rawValue) return DEFAULT_STATUS_FILTER
@@ -29,6 +40,30 @@ const parseStatusFilter = (rawValue: string | null) => {
 const parsePositiveInteger = (rawValue: string | null, fallback: number) => {
   const parsedValue = Number(rawValue)
   return Number.isInteger(parsedValue) && parsedValue > 0 ? parsedValue : fallback
+}
+
+const readStoredFilters = (): LearnerFiltersState | null => {
+  if (typeof window === "undefined") return null
+
+  try {
+    const rawValue = window.sessionStorage.getItem(LEARNERS_FILTERS_STORAGE_KEY)
+    if (!rawValue) return null
+
+    const parsedValue = JSON.parse(rawValue) as Partial<LearnerFiltersState>
+    return {
+      view: parsedValue.view === "list" ? "list" : "grid",
+      searchQuery: parsedValue.searchQuery || "",
+      statusFilter: Array.isArray(parsedValue.statusFilter) && parsedValue.statusFilter.length > 0
+        ? parsedValue.statusFilter
+        : DEFAULT_STATUS_FILTER,
+      promotionFilter: parsedValue.promotionFilter || "",
+      referentialFilter: parsedValue.referentialFilter || "",
+      currentPage: parsePositiveInteger(String(parsedValue.currentPage || ""), 1),
+      itemsPerPage: parsePositiveInteger(String(parsedValue.itemsPerPage || ""), 10),
+    }
+  } catch {
+    return null
+  }
 }
 
 export default function LearnersPage() {
@@ -95,6 +130,21 @@ export default function LearnersPage() {
   }, [promotions, searchParams])
 
   useEffect(() => {
+    if (searchParams.toString()) return
+
+    const storedFilters = readStoredFilters()
+    if (!storedFilters) return
+
+    setView(storedFilters.view)
+    setSearchQuery(storedFilters.searchQuery)
+    setStatusFilter(storedFilters.statusFilter)
+    setPromotionFilter(storedFilters.promotionFilter)
+    setReferentialFilter(storedFilters.referentialFilter)
+    setCurrentPage(storedFilters.currentPage)
+    setItemsPerPage(storedFilters.itemsPerPage)
+  }, [searchParams])
+
+  useEffect(() => {
     const nextView = searchParams.get("view") === "list" ? "list" : "grid"
     const nextSearchQuery = searchParams.get("search") || ""
     const nextStatusFilter = parseStatusFilter(searchParams.get("status"))
@@ -142,6 +192,33 @@ export default function LearnersPage() {
     referentialFilter,
     router,
     searchParams,
+    searchQuery,
+    statusFilter,
+    view,
+  ])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const filtersToPersist: LearnerFiltersState = {
+      view,
+      searchQuery,
+      statusFilter,
+      promotionFilter,
+      referentialFilter,
+      currentPage,
+      itemsPerPage,
+    }
+
+    window.sessionStorage.setItem(
+      LEARNERS_FILTERS_STORAGE_KEY,
+      JSON.stringify(filtersToPersist)
+    )
+  }, [
+    currentPage,
+    itemsPerPage,
+    promotionFilter,
+    referentialFilter,
     searchQuery,
     statusFilter,
     view,
