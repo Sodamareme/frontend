@@ -40,6 +40,7 @@ function LeaderboardCard({
   rows,
   accentClass,
   valueLabel,
+  returnTo,
 }: {
   title: string
   subtitle: string
@@ -47,6 +48,7 @@ function LeaderboardCard({
   rows: AtRiskLearnersResponse["mostAbsent"]
   accentClass: string
   valueLabel: (row: AtRiskLearnersResponse["mostAbsent"][number]) => string
+  returnTo: string
 }) {
   return (
     <section className="rounded-2xl bg-white p-6 shadow-sm border border-gray-100">
@@ -86,7 +88,7 @@ function LeaderboardCard({
                   <p className="text-xs text-gray-500">{row.attendanceRate}% de présence</p>
                 </div>
                 <Link
-                  href={`/dashboard/learners/${row.learnerId}`}
+                  href={`/dashboard/learners/${row.learnerId}?returnTo=${encodeURIComponent(returnTo)}`}
                   className="rounded-lg bg-orange-50 px-3 py-2 text-sm font-medium text-orange-600 transition-colors hover:bg-orange-100"
                 >
                   Voir détail
@@ -165,6 +167,24 @@ export default function AttendanceAnalyticsPage() {
       totalLate: analytics.mostLate.reduce((sum, learner) => sum + learner.lateCount, 0),
     }
   }, [analytics])
+
+  const returnTo = useMemo(() => {
+    const params = new URLSearchParams()
+    params.set("period", period)
+
+    if (promotionId) {
+      params.set("promotionId", promotionId)
+    }
+
+    if (referentialId) {
+      params.set("referentialId", referentialId)
+    }
+
+    const queryString = params.toString()
+    return queryString
+      ? `/dashboard/attendance/analytics?${queryString}`
+      : "/dashboard/attendance/analytics"
+  }, [period, promotionId, referentialId])
 
   return (
     <div className="space-y-6 p-6 bg-gray-50 min-h-screen">
@@ -279,6 +299,7 @@ export default function AttendanceAnalyticsPage() {
             rows={analytics.mostAbsent}
             accentClass="bg-red-100 text-red-700"
             valueLabel={(row) => `${row.absenceCount} absence${row.absenceCount > 1 ? "s" : ""}`}
+            returnTo={returnTo}
           />
 
           <LeaderboardCard
@@ -288,6 +309,7 @@ export default function AttendanceAnalyticsPage() {
             rows={analytics.mostLate}
             accentClass="bg-amber-100 text-amber-700"
             valueLabel={(row) => `${row.lateCount} retard${row.lateCount > 1 ? "s" : ""}`}
+            returnTo={returnTo}
           />
         </div>
       )}

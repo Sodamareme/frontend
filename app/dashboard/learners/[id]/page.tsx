@@ -52,9 +52,15 @@ export default function LearnerDetailsPage() {
   const [error, setError] = useState("")
   const [attendances, setAttendances] = useState<LearnerAttendance[]>([])
 
-  const backHref = searchParams.toString()
-    ? `/dashboard/learners?${searchParams.toString()}`
-    : "/dashboard/learners"
+  const returnTo = searchParams.get("returnTo")
+  const listSearchParams = new URLSearchParams(searchParams.toString())
+  listSearchParams.delete("returnTo")
+
+  const backHref = returnTo
+    ? decodeURIComponent(returnTo)
+    : listSearchParams.toString()
+      ? `/dashboard/learners?${listSearchParams.toString()}`
+      : "/dashboard/learners"
 
   useEffect(() => {
     const fetchLearnerData = async () => {
