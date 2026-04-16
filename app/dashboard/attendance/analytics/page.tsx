@@ -140,7 +140,7 @@ export default function AttendanceAnalyticsPage() {
           period,
           promotionId: promotionId || undefined,
           referentialId: referentialId || undefined,
-          limit: 5,
+          limit: 10,
         })
 
         setAnalytics(data)
