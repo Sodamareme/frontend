@@ -171,6 +171,36 @@ interface AttendanceStats {
   total:number;
 }
 
+export interface AtRiskLearner {
+  learnerId: string;
+  firstName: string;
+  lastName: string;
+  matricule: string;
+  photoUrl: string | null;
+  promotion: { id: string; name: string } | null;
+  referential: { id: string; name: string } | null;
+  absenceCount: number;
+  lateCount: number;
+  presentCount: number;
+  totalRecords: number;
+  attendanceRate: number;
+}
+
+export interface AtRiskLearnersResponse {
+  period: 'week' | 'month' | 'quarter';
+  range: {
+    startDate: string;
+    endDate: string;
+  };
+  filters: {
+    promotionId: string | null;
+    referentialId: string | null;
+    limit: number;
+  };
+  mostAbsent: AtRiskLearner[];
+  mostLate: AtRiskLearner[];
+}
+
 interface ReplaceLearnerDto {
   originalLearnerId: string;
   newLearnerData: {
@@ -1909,6 +1939,18 @@ export const attendanceAPI = {
   getYearlyStats: async (year: number): Promise<AttendanceStats> => {
     const response = await api.get('/attendance/stats/yearly', {
       params: { year }
+    });
+    return response.data;
+  },
+
+  getAtRiskLearners: async (params?: {
+    period?: 'week' | 'month' | 'quarter';
+    promotionId?: string;
+    referentialId?: string;
+    limit?: number;
+  }): Promise<AtRiskLearnersResponse> => {
+    const response = await api.get('/attendance/stats/at-risk-learners', {
+      params,
     });
     return response.data;
   },
