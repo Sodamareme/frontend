@@ -62,25 +62,23 @@ export default function LearnerDetailsPage() {
         setLoading(true);
         setError("");
 
-        // Fetch learner data first
-        const learnerData = await learnersAPI.getLearnerById(learnerId ?? "");
-        setLearner(learnerData);
+        const [learnerData, attendanceData, learnerAttendanceStats] = await Promise.all([
+          learnersAPI.getLearnerById(learnerId ?? ""),
+          attendanceAPI.getAttendanceByLearner(learnerId ?? ""),
+          learnersAPI.getLearnerAttendanceStats(learnerId ?? ""),
+        ]);
 
-        // Then fetch attendance data
-        console.log('Fetching attendance data for learner:', learnerId);
-        const attendanceData = await attendanceAPI.getAttendanceByLearner(learnerId ?? "");
-        console.log('Received attendance data:', attendanceData);
+        setLearner(learnerData);
         
         if (Array.isArray(attendanceData)) {
           setAttendances(attendanceData);
 
-          // Calculate stats from the attendance data
           const stats = {
             attendance: attendanceData,
-            present: attendanceData.filter(a => a.isPresent && !a.isLate).length,
+            present: learnerAttendanceStats.presentDays ?? attendanceData.filter(a => a.isPresent && !a.isLate).length,
             late: attendanceData.filter(a => a.isPresent && a.isLate).length,
-            absent: attendanceData.filter(a => !a.isPresent).length,
-            totalDays: attendanceData.length
+            absent: learnerAttendanceStats.absentDays ?? attendanceData.filter(a => !a.isPresent).length,
+            totalDays: learnerAttendanceStats.totalDays ?? attendanceData.length
           };
           setAttendanceStats(stats);
         } else {
