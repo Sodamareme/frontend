@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { learnersAPI, type Learner, type AttendanceStats, attendanceAPI, LearnerAttendance } from "@/lib/api"
 import { Calendar, CheckCircle, Clock, Edit, AlertTriangle, ArrowLeft } from "lucide-react"
 
@@ -44,12 +44,17 @@ export default function LearnerDetailsPage() {
   const { id } = useParams() || {}
   const learnerId = Array.isArray(id) ? id[0] : id
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const [learner, setLearner] = useState<Learner | null>(null)
   const [attendanceStats, setAttendanceStats] = useState<AttendanceStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [attendances, setAttendances] = useState<LearnerAttendance[]>([])
+
+  const backHref = searchParams.toString()
+    ? `/dashboard/learners?${searchParams.toString()}`
+    : "/dashboard/learners"
 
   useEffect(() => {
     const fetchLearnerData = async () => {
@@ -161,7 +166,7 @@ export default function LearnerDetailsPage() {
         {/* Header with return button */}
         <div className="flex items-center mb-6">
           <button 
-            onClick={() => router.back()}
+            onClick={() => router.push(backHref)}
             className="mr-4 p-2  hover:bg-gray-100 rounded-lg transition-colors"
           >
             <ArrowLeft size={20} className="text-gray-600" />
@@ -544,4 +549,3 @@ export default function LearnerDetailsPage() {
     </div>
   )
 }
-

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { learnersAPI, promotionsAPI, type Learner, type Promotion } from "@/lib/api"
 import { Plus, Search, DownloadIcon, Users, Upload } from "lucide-react"
 import LearnerCard from "@/components/dashboard/LearnerCard"
@@ -12,18 +13,52 @@ import { Button } from "@headlessui/react"
 import { LearnerFormSubmitData } from "@/lib/types"
 import BulkImportModal from "../../../components/modals/BulkImportModal"
 
+const DEFAULT_STATUS_FILTER = ["ACTIVE", "REPLACEMENT"]
+
+const parseStatusFilter = (rawValue: string | null) => {
+  if (!rawValue) return DEFAULT_STATUS_FILTER
+
+  const values = rawValue
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean)
+
+  return values.length > 0 ? values : DEFAULT_STATUS_FILTER
+}
+
+const parsePositiveInteger = (rawValue: string | null, fallback: number) => {
+  const parsedValue = Number(rawValue)
+  return Number.isInteger(parsedValue) && parsedValue > 0 ? parsedValue : fallback
+}
+
 export default function LearnersPage() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
   const [learners, setLearners] = useState<Learner[]>([])
   const [promotions, setPromotions] = useState<Promotion[]>([])
-  const [view, setView] = useState<"grid" | "list">("grid")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string[]>(["ACTIVE", "REPLACEMENT"])
-  const [promotionFilter, setPromotionFilter] = useState<string>("")
-  const [referentialFilter, setReferentialFilter] = useState<string>("")
+  const [view, setView] = useState<"grid" | "list">(
+    searchParams.get("view") === "list" ? "list" : "grid"
+  )
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "")
+  const [statusFilter, setStatusFilter] = useState<string[]>(
+    parseStatusFilter(searchParams.get("status"))
+  )
+  const [promotionFilter, setPromotionFilter] = useState<string>(
+    searchParams.get("promotion") === "all" ? "" : searchParams.get("promotion") || ""
+  )
+  const [referentialFilter, setReferentialFilter] = useState<string>(
+    searchParams.get("referential") === "all" ? "" : searchParams.get("referential") || ""
+  )
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-  const [currentPage, setCurrentPage] = useState(1)   // ✅ contrôlé ici
-  const [itemsPerPage, setItemsPerPage] = useState(10) // ✅ contrôlé ici
+  const [currentPage, setCurrentPage] = useState(
+    parsePositiveInteger(searchParams.get("page"), 1)
+  )
+  const [itemsPerPage, setItemsPerPage] = useState(
+    parsePositiveInteger(searchParams.get("itemsPerPage"), 10)
+  )
   const [showAddModal, setShowAddModal] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showBulkImportModal, setShowBulkImportModal] = useState(false)
@@ -55,14 +90,62 @@ export default function LearnersPage() {
   useEffect(() => {
     if (promotions.length > 0) {
       const activePromotion = promotions.find((p) => p.status === "ACTIVE")
-      if (activePromotion) setPromotionFilter(activePromotion.id)
+      if (activePromotion && !searchParams.has("promotion")) setPromotionFilter(activePromotion.id)
     }
-  }, [promotions])
+  }, [promotions, searchParams])
 
-  // ✅ Reset page 1 à chaque changement de filtre
   useEffect(() => {
-    setCurrentPage(1)
-  }, [searchQuery, statusFilter, promotionFilter, referentialFilter, itemsPerPage])
+    const nextView = searchParams.get("view") === "list" ? "list" : "grid"
+    const nextSearchQuery = searchParams.get("search") || ""
+    const nextStatusFilter = parseStatusFilter(searchParams.get("status"))
+    const nextPromotionFilter =
+      searchParams.get("promotion") === "all" ? "" : searchParams.get("promotion") || ""
+    const nextReferentialFilter =
+      searchParams.get("referential") === "all" ? "" : searchParams.get("referential") || ""
+    const nextPage = parsePositiveInteger(searchParams.get("page"), 1)
+    const nextItemsPerPage = parsePositiveInteger(searchParams.get("itemsPerPage"), 10)
+
+    setView(nextView)
+    setSearchQuery(nextSearchQuery)
+    setStatusFilter(nextStatusFilter)
+    setPromotionFilter(nextPromotionFilter)
+    setReferentialFilter(nextReferentialFilter)
+    setCurrentPage(nextPage)
+    setItemsPerPage(nextItemsPerPage)
+  }, [searchParams])
+
+  useEffect(() => {
+    const nextParams = new URLSearchParams()
+
+    if (searchQuery) {
+      nextParams.set("search", searchQuery)
+    }
+
+    nextParams.set("view", view)
+    nextParams.set("status", statusFilter.join(","))
+    nextParams.set("promotion", promotionFilter || "all")
+    nextParams.set("referential", referentialFilter || "all")
+    nextParams.set("page", currentPage.toString())
+    nextParams.set("itemsPerPage", itemsPerPage.toString())
+
+    const currentParams = searchParams.toString()
+    const nextQueryString = nextParams.toString()
+
+    if (currentParams !== nextQueryString) {
+      router.replace(`${pathname}?${nextQueryString}`, { scroll: false })
+    }
+  }, [
+    currentPage,
+    itemsPerPage,
+    pathname,
+    promotionFilter,
+    referentialFilter,
+    router,
+    searchParams,
+    searchQuery,
+    statusFilter,
+    view,
+  ])
 
   // ── Filtering & pagination ─────────────────────────────────────────────────
 
@@ -213,6 +296,31 @@ export default function LearnersPage() {
     [learners]
   )
 
+  const learnerDetailsSuffix = useMemo(() => {
+    const params = new URLSearchParams()
+
+    if (searchQuery) {
+      params.set("search", searchQuery)
+    }
+
+    params.set("view", view)
+    params.set("status", statusFilter.join(","))
+    params.set("promotion", promotionFilter || "all")
+    params.set("referential", referentialFilter || "all")
+    params.set("page", currentPage.toString())
+    params.set("itemsPerPage", itemsPerPage.toString())
+
+    return `?${params.toString()}`
+  }, [
+    currentPage,
+    itemsPerPage,
+    promotionFilter,
+    referentialFilter,
+    searchQuery,
+    statusFilter,
+    view,
+  ])
+
   // ── Add learner ────────────────────────────────────────────────────────────
 
   async function handleAddLearner(data: LearnerFormSubmitData) {
@@ -296,7 +404,10 @@ export default function LearnersPage() {
               placeholder="Rechercher..."
               className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value)
+                setCurrentPage(1)
+              }}
             />
           </div>
 
@@ -305,7 +416,10 @@ export default function LearnersPage() {
             <select
               className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
               value={referentialFilter}
-              onChange={(e) => setReferentialFilter(e.target.value)}
+              onChange={(e) => {
+                setReferentialFilter(e.target.value)
+                setCurrentPage(1)
+              }}
             >
               <option value="">Tous les référentiels</option>
               {uniqueReferentials.map((ref) => (
@@ -321,7 +435,10 @@ export default function LearnersPage() {
             <select
               className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
               value={statusFilter}
-              onChange={(e) => setStatusFilter(Array.from(e.target.selectedOptions).map(o => o.value))}
+              onChange={(e) => {
+                setStatusFilter(Array.from(e.target.selectedOptions).map(o => o.value))
+                setCurrentPage(1)
+              }}
               multiple={true}
               size={1}
               style={{ height: "42px" }}
@@ -337,7 +454,10 @@ export default function LearnersPage() {
             <select
               className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
               value={promotionFilter}
-              onChange={(e) => setPromotionFilter(e.target.value)}
+              onChange={(e) => {
+                setPromotionFilter(e.target.value)
+                setCurrentPage(1)
+              }}
             >
               <option value="">Toutes les promotions</option>
               {promotions
@@ -436,7 +556,11 @@ export default function LearnersPage() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {currentItems.map((learner) => (
-              <LearnerCard key={learner.id} learner={learner} />
+              <LearnerCard
+                key={learner.id}
+                learner={learner}
+                href={`/dashboard/learners/${learner.id}${learnerDetailsSuffix}`}
+              />
             ))}
           </div>
           {/* ✅ Pagination contrôlée par le parent */}
@@ -465,7 +589,10 @@ export default function LearnersPage() {
                 {currentItems.map((learner) => (
                   <tr key={learner.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <Link href={`/dashboard/learners/${learner.id}`} className="flex items-center">
+                      <Link
+                        href={`/dashboard/learners/${learner.id}${learnerDetailsSuffix}`}
+                        className="flex items-center"
+                      >
                         <div className="flex-shrink-0 h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-medium overflow-hidden">
                           {learner.photoUrl ? (
                             <img

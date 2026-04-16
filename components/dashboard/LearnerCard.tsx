@@ -6,9 +6,10 @@ import { Book, Calendar, Phone } from 'lucide-react';
 
 interface LearnerCardProps {
   learner: Learner;
+  href?: string;
 }
 
-export default function LearnerCard({ learner }: LearnerCardProps) {
+export default function LearnerCard({ learner, href }: LearnerCardProps) {
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case 'ACTIVE':
@@ -52,7 +53,7 @@ export default function LearnerCard({ learner }: LearnerCardProps) {
 
   return (
     <Link 
-      href={`/dashboard/learners/${learner.id}`}
+      href={href || `/dashboard/learners/${learner.id}`}
       className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden border border-gray-100"
     >
       {/* Header with gradient background */}
