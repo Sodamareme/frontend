@@ -64,7 +64,16 @@ export default function LearnerDetailsPage() {
         ])
 
         setLearner(learnerData)
-        setAttendanceStats(attendanceStatsData)
+        setAttendanceStats({
+          attendance: [],
+          present: attendanceStatsData.presentDays ?? 0,
+          late: attendanceStatsData.lateDays ?? 0,
+          absent: attendanceStatsData.absentDays ?? 0,
+          totalDays: attendanceStatsData.totalDays ?? 0,
+          total: attendanceStatsData.totalDays ?? 0,
+          justifiedAbsentDays: attendanceStatsData.justifiedAbsentDays ?? 0,
+          unjustifiedAbsentDays: attendanceStatsData.unjustifiedAbsentDays ?? 0,
+        })
       } catch (err) {
         console.error("Error fetching learner data:", err)
         setError("Une erreur est survenue lors du chargement des données")
@@ -211,6 +220,17 @@ export default function LearnerDetailsPage() {
 
                 {/* Stats */}
                 <div className="flex-1 flex flex-wrap md:flex-nowrap border-t md:border-t-0 md:border-l border-gray-100">
+                  {/* Counted days */}
+                  <div className="flex-1 p-6 flex items-center justify-center border-r border-gray-100 bg-gray-50 bg-opacity-50">
+                    <div className="flex flex-col items-center">
+                      <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-2">
+                        <Calendar className="h-6 w-6 text-blue-500" />
+                      </div>
+                      <span className="text-3xl font-bold text-blue-500">{attendanceStats?.totalDays || 0}</span>
+                      <span className="text-sm text-gray-500">Jour(s) comptabilisé(s)</span>
+                    </div>
+                  </div>
+
                   {/* Present */}
                   <div className="flex-1 p-6 flex items-center justify-center border-r border-gray-100 bg-gray-50 bg-opacity-50">
                     <div className="flex flex-col items-center">
@@ -241,6 +261,9 @@ export default function LearnerDetailsPage() {
                       </div>
                       <span className="text-3xl font-bold text-red-500">{attendanceStats?.absent || 0}</span>
                       <span className="text-sm text-gray-500">Absence(s)</span>
+                      <span className="text-xs text-gray-400 mt-1">
+                        Dont {attendanceStats?.justifiedAbsentDays || 0} justifiée(s)
+                      </span>
                     </div>
                   </div>
                 </div>
