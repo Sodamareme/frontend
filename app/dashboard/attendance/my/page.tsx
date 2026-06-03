@@ -83,7 +83,14 @@ export default function MyAttendancePage() {
   const [file, setFile]                           = useState<File | undefined>(undefined)
 
   // Stats
-  const [stats, setStats] = useState({ present: 0, absent: 0, late: 0, total: 0 })
+  const [stats, setStats] = useState({
+    present: 0,
+    absent: 0,
+    late: 0,
+    total: 0,
+    totalDays: 0,
+    justifiedAbsentDays: 0,
+  })
 
   // Filters
   const [searchDate, setSearchDate]   = useState("")
@@ -103,9 +110,16 @@ export default function MyAttendancePage() {
       const user = JSON.parse(userStr)
       const learnerDetails = await learnersAPI.getLearnerByEmail(user.email)
       const attendanceData = learnerDetails.attendances || []
+      const attendanceStatsData = await learnersAPI.getLearnerAttendanceStats(learnerDetails.id)
       setAttendances(attendanceData)
-      const s = learnersAPI.calculateAttendanceStats(attendanceData)
-      setStats({ ...s, total: s.present + s.absent + s.late })
+      setStats({
+        present: attendanceStatsData.presentDays ?? 0,
+        late: attendanceStatsData.lateDays ?? 0,
+        absent: attendanceStatsData.absentDays ?? 0,
+        total: attendanceStatsData.totalDays ?? 0,
+        totalDays: attendanceStatsData.totalDays ?? 0,
+        justifiedAbsentDays: attendanceStatsData.justifiedAbsentDays ?? 0,
+      })
     } catch (err) {
       console.error('Error fetching attendance:', err)
       setError('Failed to load attendance data')
@@ -247,17 +261,20 @@ export default function MyAttendancePage() {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {[
-            { label: 'Présences',   value: stats.present, pct: stats.present, Icon: CheckCircle2, theme: 'green'  },
-            { label: 'Retards',     value: stats.late,    pct: stats.late,    Icon: Clock,        theme: 'orange' },
-            { label: 'Absences',    value: stats.absent,  pct: stats.absent,  Icon: XCircle,      theme: 'red'    },
-            { label: 'Total jours', value: stats.total,   pct: null,          Icon: Calendar,     theme: 'purple' },
-          ].map(({ label, value, pct, Icon, theme }) => (
+            { label: 'Présences', value: stats.present, pct: stats.present, Icon: CheckCircle2, theme: 'green'  },
+            { label: 'Retards', value: stats.late, pct: stats.late, Icon: Clock, theme: 'orange' },
+            { label: 'Absences', value: stats.absent, pct: stats.absent, Icon: XCircle, theme: 'red', hint: `Dont ${stats.justifiedAbsentDays} justifiée(s)` },
+            { label: 'Total jours', value: stats.totalDays, pct: null, Icon: Calendar, theme: 'purple' },
+          ].map(({ label, value, pct, Icon, theme, hint }) => (
             <Card key={label} className={`bg-gradient-to-br from-${theme}-50 to-${theme}-100 border-${theme}-200 shadow-sm hover:shadow-md transition-all duration-300`}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="space-y-2">
                     <p className={`text-sm font-medium text-${theme}-700`}>{label}</p>
                     <p className={`text-3xl font-bold text-${theme}-900`}>{value}</p>
+                    {hint ? (
+                      <p className="text-xs text-gray-500">{hint}</p>
+                    ) : null}
                     <p className={`text-xs text-${theme}-600`}>
                       {pct !== null
                         ? `${stats.total > 0 ? Math.round((pct / stats.total) * 100) : 0}% du total`
