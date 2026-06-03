@@ -162,12 +162,14 @@ export interface LearnerDetailsExtended {
   status: 'ACTIVE' | 'INACTIVE' | 'GRADUATED' | 'DROPPED_OUT';
 }
 
-interface AttendanceStats {
+export interface AttendanceStats {
   attendance: any[];
   present: number;
   absent: number;
   late: number;
   totalDays: number;
+  justifiedAbsentDays?: number;
+  unjustifiedAbsentDays?: number;
   total:number;
 }
 
@@ -646,7 +648,15 @@ export const learnersAPI = {
     }
   },
   
-  getLearnerAttendanceStats: async (id: string) => {
+  getLearnerAttendanceStats: async (id: string): Promise<{
+    totalDays: number;
+    presentDays: number;
+    lateDays: number;
+    absentDays: number;
+    justifiedAbsentDays: number;
+    unjustifiedAbsentDays: number;
+    attendanceRate: number;
+  }> => {
     try {
       const response = await api.get(`/learners/${id}/attendance-stats`);
       return response.data;

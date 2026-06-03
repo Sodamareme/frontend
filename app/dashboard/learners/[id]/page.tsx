@@ -82,9 +82,18 @@ export default function LearnerDetailsPage() {
           const stats = {
             attendance: attendanceData,
             present: learnerAttendanceStats.presentDays ?? attendanceData.filter(a => a.isPresent && !a.isLate).length,
-            late: attendanceData.filter(a => a.isPresent && a.isLate).length,
+            late: learnerAttendanceStats.lateDays ?? attendanceData.filter(a => a.isPresent && a.isLate).length,
             absent: learnerAttendanceStats.absentDays ?? attendanceData.filter(a => !a.isPresent).length,
-            totalDays: learnerAttendanceStats.totalDays ?? attendanceData.length
+            totalDays: learnerAttendanceStats.totalDays ?? attendanceData.length,
+            total: learnerAttendanceStats.totalDays ?? attendanceData.length,
+            justifiedAbsentDays: learnerAttendanceStats.justifiedAbsentDays ?? 0,
+            unjustifiedAbsentDays:
+              learnerAttendanceStats.unjustifiedAbsentDays ??
+              Math.max(
+                (learnerAttendanceStats.absentDays ?? attendanceData.filter(a => !a.isPresent).length) -
+                  (learnerAttendanceStats.justifiedAbsentDays ?? 0),
+                0
+              ),
           };
           setAttendanceStats(stats);
         } else {
@@ -95,7 +104,10 @@ export default function LearnerDetailsPage() {
             present: 0,
             late: 0,
             absent: 0,
-            totalDays: 0
+            totalDays: 0,
+            total: 0,
+            justifiedAbsentDays: 0,
+            unjustifiedAbsentDays: 0,
           });
         }
 
@@ -276,6 +288,17 @@ export default function LearnerDetailsPage() {
 
                 {/* Stats */}
                 <div className="flex-1 flex flex-wrap md:flex-nowrap border-t md:border-t-0 md:border-l border-gray-100">
+                  {/* Counted days */}
+                  <div className="flex-1 p-6 flex items-center justify-center border-r border-gray-100 bg-gray-50 bg-opacity-50">
+                    <div className="flex flex-col items-center">
+                      <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-2">
+                        <Calendar className="h-6 w-6 text-blue-500" />
+                      </div>
+                      <span className="text-3xl font-bold text-blue-500">{attendanceStats?.totalDays || 0}</span>
+                      <span className="text-sm text-gray-500">Jour(s) comptabilisé(s)</span>
+                    </div>
+                  </div>
+
                   {/* Present */}
                   <div className="flex-1 p-6 flex items-center justify-center border-r border-gray-100 bg-gray-50 bg-opacity-50">
                     <div className="flex flex-col items-center">
@@ -306,6 +329,9 @@ export default function LearnerDetailsPage() {
                       </div>
                       <span className="text-3xl font-bold text-red-500">{attendanceStats?.absent || 0}</span>
                       <span className="text-sm text-gray-500">Absence(s)</span>
+                      <span className="text-xs text-gray-400 mt-1">
+                        Dont {attendanceStats?.justifiedAbsentDays || 0} justifiée(s)
+                      </span>
                     </div>
                   </div>
                 </div>
