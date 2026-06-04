@@ -2360,12 +2360,19 @@ export const usersAPI = {
   getUserPhoto: async (email: string) => {
     try {
       const token = getAuthToken();
-      const response = await api.get(`/users/photo/${email}`, {
+      const response = await fetch(`${API_BASE_URL}/users/photo/${encodeURIComponent(email)}`, {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
       });
-      return response.data.photoUrl;
+
+      if (!response.ok) {
+        console.warn(`Skipping user photo fetch for ${email}: HTTP ${response.status}`);
+        return null;
+      }
+
+      const data = await response.json();
+      return data.photoUrl ?? null;
     } catch (error) {
       console.error('Error fetching user photo:', error);
       return null;
