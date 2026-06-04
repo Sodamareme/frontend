@@ -121,10 +121,7 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
 
     if (!response.ok) {
       if (response.status === 401) {
-        // Token expiré ou invalide
-        removeAuthToken();
-        window.location.href = '/';
-        return;
+        console.warn(`Unauthorized fetch request ignored for session continuity: ${url}`);
       }
     
     let errorMessage = `Erreur HTTP ${response.status}`;
@@ -285,9 +282,8 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      removeAuthToken();
-      localStorage.removeItem('user');
-      window.location.href = '/';
+      const failingUrl = error.config?.url || 'unknown-url';
+      console.warn(`Unauthorized axios request ignored for session continuity: ${failingUrl}`);
     }
     return Promise.reject(error);
   }
