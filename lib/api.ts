@@ -2091,10 +2091,14 @@ export const attendanceAPI = {
   submitJustification: async (
     attendanceId: string,
     justification: string,
+    date?: string,
     document?: File
   ) => {
     const formData = new FormData();
     formData.append('justification', justification);
+    if (date) {
+      formData.append('date', date);
+    }
     if (document) {
       formData.append('document', document);
     }

@@ -44,10 +44,18 @@ export default function LearnerDashboard() {
         const details = await learnersAPI.getLearnerByEmail(user.email);
         if (details) {
           setLearnerDetails(details);
-          
-          // Calculate attendance stats
-          const stats = learnersAPI.calculateAttendanceStats(details.attendances);
-          setAttendanceStats(stats);
+
+          const statsData = await learnersAPI.getLearnerAttendanceStats(details.id);
+          setAttendanceStats({
+            attendance: details.attendances || [],
+            present: statsData.presentDays ?? 0,
+            late: statsData.lateDays ?? 0,
+            absent: statsData.absentDays ?? 0,
+            totalDays: statsData.totalDays ?? 0,
+            total: statsData.totalDays ?? 0,
+            justifiedAbsentDays: statsData.justifiedAbsentDays ?? 0,
+            unjustifiedAbsentDays: statsData.unjustifiedAbsentDays ?? 0,
+          });
           
           // Récupérer les modules directement depuis le referential du learner
           if (details.referential?.id) {

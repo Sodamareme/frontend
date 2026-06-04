@@ -111,7 +111,38 @@ export default function MyAttendancePage() {
       const learnerDetails = await learnersAPI.getLearnerByEmail(user.email)
       const attendanceData = learnerDetails.attendances || []
       const attendanceStatsData = await learnersAPI.getLearnerAttendanceStats(learnerDetails.id)
-      setAttendances(attendanceData)
+      const existingDates = new Set(
+        attendanceData.map((attendance: AttendanceRecord) => format(new Date(attendance.date), 'yyyy-MM-dd'))
+      )
+      const missingAbsenceCount = Math.max(
+        (attendanceStatsData.absentDays ?? 0) - attendanceData.filter((a: AttendanceRecord) => !a.isPresent).length,
+        0
+      )
+      const generatedAbsences: AttendanceRecord[] = []
+      if (missingAbsenceCount > 0) {
+        const today = new Date()
+        let cursor = new Date(today)
+        while (generatedAbsences.length < missingAbsenceCount) {
+          const dateKey = format(cursor, 'yyyy-MM-dd')
+          if (!existingDates.has(dateKey)) {
+            generatedAbsences.push({
+              id: `absent-${learnerDetails.id}`,
+              date: cursor.toISOString(),
+              isPresent: false,
+              isLate: false,
+              scanTime: null,
+              status: 'TO_JUSTIFY',
+            })
+          }
+          cursor.setDate(cursor.getDate() - 1)
+        }
+      }
+
+      setAttendances(
+        [...attendanceData, ...generatedAbsences].sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        )
+      )
       setStats({
         present: attendanceStatsData.presentDays ?? 0,
         late: attendanceStatsData.lateDays ?? 0,
@@ -187,7 +218,12 @@ export default function MyAttendancePage() {
     }
     try {
       setSubmitting(true)
-      await attendanceAPI.submitJustification(selectedAttendance.id, justification, file)
+      await attendanceAPI.submitJustification(
+        selectedAttendance.id,
+        justification,
+        format(new Date(selectedAttendance.date), 'yyyy-MM-dd'),
+        file
+      )
       await fetchAttendance()
       handleCloseModal()
       toast.success("Justification soumise avec succès")
