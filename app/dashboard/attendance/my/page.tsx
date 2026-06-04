@@ -109,37 +109,10 @@ export default function MyAttendancePage() {
       if (!userStr) throw new Error('User not found')
       const user = JSON.parse(userStr)
       const learnerDetails = await learnersAPI.getLearnerByEmail(user.email)
-      const attendanceData = learnerDetails.attendances || []
+      const attendanceData = await attendanceAPI.getAttendanceByLearner(learnerDetails.id)
       const attendanceStatsData = await learnersAPI.getLearnerAttendanceStats(learnerDetails.id)
-      const existingDates = new Set(
-        attendanceData.map((attendance: AttendanceRecord) => format(new Date(attendance.date), 'yyyy-MM-dd'))
-      )
-      const missingAbsenceCount = Math.max(
-        (attendanceStatsData.absentDays ?? 0) - attendanceData.filter((a: AttendanceRecord) => !a.isPresent).length,
-        0
-      )
-      const generatedAbsences: AttendanceRecord[] = []
-      if (missingAbsenceCount > 0) {
-        const today = new Date()
-        let cursor = new Date(today)
-        while (generatedAbsences.length < missingAbsenceCount) {
-          const dateKey = format(cursor, 'yyyy-MM-dd')
-          if (!existingDates.has(dateKey)) {
-            generatedAbsences.push({
-              id: `absent-${learnerDetails.id}`,
-              date: cursor.toISOString(),
-              isPresent: false,
-              isLate: false,
-              scanTime: null,
-              status: 'TO_JUSTIFY',
-            })
-          }
-          cursor.setDate(cursor.getDate() - 1)
-        }
-      }
-
       setAttendances(
-        [...attendanceData, ...generatedAbsences].sort(
+        [...attendanceData].sort(
           (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
         )
       )
