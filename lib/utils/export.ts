@@ -6,16 +6,19 @@ const convertToCSV = (data: Record<string, any>[]) => {
   if (data.length === 0) return '';
   
   const headers = Object.keys(data[0]);
-  const csvHeaders = headers.join(',');
+  const csvHeaders = headers.join(';');
   
   const csvRows = data.map(row => {
     return headers.map(header => {
       const value = row[header];
-      if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
-        return `"${value.replace(/"/g, '""')}"`;
+      const normalizedValue = value ?? '';
+      const stringValue = String(normalizedValue);
+
+      if (stringValue.includes(';') || stringValue.includes('"') || stringValue.includes('\n')) {
+        return `"${stringValue.replace(/"/g, '""')}"`;
       }
-      return value || '';
-    }).join(',');
+      return stringValue;
+    }).join(';');
   });
   
   return [csvHeaders, ...csvRows].join('\n');
@@ -23,9 +26,16 @@ const convertToCSV = (data: Record<string, any>[]) => {
 
 export const exportToCSV = (data: Record<string, any>[], filename: string) => {
   try {
+    if (data.length === 0) {
+      toast.error('Aucune donnée à exporter', {
+        description: 'Appliquez d\'abord des filtres qui retournent des résultats.',
+      });
+      return;
+    }
+
     const csvContent = convertToCSV(data);
     
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(['\uFEFF', csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     
     if (link.download !== undefined) {

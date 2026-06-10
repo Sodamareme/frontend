@@ -25,6 +25,7 @@ import {
 import { toast } from "sonner"
 import JustificationReviewModal from "@/components/modals/JustificationReviewModal"
 import { useRouter, useSearchParams } from 'next/navigation'
+import { exportToCSV } from "@/lib/utils/export"
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -174,6 +175,45 @@ const normalizeAttendanceStats = (data: any): AttendanceViewData => {
     absent: 0,
     total: 0,
     attendance,
+  }
+}
+
+const formatExportDate = (date: string) =>
+  date
+    ? new Date(date).toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      })
+    : '—'
+
+const formatExportTime = (scanTime?: string) =>
+  scanTime
+    ? new Date(scanTime).toLocaleTimeString('fr-FR', {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : 'Absent'
+
+const getAttendanceStatusLabel = (record: AttendanceRecord) => {
+  if (!record.isPresent) return 'Absent'
+  if (record.isLate) return 'Retard'
+  return 'Présent'
+}
+
+const getJustificationStatusLabel = (record: AttendanceRecord) => {
+  if (record.isPresent && !record.isLate) return 'Non applicable'
+
+  switch (record.status) {
+    case 'APPROVED':
+      return 'Justifié'
+    case 'PENDING':
+      return 'En attente'
+    case 'REJECTED':
+      return 'Rejeté'
+    case 'TO_JUSTIFY':
+    default:
+      return record.justification?.trim() || record.documentUrl ? 'À vérifier' : 'Aucun justificatif'
   }
 }
 
@@ -537,6 +577,31 @@ const handleStatusChange = async (id: string, date: string, newStatus: EditableS
     currentPage * itemsPerPage
   )
 
+  const handleExport = () => {
+    const exportedRows = filteredRecords.map((record) => ({
+      Matricule: record.learner.matricule || '—',
+      'Nom complet': `${record.learner.firstName} ${record.learner.lastName}`,
+      Date: formatExportDate(record.date),
+      Heure: formatExportTime(record.scanTime),
+      Référentiel: record.learner.referential?.name || 'Non assigné',
+      Statut: getAttendanceStatusLabel(record),
+      'État justificatif': getJustificationStatusLabel(record),
+      Justification: record.justification?.trim() || '—',
+      'Document justificatif': record.documentUrl || '—',
+    }))
+
+    const dateLabel = selectedDate.replaceAll('-', '')
+    const statusLabel = statusFilter && statusFilter !== 'all' ? statusFilter : 'tous'
+    const searchLabel = searchQuery.trim()
+      ? searchQuery.trim().toLowerCase().replace(/\s+/g, '-')
+      : 'tous'
+
+    exportToCSV(
+      exportedRows,
+      `presences-${dateFilter}-${dateLabel}-${statusLabel}-${searchLabel}.csv`
+    )
+  }
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
@@ -637,7 +702,7 @@ const handleStatusChange = async (id: string, date: string, newStatus: EditableS
           </SelectContent>
         </Select>
 
-        <Button variant="default" className="bg-orange-500 hover:bg-orange-600 text-white" onClick={() => alert('Export à implémenter')}>
+        <Button variant="default" className="bg-orange-500 hover:bg-orange-600 text-white" onClick={handleExport}>
           <Download className="h-4 w-4 mr-2" /> Exporter
         </Button>
       </div>
