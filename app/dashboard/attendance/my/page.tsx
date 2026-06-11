@@ -111,6 +111,9 @@ export default function MyAttendancePage() {
       const learnerDetails = await learnersAPI.getLearnerByEmail(user.email)
       const attendanceData = await attendanceAPI.getAttendanceByLearner(learnerDetails.id)
       const attendanceStatsData = await learnersAPI.getLearnerAttendanceStats(learnerDetails.id)
+      const justifiedAbsenceCount = attendanceData.filter(
+        (attendance) => !attendance.isPresent && attendance.status === "APPROVED"
+      ).length
       setAttendances(
         [...attendanceData].sort(
           (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
@@ -122,7 +125,10 @@ export default function MyAttendancePage() {
         absent: attendanceStatsData.absentDays ?? 0,
         total: attendanceStatsData.totalDays ?? 0,
         totalDays: attendanceStatsData.totalDays ?? 0,
-        justifiedAbsentDays: attendanceStatsData.justifiedAbsentDays ?? 0,
+        justifiedAbsentDays: Math.max(
+          attendanceStatsData.justifiedAbsentDays ?? 0,
+          justifiedAbsenceCount
+        ),
       })
     } catch (err) {
       console.error('Error fetching attendance:', err)
