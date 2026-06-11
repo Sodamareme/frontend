@@ -37,14 +37,14 @@ function getStatusBadge(status: AttendanceStatus | undefined) {
   switch (status) {
     case 'TO_JUSTIFY':
       return (
-        <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-xs font-medium">
+        <Badge variant="outline" className="border-[#eadbc5] bg-[#fff1e8] text-[#8b5a2b] text-xs font-medium">
           <AlertCircle className="w-3 h-3 mr-1" />
           À justifier
         </Badge>
       )
     case 'PENDING':
       return (
-        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 text-xs font-medium">
+        <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700 text-xs font-medium">
           <Clock className="w-3 h-3 mr-1" />
           En attente
         </Badge>
@@ -229,10 +229,10 @@ export default function MyAttendancePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[80vh]">
+      <div className="flex min-h-[80vh] items-center justify-center bg-[#f5f1e8]">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-gray-600 font-medium">Chargement de vos données d'assiduité...</p>
+          <p className="font-medium text-slate-600">Chargement de vos données d'assiduité...</p>
         </div>
       </div>
     )
@@ -240,8 +240,8 @@ export default function MyAttendancePage() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-[80vh]">
-        <Card className="max-w-md mx-auto">
+      <div className="flex min-h-[80vh] items-center justify-center bg-[#f5f1e8]">
+        <Card className="mx-auto max-w-md border border-red-200 shadow-sm">
           <CardContent className="p-6 text-center">
             <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Erreur de chargement</h3>
@@ -255,19 +255,19 @@ export default function MyAttendancePage() {
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-[#f5f1e8]">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
 
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+          <div className="mb-4 flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Mon Assiduité</h1>
-              <p className="text-gray-600 mt-2">Suivez votre présence et gérez vos justifications</p>
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#d36b2c]">Ma présence</p>
+              <h1 className="mt-2 text-3xl font-semibold text-slate-900">Historique d'assiduité</h1>
             </div>
-            <div className="flex items-center space-x-2 text-sm text-gray-500">
-              <TrendingUp className="w-4 h-4" />
-              <span>Taux de présence : {getAttendanceRate()}%</span>
+            <div className="flex items-center space-x-2 text-sm text-slate-500">
+              <TrendingUp className="h-4 w-4 text-[#d36b2c]" />
+              <span>{getAttendanceRate()}% de présence</span>
             </div>
           </div>
           <Separator className="bg-gray-200" />
@@ -276,37 +276,53 @@ export default function MyAttendancePage() {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {[
-            { label: 'Présences', value: stats.present, pct: stats.present, Icon: CheckCircle2, theme: 'green'  },
-            { label: 'Retards', value: stats.late, pct: stats.late, Icon: Clock, theme: 'orange' },
-            { label: 'Absences', value: stats.absent, pct: stats.absent, Icon: XCircle, theme: 'red', hint: `Dont ${stats.justifiedAbsentDays} justifiée(s)` },
-            { label: 'Total jours', value: stats.totalDays, pct: null, Icon: Calendar, theme: 'purple' },
-          ].map(({ label, value, pct, Icon, theme, hint }) => (
-            <Card key={label} className={`bg-gradient-to-br from-${theme}-50 to-${theme}-100 border-${theme}-200 shadow-sm hover:shadow-md transition-all duration-300`}>
+            { label: 'Présences', value: stats.present, pct: stats.present, Icon: CheckCircle2, accent: 'emerald', hint: 'Jours validés'  },
+            { label: 'Retards', value: stats.late, pct: stats.late, Icon: Clock, accent: 'orange', hint: 'À surveiller' },
+            { label: 'Absences', value: stats.absent, pct: stats.absent, Icon: XCircle, accent: 'red', hint: `Dont ${stats.justifiedAbsentDays} justifiée(s)` },
+            { label: 'Total jours', value: stats.totalDays, pct: null, Icon: Calendar, accent: 'slate', hint: 'Comptabilisés' },
+          ].map(({ label, value, pct, Icon, accent, hint }) => {
+            const accentClasses = {
+              emerald: {
+                iconWrap: 'bg-emerald-50 text-emerald-700',
+              },
+              orange: {
+                iconWrap: 'bg-[#fff1e8] text-[#d36b2c]',
+              },
+              red: {
+                iconWrap: 'bg-red-50 text-red-700',
+              },
+              slate: {
+                iconWrap: 'bg-slate-100 text-slate-700',
+              },
+            } as const
+
+            return (
+            <Card key={label} className="rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="space-y-2">
-                    <p className={`text-sm font-medium text-${theme}-700`}>{label}</p>
-                    <p className={`text-3xl font-bold text-${theme}-900`}>{value}</p>
+                    <p className="text-sm font-medium text-slate-500">{label}</p>
+                    <p className="text-3xl font-semibold text-slate-900">{value}</p>
                     {hint ? (
-                      <p className="text-xs text-gray-500">{hint}</p>
+                      <p className="text-xs uppercase tracking-[0.14em] text-slate-400">{hint}</p>
                     ) : null}
-                    <p className={`text-xs text-${theme}-600`}>
+                    <p className="text-xs text-slate-500">
                       {pct !== null
                         ? `${stats.total > 0 ? Math.round((pct / stats.total) * 100) : 0}% du total`
                         : 'Jours comptabilisés'}
                     </p>
                   </div>
-                  <div className={`p-3 bg-${theme}-200 rounded-full`}>
-                    <Icon className={`w-8 h-8 text-${theme}-700`} />
+                  <div className={`rounded-2xl p-3 ${accentClasses[accent].iconWrap}`}>
+                    <Icon className="h-8 w-8" />
                   </div>
                 </div>
               </CardContent>
             </Card>
-          ))}
+          )})}
         </div>
 
         {/* Filters */}
-        <Card className="mb-6 shadow-sm">
+        <Card className="mb-6 rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
           <CardContent className="p-6">
             <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
               <div className="flex items-center space-x-2">
@@ -326,7 +342,7 @@ export default function MyAttendancePage() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 w-full sm:w-auto"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#d36b2c] sm:w-auto"
                 >
                   <option value="all">Tous les statuts</option>
                   <option value="present">Présent</option>
@@ -345,11 +361,11 @@ export default function MyAttendancePage() {
         </Card>
 
         {/* Table */}
-        <Card className="shadow-sm">
-          <CardHeader className="bg-white border-b border-gray-200">
+        <Card className="rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
+          <CardHeader className="border-b border-gray-200 bg-white">
             <div className="flex items-center justify-between">
               <CardTitle className="text-xl font-semibold text-gray-900 flex items-center">
-                <FileText className="w-6 h-6 mr-2 text-orange-500" />
+                <FileText className="mr-2 h-6 w-6 text-[#d36b2c]" />
                 Historique des présences
               </CardTitle>
               <Badge variant="outline" className="text-sm">
@@ -361,7 +377,7 @@ export default function MyAttendancePage() {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50">
+                <thead className="bg-[#fcfaf6]">
                   <tr>
                     {['Date', "Heure d'arrivée", 'Statut', 'Justification', 'Actions'].map(h => (
                       <th key={h} className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -373,7 +389,7 @@ export default function MyAttendancePage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {paginatedAttendances.length > 0 ? (
                     paginatedAttendances.map((attendance) => (
-                      <tr key={attendance.id} className="hover:bg-gray-50 transition-colors duration-150">
+                      <tr key={attendance.id} className="transition-colors duration-150 hover:bg-[#fcfaf6]">
                         {/* Date */}
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {format(new Date(attendance.date), 'EEEE dd MMMM yyyy', { locale: fr })}
@@ -393,7 +409,7 @@ export default function MyAttendancePage() {
                               <CheckCircle2 className="w-3 h-3 mr-1" /> Présent
                             </Badge>
                           ) : attendance.isLate ? (
-                            <Badge className="bg-orange-100 text-orange-800 border-orange-200">
+                            <Badge className="border-[#eadbc5] bg-[#fff1e8] text-[#8b5a2b]">
                               <Clock className="w-3 h-3 mr-1" /> En retard
                             </Badge>
                           ) : (
@@ -417,7 +433,7 @@ export default function MyAttendancePage() {
                               <Button
                                 variant="outline" size="sm"
                                 onClick={() => handleJustify(attendance)}
-                                className="text-purple-600 hover:text-purple-700 border-purple-200 hover:bg-purple-50"
+                                className="border-[#eadbc5] text-[#8b5a2b] hover:bg-[#fff1e8] hover:text-[#8b5a2b]"
                               >
                                 <FileText className="w-4 h-4 mr-1" /> Justifier
                               </Button>
@@ -501,7 +517,7 @@ export default function MyAttendancePage() {
                     placeholder="Expliquez les raisons de votre absence ou retard..."
                     value={justification}
                     onChange={(e) => setJustification(e.target.value)}
-                    className="min-h-[120px] resize-none"
+                    className="min-h-[120px] resize-none rounded-2xl"
                   />
                 </div>
 
