@@ -106,10 +106,10 @@ export default function ProfilePage() {
   // ── États de chargement / erreur ─────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-teal-50 via-white to-orange-50">
+      <div className="flex min-h-screen items-center justify-center bg-[#f5f1e8]">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Chargement de votre profil...</p>
+          <div className="mx-auto mb-4 h-14 w-14 animate-spin rounded-full border-4 border-[#d36b2c] border-t-transparent" />
+          <p className="text-slate-600">Chargement de votre profil...</p>
         </div>
       </div>
     )
@@ -117,14 +117,14 @@ export default function ProfilePage() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50 p-4">
-        <div className="bg-red-100 border border-red-200 text-red-700 p-6 rounded-lg text-center max-w-md">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#f5f1e8] p-4">
+        <div className="max-w-md rounded-3xl border border-red-200 bg-red-50 p-6 text-center text-red-700 shadow-sm">
           <XCircle className="h-12 w-12 mx-auto mb-4 text-red-500" />
           <h2 className="text-lg font-semibold mb-2">Erreur de chargement</h2>
           <p>{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            className="mt-4 rounded-2xl bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-700"
           >
             Réessayer
           </button>
@@ -135,14 +135,14 @@ export default function ProfilePage() {
 
   if (!learnerDetails) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-orange-50 via-white to-teal-50 p-4">
-        <div className="bg-orange-100 border border-orange-200 text-orange-700 p-6 rounded-lg text-center max-w-md">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#f5f1e8] p-4">
+        <div className="max-w-md rounded-3xl border border-[#eadbc5] bg-[#fbf8f2] p-6 text-center text-slate-700 shadow-sm">
           <User className="h-12 w-12 mx-auto mb-4 text-orange-500" />
           <h2 className="text-lg font-semibold mb-2">Profil non trouvé</h2>
           <p>Aucune donnée de profil disponible pour cet utilisateur</p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+            className="mt-4 rounded-2xl bg-[#d36b2c] px-4 py-2 text-white transition-colors hover:bg-[#bb5c22]"
           >
             Actualiser
           </button>
@@ -250,12 +250,12 @@ function LearnerProfile({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-orange-50">
+    <div className="min-h-screen bg-[#f5f1e8]">
       <div className="max-w-7xl mx-auto px-4 py-8">
 
         {/* ── Message de sauvegarde ─────────────────────────────────────────── */}
         {saveMessage && (
-          <div className={`mb-6 p-4 rounded-lg ${
+          <div className={`mb-6 rounded-2xl p-4 ${
             saveMessage.type === 'success'
               ? 'bg-green-100 border border-green-200 text-green-700'
               : 'bg-red-100 border border-red-200 text-red-700'
@@ -271,7 +271,7 @@ function LearnerProfile({
 
         {/* ── Message d'erreur photo ────────────────────────────────────────── */}
         {photoError && (
-          <div className="mb-6 p-4 rounded-lg bg-red-100 border border-red-200 text-red-700">
+          <div className="mb-6 rounded-2xl border border-red-200 bg-red-100 p-4 text-red-700">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <XCircle className="h-5 w-5 flex-shrink-0" />
@@ -290,16 +290,16 @@ function LearnerProfile({
 
         {/* ── Header avec bannière ──────────────────────────────────────────── */}
         <div className="relative mb-8">
-          <div className="h-44 bg-gradient-to-r from-teal-600 to-orange-600 rounded-2xl shadow-lg" />
+          <div className="h-40 rounded-[2rem] bg-[#e7dccb]" />
 
-          <Card className="h-40 absolute top-2 left-1/2 transform -translate-x-1/2 w-full max-w-4xl border-0 shadow-xl">
+          <Card className="absolute left-1/2 top-3 h-40 w-full max-w-4xl -translate-x-1/2 transform border border-[#eadbc5] bg-[#fbf8f2] shadow-sm">
             <CardContent className="p-4">
               <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6">
 
                 {/* ── Avatar + bouton modifier photo ──────────────────────── */}
                 <div className="relative flex-shrink-0 group">
                   {/* Avatar */}
-                  <div className="h-32 w-32 rounded-full overflow-hidden border-4 border-white shadow-lg bg-gradient-to-br from-teal-100 to-orange-100">
+                  <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-white bg-[#f3eadc] shadow-sm">
                     {learner.photoUrl ? (
                       <img
                         src={learner.photoUrl}
@@ -307,7 +307,7 @@ function LearnerProfile({
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <div className="h-full w-full bg-gradient-to-br from-teal-600 to-orange-600 flex items-center justify-center">
+                      <div className="flex h-full w-full items-center justify-center bg-[#d36b2c]">
                         <span className="text-3xl font-bold text-white">
                           {learner.firstName?.[0]}{learner.lastName?.[0]}
                         </span>
@@ -342,7 +342,7 @@ function LearnerProfile({
                     className={`absolute bottom-0 right-0 p-2 rounded-full border-2 border-white shadow-md cursor-pointer transition-colors ${
                       photoUploading
                         ? 'bg-gray-400 cursor-not-allowed pointer-events-none'
-                        : 'bg-teal-600 hover:bg-teal-700'
+                        : 'bg-[#d36b2c] hover:bg-[#bb5c22]'
                     }`}
                     title="Changer la photo"
                   >
@@ -372,19 +372,19 @@ function LearnerProfile({
 
                 {/* ── Infos principales ────────────────────────────────────── */}
                 <div className="flex-1 text-center sm:text-left">
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  <h1 className="mb-2 text-3xl font-semibold text-slate-900">
                     {learner.firstName} {learner.lastName}
                   </h1>
-                  <p className="text-lg text-gray-600 mb-4">
+                  <p className="mb-4 text-lg text-slate-600">
                     Matricule: <span className="font-mono font-semibold">{learner.matricule}</span>
                   </p>
 
                   <div className="flex flex-wrap gap-3 justify-center sm:justify-start">
-                    <Badge className="bg-teal-100 text-teal-800 hover:bg-teal-200 px-4 py-2">
+                    <Badge className="border border-slate-200 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50">
                       <School className="h-4 w-4 mr-2" />
                       {learner.referential?.name}
                     </Badge>
-                    <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-200 px-4 py-2">
+                    <Badge className="border border-[#eadbc5] bg-[#fcfaf6] px-4 py-2 text-[#8b5a2b] hover:bg-[#f8f1e8]">
                       <Calendar className="h-4 w-4 mr-2" />
                       {learner.promotion?.name}
                     </Badge>
@@ -400,10 +400,10 @@ function LearnerProfile({
           <Tabs defaultValue="personal" className="space-y-6">
 
             {/* Navigation */}
-            <TabsList className="h-15 grid grid-cols-4 gap-2 bg-white p-2 rounded-xl shadow-sm border">
+            <TabsList className="grid h-15 grid-cols-4 gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
               <TabsTrigger
                 value="personal"
-                className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-800 data-[state=active]:shadow-sm rounded-lg py-3 transition-all"
+                className="rounded-xl py-3 transition-all data-[state=active]:bg-slate-100 data-[state=active]:text-slate-900 data-[state=active]:shadow-none"
               >
                 <span className="sm:hidden flex flex-col items-center">
                   <UserCircle className="h-5 w-5 mb-1" />
@@ -417,7 +417,7 @@ function LearnerProfile({
 
               <TabsTrigger
                 value="academic"
-                className="data-[state=active]:bg-orange-100 data-[state=active]:text-orange-800 data-[state=active]:shadow-sm rounded-lg py-3 transition-all"
+                className="rounded-xl py-3 transition-all data-[state=active]:bg-slate-100 data-[state=active]:text-slate-900 data-[state=active]:shadow-none"
               >
                 <span className="sm:hidden flex flex-col items-center">
                   <GraduationCap className="h-5 w-5 mb-1" />
@@ -431,7 +431,7 @@ function LearnerProfile({
 
               <TabsTrigger
                 value="kit"
-                className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-800 data-[state=active]:shadow-sm rounded-lg py-3 transition-all"
+                className="rounded-xl py-3 transition-all data-[state=active]:bg-slate-100 data-[state=active]:text-slate-900 data-[state=active]:shadow-none"
               >
                 <span className="sm:hidden flex flex-col items-center">
                   <PackageCheck className="h-5 w-5 mb-1" />
@@ -445,7 +445,7 @@ function LearnerProfile({
 
               <TabsTrigger
                 value="documents"
-                className="data-[state=active]:bg-orange-100 data-[state=active]:text-orange-800 data-[state=active]:shadow-sm rounded-lg py-3 transition-all"
+                className="rounded-xl py-3 transition-all data-[state=active]:bg-slate-100 data-[state=active]:text-slate-900 data-[state=active]:shadow-none"
               >
                 <span className="sm:hidden flex flex-col items-center">
                   <Files className="h-5 w-5 mb-1" />
@@ -466,9 +466,9 @@ function LearnerProfile({
                 loading={saveLoading}
               />
 
-              <Card className="shadow-lg border-0">
-                <CardHeader className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-t-lg">
-                  <CardTitle className="text-xl flex items-center gap-2 text-orange-800">
+              <Card className="border border-slate-200 shadow-sm">
+                <CardHeader className="rounded-t-2xl border-b border-slate-200 bg-[#fcfaf6]">
+                  <CardTitle className="flex items-center gap-2 text-xl text-slate-900">
                     <User className="h-5 w-5" />
                     Informations du Tuteur
                   </CardTitle>
@@ -490,24 +490,24 @@ function LearnerProfile({
 
             {/* ── Tab : Académique ─────────────────────────────────────────── */}
             <TabsContent value="academic" className="space-y-6">
-              <Card className="shadow-lg border-0">
-                <CardHeader className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-t-lg">
-                  <CardTitle className="text-xl flex items-center gap-2 text-orange-800">
+              <Card className="border border-slate-200 shadow-sm">
+                <CardHeader className="rounded-t-2xl border-b border-slate-200 bg-[#fcfaf6]">
+                  <CardTitle className="flex items-center gap-2 text-xl text-slate-900">
                     <GraduationCap className="h-5 w-5" />
                     Parcours Académique
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="grid gap-6 md:grid-cols-2">
-                    <div className="p-6 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl">
+                    <div className="rounded-2xl border border-[#eadbc5] bg-[#fcfaf6] p-6">
                       <div className="flex items-start gap-4">
-                        <div className="p-3 bg-orange-200 rounded-xl">
-                          <School className="h-6 w-6 text-orange-700" />
+                        <div className="rounded-xl bg-[#f3eadc] p-3">
+                          <School className="h-6 w-6 text-[#8b5a2b]" />
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-semibold text-orange-900 text-lg mb-2">Promotion</h3>
-                          <p className="text-orange-800 font-medium mb-1">{learner.promotion?.name}</p>
-                          <p className="text-orange-600 text-sm">
+                          <h3 className="mb-2 text-lg font-semibold text-slate-900">Promotion</h3>
+                          <p className="mb-1 font-medium text-slate-800">{learner.promotion?.name}</p>
+                          <p className="text-sm text-slate-500">
                             Début :{' '}
                             {learner.promotion?.startDate
                               ? new Date(learner.promotion.startDate).toLocaleDateString('fr-FR')
@@ -517,15 +517,15 @@ function LearnerProfile({
                       </div>
                     </div>
 
-                    <div className="p-6 bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-6">
                       <div className="flex items-start gap-4">
-                        <div className="p-3 bg-teal-200 rounded-xl">
-                          <BookOpen className="h-6 w-6 text-teal-700" />
+                        <div className="rounded-xl bg-slate-100 p-3">
+                          <BookOpen className="h-6 w-6 text-slate-700" />
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-semibold text-teal-900 text-lg mb-2">Référentiel</h3>
-                          <p className="text-teal-800 font-medium mb-1">{learner.referential?.name}</p>
-                          <p className="text-teal-600 text-sm">{learner.referential?.description}</p>
+                          <h3 className="mb-2 text-lg font-semibold text-slate-900">Référentiel</h3>
+                          <p className="mb-1 font-medium text-slate-800">{learner.referential?.name}</p>
+                          <p className="text-sm text-slate-500">{learner.referential?.description}</p>
                         </div>
                       </div>
                     </div>
@@ -536,18 +536,18 @@ function LearnerProfile({
 
             {/* ── Tab : Kit ────────────────────────────────────────────────── */}
             <TabsContent value="kit" className="space-y-6">
-              <Card className="shadow-lg border-0">
-                <CardHeader className="bg-gradient-to-r from-teal-50 to-teal-100 rounded-t-lg">
-                  <CardTitle className="text-xl flex items-center gap-2 text-teal-800">
+              <Card className="border border-slate-200 shadow-sm">
+                <CardHeader className="rounded-t-2xl border-b border-slate-200 bg-[#fcfaf6]">
+                  <CardTitle className="flex items-center gap-2 text-xl text-slate-900">
                     <Package className="h-5 w-5" />
                     Kit ODC
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
-                  <div className="mb-8 p-6 bg-gradient-to-r from-teal-50 to-orange-50 rounded-xl">
+                  <div className="mb-8 rounded-2xl border border-[#eadbc5] bg-[#fcfaf6] p-6">
                     <div className="flex items-center justify-between mb-4">
                       <span className="text-lg font-semibold text-gray-800">Progression du kit</span>
-                      <span className="text-2xl font-bold text-teal-600">{Math.round(getKitProgress())}%</span>
+                      <span className="text-2xl font-bold text-[#d36b2c]">{Math.round(getKitProgress())}%</span>
                     </div>
                     <Progress value={getKitProgress()} className="h-4 bg-gray-200" />
                     <p className="text-sm text-gray-600 mt-2">
@@ -568,10 +568,10 @@ function LearnerProfile({
 
             {/* ── Tab : Documents ──────────────────────────────────────────── */}
             <TabsContent value="documents" className="space-y-6">
-              <Card className="shadow-xl border-0 overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-orange-500 via-teal-600 to-emerald-600">
-                  <CardTitle className="text-xl flex items-center gap-3 text-white">
-                    <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+              <Card className="overflow-hidden border border-slate-200 shadow-sm">
+                <CardHeader className="border-b border-slate-200 bg-[#fcfaf6]">
+                  <CardTitle className="flex items-center gap-3 text-xl text-slate-900">
+                    <div className="rounded-lg bg-[#f3eadc] p-2 text-[#d36b2c]">
                       <FileText className="h-5 w-5" />
                     </div>
                     Justifications d'absence/retard
@@ -616,11 +616,11 @@ function InfoItem({
   value: string | undefined
 }) {
   return (
-    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-      <div className="text-gray-500">{icon}</div>
+    <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50">
+      <div className="text-slate-400">{icon}</div>
       <div className="flex-1">
-        <p className="text-sm font-medium text-gray-600">{label}</p>
-        <p className="text-gray-900 font-medium">{value || 'Non renseigné'}</p>
+        <p className="text-sm font-medium text-slate-500">{label}</p>
+        <p className="font-medium text-slate-900">{value || 'Non renseigné'}</p>
       </div>
     </div>
   )
@@ -637,10 +637,10 @@ function KitItem({
 }) {
   return (
     <div
-      className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
+      className={`flex items-center justify-between rounded-2xl border p-4 transition-all ${
         received
-          ? 'bg-green-50 border-green-200 hover:bg-green-100'
-          : 'bg-red-50 border-red-200 hover:bg-red-100'
+          ? 'border-emerald-200 bg-emerald-50 hover:bg-emerald-100'
+          : 'border-slate-200 bg-white hover:bg-slate-50'
       }`}
     >
       <div className="flex items-center gap-3">
@@ -650,13 +650,13 @@ function KitItem({
       <div className="flex items-center gap-2">
         {received
           ? <CheckCircle className="h-5 w-5 text-green-600" />
-          : <XCircle   className="h-5 w-5 text-red-600" />}
+          : <XCircle   className="h-5 w-5 text-slate-400" />}
         <Badge
           variant={received ? 'default' : 'secondary'}
           className={
             received
               ? 'bg-green-100 text-green-800 hover:bg-green-200'
-              : 'bg-red-100 text-red-800 hover:bg-red-200'
+              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
           }
         >
           {received ? 'Reçu' : 'Non reçu'}
@@ -670,18 +670,18 @@ function JustificationItem({ attendance }: { attendance: any }) {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'PRESENT': return <Badge className="bg-green-100 text-green-800">Présent</Badge>
-      case 'ABSENT':  return <Badge className="bg-red-100 text-red-800">Absent</Badge>
-      case 'LATE':    return <Badge className="bg-orange-100 text-orange-800">Retard</Badge>
+      case 'ABSENT':  return <Badge className="bg-slate-100 text-slate-800">Absent</Badge>
+      case 'LATE':    return <Badge className="bg-amber-100 text-amber-800">Retard</Badge>
       default:        return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>
     }
   }
 
   return (
-    <div className="flex flex-col gap-3 p-4 bg-gradient-to-r from-orange-50 to-purple-100 rounded-xl hover:shadow-md transition-shadow">
+    <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition-shadow hover:shadow-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-white rounded-lg shadow-sm">
-            <Calendar className="h-5 w-5 text-orange-500" />
+          <div className="rounded-lg bg-[#f3eadc] p-2 shadow-sm">
+            <Calendar className="h-5 w-5 text-[#d36b2c]" />
           </div>
           <div>
             <p className="font-medium text-gray-900">
@@ -702,8 +702,8 @@ function JustificationItem({ attendance }: { attendance: any }) {
 
       {attendance.justification && (
         <div className="pl-11">
-          <p className="text-sm font-medium text-gray-700 mb-1">Justification :</p>
-          <p className="text-gray-600 text-sm bg-white p-3 rounded-lg">
+          <p className="mb-1 text-sm font-medium text-slate-700">Justification :</p>
+          <p className="rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
             {attendance.justification}
           </p>
         </div>
@@ -715,7 +715,7 @@ function JustificationItem({ attendance }: { attendance: any }) {
             href={attendance.documentUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm"
+            className="inline-flex items-center gap-2 rounded-2xl bg-[#d36b2c] px-4 py-2 text-sm text-white transition-colors hover:bg-[#bb5c22]"
           >
             <FileText className="h-4 w-4" />
             Voir le document justificatif
@@ -729,11 +729,10 @@ function JustificationItem({ attendance }: { attendance: any }) {
 function EmptyState({ message }: { message: string }) {
   return (
     <div className="text-center py-16">
-      <div className="relative inline-block">
-        <div className="absolute inset-0 bg-gradient-to-r from-orange-200 to-teal-200 blur-2xl opacity-30" />
-        <FileText className="relative h-20 w-20 text-gray-300 mx-auto mb-4" />
+      <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-slate-100">
+        <FileText className="h-10 w-10 text-slate-300" />
       </div>
-      <p className="text-gray-500 text-lg font-medium">{message}</p>
+      <p className="mt-4 text-lg font-medium text-slate-500">{message}</p>
     </div>
   )
 }
