@@ -289,11 +289,9 @@ function LearnerProfile({
         )}
 
         {/* ── Header avec bannière ──────────────────────────────────────────── */}
-        <div className="relative mb-8">
-          <div className="h-40 rounded-[2rem] bg-[#e7dccb]" />
-
-          <Card className="absolute left-1/2 top-3 h-40 w-full max-w-4xl -translate-x-1/2 transform border border-[#eadbc5] bg-[#fbf8f2] shadow-sm">
-            <CardContent className="p-4">
+        <div className="mb-8 rounded-[2rem] border border-[#eadbc5] bg-[#fbf8f2] shadow-sm">
+          <Card className="border-0 bg-transparent shadow-none">
+            <CardContent className="p-6">
               <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6">
 
                 {/* ── Avatar + bouton modifier photo ──────────────────────── */}
@@ -365,14 +363,15 @@ function LearnerProfile({
                   />
 
                   {/* Badge statut */}
-                  <div className={`absolute -bottom-2 left-0 px-3 py-1 rounded-full text-xs font-semibold border-2 border-white ${getStatusColor(learner.status)}`}>
+                  <div className={`absolute -bottom-2 left-0 rounded-full border-2 border-white px-3 py-1 text-xs font-semibold ${getStatusColor(learner.status)}`}>
                     {learner.status === 'ACTIVE' ? 'Actif' : 'Inactif'}
                   </div>
                 </div>
 
                 {/* ── Infos principales ────────────────────────────────────── */}
                 <div className="flex-1 text-center sm:text-left">
-                  <h1 className="mb-2 text-3xl font-semibold text-slate-900">
+                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">Mon profil</p>
+                  <h1 className="mb-2 mt-2 text-3xl font-semibold text-slate-900">
                     {learner.firstName} {learner.lastName}
                   </h1>
                   <p className="mb-4 text-lg text-slate-600">
@@ -396,7 +395,7 @@ function LearnerProfile({
         </div>
 
         {/* ── Contenu principal avec tabs ───────────────────────────────────── */}
-        <div className="mt-20">
+        <div className="mt-8">
           <Tabs defaultValue="personal" className="space-y-6">
 
             {/* Navigation */}
