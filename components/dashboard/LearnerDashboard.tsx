@@ -34,19 +34,19 @@ function StatPanel({
 }) {
   const tones = {
     emerald: {
-      iconWrap: "bg-emerald-50 text-emerald-700",
-      value: "text-emerald-700",
+      iconWrap: "bg-[#fff1e8] text-[#d36b2c]",
+      value: "text-slate-900",
     },
     amber: {
-      iconWrap: "bg-amber-50 text-amber-700",
-      value: "text-amber-700",
+      iconWrap: "bg-[#fff1e8] text-[#d36b2c]",
+      value: "text-slate-900",
     },
     red: {
-      iconWrap: "bg-red-50 text-red-700",
-      value: "text-red-700",
+      iconWrap: "bg-[#fff1e8] text-[#d36b2c]",
+      value: "text-slate-900",
     },
     slate: {
-      iconWrap: "bg-slate-100 text-slate-700",
+      iconWrap: "bg-[#fff1e8] text-[#d36b2c]",
       value: "text-slate-800",
     },
   } as const;
@@ -170,7 +170,7 @@ export default function LearnerDashboard() {
             <div className="grid gap-6 px-6 py-7 lg:grid-cols-[1.45fr_0.8fr] lg:px-8">
               <div className="space-y-5">
                 <div className="space-y-2">
-                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#d36b2c]">
                     Dashboard apprenant
                   </p>
                   <h1 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
@@ -179,14 +179,14 @@ export default function LearnerDashboard() {
                 </div>
 
                 <div className="flex flex-wrap gap-3">
-                  <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                    <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Referentiel</p>
+                  <div className="rounded-2xl border border-[#eadbc5] bg-white px-4 py-3">
+                    <p className="text-xs uppercase tracking-[0.16em] text-[#d36b2c]">Referentiel</p>
                     <p className="mt-1 font-medium text-slate-800">
                       {learnerDetails?.referential?.name || "Non renseigne"}
                     </p>
                   </div>
-                  <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                    <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Matricule</p>
+                  <div className="rounded-2xl border border-[#eadbc5] bg-white px-4 py-3">
+                    <p className="text-xs uppercase tracking-[0.16em] text-[#d36b2c]">Matricule</p>
                     <p className="mt-1 font-medium text-slate-800">
                       {learnerDetails?.matricule || "Non renseigne"}
                     </p>
@@ -198,7 +198,7 @@ export default function LearnerDashboard() {
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-sm font-medium text-slate-500">Taux de presence</p>
-                    <p className="mt-2 text-4xl font-semibold text-slate-900">{attendanceRate}%</p>
+                    <p className="mt-2 text-4xl font-semibold text-[#d36b2c]">{attendanceRate}%</p>
                   </div>
                   <div className="rounded-2xl bg-[#f3eadc] p-3 text-[#d36b2c]">
                     <GraduationCap className="h-6 w-6" />
@@ -241,7 +241,7 @@ export default function LearnerDashboard() {
             <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-sm font-medium text-slate-500">QR Code</p>
+                  <p className="text-sm font-medium text-[#d36b2c]">QR Code</p>
                   <h2 className="mt-2 text-2xl font-semibold text-slate-900">Acces rapide</h2>
                 </div>
                 <div className="rounded-2xl bg-[#f3eadc] p-3 text-[#d36b2c]">
@@ -285,7 +285,7 @@ export default function LearnerDashboard() {
             <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-sm font-medium text-slate-500">Parcours</p>
+                  <p className="text-sm font-medium text-[#d36b2c]">Parcours</p>
                   <h2 className="mt-2 text-2xl font-semibold text-slate-900">Modules</h2>
                 </div>
                 <div className="rounded-2xl bg-slate-100 p-3 text-slate-700">

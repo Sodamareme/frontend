@@ -370,7 +370,7 @@ function LearnerProfile({
 
                 {/* ── Infos principales ────────────────────────────────────── */}
                 <div className="flex-1 text-center sm:text-left">
-                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">Mon profil</p>
+                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#d36b2c]">Mon profil</p>
                   <h1 className="mb-2 mt-2 text-3xl font-semibold text-slate-900">
                     {learner.firstName} {learner.lastName}
                   </h1>
@@ -379,7 +379,7 @@ function LearnerProfile({
                   </p>
 
                   <div className="flex flex-wrap gap-3 justify-center sm:justify-start">
-                    <Badge className="border border-slate-200 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50">
+                    <Badge className="border border-[#eadbc5] bg-white px-4 py-2 text-[#8b5a2b] hover:bg-[#f8f1e8]">
                       <School className="h-4 w-4 mr-2" />
                       {learner.referential?.name}
                     </Badge>
@@ -545,8 +545,8 @@ function LearnerProfile({
                 <CardContent className="p-6">
                   <div className="mb-8 rounded-2xl border border-[#eadbc5] bg-[#fcfaf6] p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <span className="text-lg font-semibold text-gray-800">Progression du kit</span>
-                      <span className="text-2xl font-bold text-[#d36b2c]">{Math.round(getKitProgress())}%</span>
+                    <span className="text-lg font-semibold text-gray-800">Progression du kit</span>
+                    <span className="text-2xl font-bold text-[#d36b2c]">{Math.round(getKitProgress())}%</span>
                     </div>
                     <Progress value={getKitProgress()} className="h-4 bg-gray-200" />
                     <p className="text-sm text-gray-600 mt-2">
