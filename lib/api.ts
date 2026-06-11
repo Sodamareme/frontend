@@ -110,12 +110,16 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
   
   const headers = {
     'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    Pragma: 'no-cache',
+    Expires: '0',
     ...(token && { Authorization: `Bearer ${token}` }),
     ...options.headers,
   }
 
   const response = await fetch(`${API_BASE_URL}${url}`, {
     ...options,
+    cache: 'no-store',
     headers,
   })
 
@@ -237,6 +241,9 @@ const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    Pragma: 'no-cache',
+    Expires: '0',
   },
   timeout: 30000,
 });
@@ -254,6 +261,13 @@ api.interceptors.request.use(
     // pour que le browser génère automatiquement le boundary
     if (config.data instanceof FormData) {
       delete config.headers['Content-Type'];
+    }
+
+    if (config.method?.toLowerCase() === 'get') {
+      config.params = {
+        ...(config.params || {}),
+        _ts: Date.now(),
+      };
     }
 
     return config;
