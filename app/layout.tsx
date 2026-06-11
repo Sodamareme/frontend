@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/components/providers/theme-provider'
 import { QueryProvider } from '@/components/providers/query-provider'
 import { AuthProvider } from '@/components/providers/auth-provider'
 import { NotificationProvider } from '@/components/providers/notification-provider'
+import AppUpdateWatcher from '@/components/system/AppUpdateWatcher'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -51,6 +52,7 @@ export default function RootLayout({
           >
             <QueryProvider>
               <NotificationProvider>
+                <AppUpdateWatcher />
                 {children}
                 <Toaster richColors closeButton />
               </NotificationProvider>
