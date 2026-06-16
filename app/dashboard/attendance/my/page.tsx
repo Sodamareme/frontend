@@ -570,7 +570,7 @@ export default function MyAttendancePage() {
                               <Clock className="mr-2 h-4 w-4" />
                               En cours de validation
                             </Button>
-                          ) : null}
+                          ) : null)}
                       </div>
                     </div>
                   ))
