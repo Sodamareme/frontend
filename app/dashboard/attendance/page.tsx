@@ -26,6 +26,7 @@ import { toast } from "sonner"
 import JustificationReviewModal from "@/components/modals/JustificationReviewModal"
 import { useRouter, useSearchParams } from 'next/navigation'
 import { exportToCSV } from "@/lib/utils/export"
+import { useAutoRefresh } from "@/hooks/useAutoRefresh"
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -81,6 +82,32 @@ const formatDateForInput = (date: string, filterType: DateFilterType): string =>
       return `${d.getFullYear()}`
     default:
       return date
+  }
+}
+
+const getMaxDateValue = (filterType: DateFilterType): string => {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = `${today.getMonth() + 1}`.padStart(2, '0')
+  const day = `${today.getDate()}`.padStart(2, '0')
+
+  switch (filterType) {
+    case 'month':
+      return `${year}-${month}`
+    case 'year':
+      return `${year}`
+    case 'week': {
+      const currentDay = today.getDay() || 7
+      const monday = new Date(today)
+      monday.setDate(today.getDate() - currentDay + 1)
+      const firstDayOfYear = new Date(monday.getFullYear(), 0, 1)
+      const diffInDays = Math.floor((monday.getTime() - firstDayOfYear.getTime()) / 86400000)
+      const weekNumber = Math.ceil((diffInDays + firstDayOfYear.getDay() + 1) / 7)
+      return `${monday.getFullYear()}-W${weekNumber.toString().padStart(2, '0')}`
+    }
+    case 'day':
+    default:
+      return `${year}-${month}-${day}`
   }
 }
 
@@ -529,6 +556,8 @@ const handleStatusChange = async (id: string, date: string, newStatus: EditableS
     fetchData()
   }, [dateFilter, selectedDate])
 
+  useAutoRefresh(fetchStats, { intervalMs: 15_000 })
+
   useEffect(() => {
     const justifyId = searchParams?.get('justify')
     if (justifyId) {
@@ -662,6 +691,7 @@ const handleStatusChange = async (id: string, date: string, newStatus: EditableS
           <Input
             type={getDateInputType()}
             value={formatDateForInput(selectedDate, dateFilter)}
+            max={getMaxDateValue(dateFilter)}
             onChange={(e) => {
               let newDate = e.target.value
               switch (dateFilter) {

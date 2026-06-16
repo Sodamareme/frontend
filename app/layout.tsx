@@ -7,6 +7,7 @@ import { QueryProvider } from '@/components/providers/query-provider'
 import { AuthProvider } from '@/components/providers/auth-provider'
 import { NotificationProvider } from '@/components/providers/notification-provider'
 import AppUpdateWatcher from '@/components/system/AppUpdateWatcher'
+import { APP_RUNTIME_VERSION } from '@/lib/app-version'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -43,7 +44,11 @@ export default function RootLayout({
             `}
           </style>
         </head>
-        <body className={inter.className} suppressHydrationWarning>
+        <body
+          className={inter.className}
+          suppressHydrationWarning
+          data-app-version={APP_RUNTIME_VERSION}
+        >
           <ThemeProvider
             attribute="class"
             defaultTheme="light"

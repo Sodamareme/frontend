@@ -1,88 +1,152 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from 'react'
-import { learnersAPI } from '@/lib/api'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
-import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
-import { Clock, Calendar, CheckCircle2, XCircle, Search, Upload, AlertCircle, TrendingUp, FileText, Filter } from "lucide-react"
-import { format } from 'date-fns'
-import { fr } from 'date-fns/locale'
-import Pagination from '@/components/common/Pagination'
-import { toast } from "sonner"
-import { attendanceAPI } from "@/lib/api"
-import { AbsenceStatus } from '@/types/attendance'
+import { useEffect, useState } from "react";
+import { learnersAPI } from "@/lib/api";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import {
+  AlertCircle,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  FileText,
+  Filter,
+  Search,
+  Sparkles,
+  TrendingUp,
+  Upload,
+  XCircle,
+} from "lucide-react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import Pagination from "@/components/common/Pagination";
+import { toast } from "sonner";
+import { attendanceAPI } from "@/lib/api";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-type AttendanceStatus = "TO_JUSTIFY" | "PENDING" | "REJECTED" | "APPROVED"
+type AttendanceStatus = "TO_JUSTIFY" | "PENDING" | "REJECTED" | "APPROVED";
 
 interface AttendanceRecord {
-  id: string
-  date: string
-  isPresent: boolean
-  isLate: boolean
-  scanTime: string | null
-  justification?: string
-  status: AttendanceStatus
+  id: string;
+  date: string;
+  isPresent: boolean;
+  isLate: boolean;
+  scanTime: string | null;
+  justification?: string;
+  status: AttendanceStatus;
 }
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function getStatusBadge(status: AttendanceStatus | undefined) {
   switch (status) {
-    case 'TO_JUSTIFY':
+    case "TO_JUSTIFY":
       return (
         <Badge variant="outline" className="border-[#eadbc5] bg-[#fff1e8] text-[#8b5a2b] text-xs font-medium">
-          <AlertCircle className="w-3 h-3 mr-1" />
+          <AlertCircle className="mr-1 h-3 w-3" />
           À justifier
         </Badge>
-      )
-    case 'PENDING':
+      );
+    case "PENDING":
       return (
         <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700 text-xs font-medium">
-          <Clock className="w-3 h-3 mr-1" />
+          <Clock className="mr-1 h-3 w-3" />
           En attente
         </Badge>
-      )
-    case 'APPROVED':
+      );
+    case "APPROVED":
       return (
-        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs font-medium">
-          <CheckCircle2 className="w-3 h-3 mr-1" />
+        <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700 text-xs font-medium">
+          <CheckCircle2 className="mr-1 h-3 w-3" />
           Justifié
         </Badge>
-      )
-    case 'REJECTED':
+      );
+    case "REJECTED":
       return (
-        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs font-medium">
-          <XCircle className="w-3 h-3 mr-1" />
+        <Badge variant="outline" className="border-red-200 bg-red-50 text-red-700 text-xs font-medium">
+          <XCircle className="mr-1 h-3 w-3" />
           Rejeté
         </Badge>
-      )
+      );
     default:
-      return null
+      return null;
   }
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+function getPresenceBadge(attendance: AttendanceRecord) {
+  if (attendance.isPresent && !attendance.isLate) {
+    return (
+      <Badge className="border-green-200 bg-green-100 text-green-800">
+        <CheckCircle2 className="mr-1 h-3 w-3" />
+        Présent
+      </Badge>
+    );
+  }
+
+  if (attendance.isLate) {
+    return (
+      <Badge className="border-[#eadbc5] bg-[#fff1e8] text-[#8b5a2b]">
+        <Clock className="mr-1 h-3 w-3" />
+        En retard
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge className="border-red-200 bg-red-100 text-red-800">
+      <XCircle className="mr-1 h-3 w-3" />
+      Absent
+    </Badge>
+  );
+}
+
+function SummaryCard({
+  label,
+  value,
+  hint,
+  icon: Icon,
+}: {
+  label: string;
+  value: number;
+  hint: string;
+  icon: typeof Calendar;
+}) {
+  return (
+    <div className="group relative overflow-hidden rounded-[1.7rem] border border-white/70 bg-white/90 p-5 shadow-[0_18px_45px_rgba(15,23,42,0.07)] backdrop-blur">
+      <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#d36b2c] via-[#f59e0b] to-[#f7c77d]" />
+      <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-[#fff1e8] transition-transform duration-500 group-hover:scale-110" />
+      <div className="relative flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-medium text-slate-500">{label}</p>
+          <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">{value}</p>
+          <p className="mt-2 text-xs uppercase tracking-[0.16em] text-slate-400">{hint}</p>
+        </div>
+        <div className="rounded-2xl bg-[#fff1e8] p-3 text-[#d36b2c]">
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function MyAttendancePage() {
-  const [attendances, setAttendances] = useState<AttendanceRecord[]>([])
-  const [loading, setLoading]         = useState(true)
-  const [error, setError]             = useState("")
-  const [submitting, setSubmitting]   = useState(false)
-
-  // Modal
-  const [showJustifyModal, setShowJustifyModal]   = useState(false)
-  const [selectedAttendance, setSelectedAttendance] = useState<AttendanceRecord | null>(null)
-  const [justification, setJustification]         = useState("")
-  const [file, setFile]                           = useState<File | undefined>(undefined)
-
-  // Stats
+  const [attendances, setAttendances] = useState<AttendanceRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [showJustifyModal, setShowJustifyModal] = useState(false);
+  const [selectedAttendance, setSelectedAttendance] = useState<AttendanceRecord | null>(null);
+  const [justification, setJustification] = useState("");
+  const [file, setFile] = useState<File | undefined>(undefined);
   const [stats, setStats] = useState({
     present: 0,
     absent: 0,
@@ -90,35 +154,28 @@ export default function MyAttendancePage() {
     total: 0,
     totalDays: 0,
     justifiedAbsentDays: 0,
-  })
-
-  // Filters
-  const [searchDate, setSearchDate]   = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
-
-  // ✅ Pagination contrôlée
-  const [currentPage, setCurrentPage]   = useState(1)
-  const [itemsPerPage, setItemsPerPage] = useState(10)
-
-  // ── Data fetching ────────────────────────────────────────────────────────────
+  });
+  const [searchDate, setSearchDate] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const fetchAttendance = async () => {
     try {
-      setLoading(true)
-      const userStr = localStorage.getItem('user')
-      if (!userStr) throw new Error('User not found')
-      const user = JSON.parse(userStr)
-      const learnerDetails = await learnersAPI.getLearnerByEmail(user.email)
-      const attendanceData = await attendanceAPI.getAttendanceByLearner(learnerDetails.id)
-      const attendanceStatsData = await learnersAPI.getLearnerAttendanceStats(learnerDetails.id)
+      setLoading(true);
+      const userStr = localStorage.getItem("user");
+      if (!userStr) throw new Error("User not found");
+      const user = JSON.parse(userStr);
+      const learnerDetails = await learnersAPI.getLearnerByEmail(user.email);
+      const attendanceData = await attendanceAPI.getAttendanceByLearner(learnerDetails.id);
+      const attendanceStatsData = await learnersAPI.getLearnerAttendanceStats(learnerDetails.id);
       const justifiedAbsenceCount = attendanceData.filter(
-        (attendance) => !attendance.isPresent && attendance.status === "APPROVED"
-      ).length
+        (attendance) => !attendance.isPresent && attendance.status === "APPROVED",
+      ).length;
+
       setAttendances(
-        [...attendanceData].sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-        )
-      )
+        [...attendanceData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+      );
       setStats({
         present: attendanceStatsData.presentDays ?? 0,
         late: attendanceStatsData.lateDays ?? 0,
@@ -127,472 +184,541 @@ export default function MyAttendancePage() {
         totalDays: attendanceStatsData.totalDays ?? 0,
         justifiedAbsentDays: Math.max(
           attendanceStatsData.justifiedAbsentDays ?? 0,
-          justifiedAbsenceCount
+          justifiedAbsenceCount,
         ),
-      })
+      });
     } catch (err) {
-      console.error('Error fetching attendance:', err)
-      setError('Failed to load attendance data')
+      console.error("Error fetching attendance:", err);
+      setError("Failed to load attendance data");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  useEffect(() => { fetchAttendance() }, [])
-
-  // Notification absences à justifier
   useEffect(() => {
-    const count = attendances.filter(a => a.status === 'TO_JUSTIFY').length
+    void fetchAttendance();
+  }, []);
+
+  useAutoRefresh(fetchAttendance, { intervalMs: 15_000 });
+
+  useEffect(() => {
+    const count = attendances.filter((a) => a.status === "TO_JUSTIFY").length;
     if (count > 0) {
-      toast.warning(`Vous avez ${count} absence(s)/retard(s) à justifier`, { duration: 5000 })
+      toast.warning(`Vous avez ${count} absence(s)/retard(s) à justifier`, { duration: 5000 });
     }
-  }, [attendances])
+  }, [attendances]);
 
-  // Reset page quand les filtres changent
   useEffect(() => {
-    setCurrentPage(1)
-  }, [searchDate, statusFilter])
-
-  // ── Filtering & pagination ───────────────────────────────────────────────────
+    setCurrentPage(1);
+  }, [searchDate, statusFilter]);
 
   const filteredAttendances = attendances
-    .filter(a => {
-      const matchesDate   = !searchDate || format(new Date(a.date), 'yyyy-MM-dd') === searchDate
+    .filter((a) => {
+      const matchesDate = !searchDate || format(new Date(a.date), "yyyy-MM-dd") === searchDate;
       const matchesStatus =
         statusFilter === "all" ||
-        (statusFilter === "present"    && a.isPresent && !a.isLate) ||
-        (statusFilter === "late"       && a.isLate) ||
-        (statusFilter === "absent"     && !a.isPresent) ||
-        (statusFilter === "to_justify" && a.status === "TO_JUSTIFY")
-      return matchesDate && matchesStatus
+        (statusFilter === "present" && a.isPresent && !a.isLate) ||
+        (statusFilter === "late" && a.isLate) ||
+        (statusFilter === "absent" && !a.isPresent) ||
+        (statusFilter === "to_justify" && a.status === "TO_JUSTIFY");
+      return matchesDate && matchesStatus;
     })
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  // ✅ Découpage dans le parent
   const paginatedAttendances = filteredAttendances.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  )
-
-  // ── Actions ──────────────────────────────────────────────────────────────────
+    currentPage * itemsPerPage,
+  );
 
   const handleJustify = (attendance: AttendanceRecord) => {
-    setSelectedAttendance(attendance)
-    setJustification(attendance.justification || "")
-    setFile(undefined)
-    setShowJustifyModal(true)
-  }
+    setSelectedAttendance(attendance);
+    setJustification(attendance.justification || "");
+    setFile(undefined);
+    setShowJustifyModal(true);
+  };
 
   const handleCloseModal = () => {
-    setShowJustifyModal(false)
-    setJustification("")
-    setFile(undefined)
-    setSelectedAttendance(null)
-  }
+    setShowJustifyModal(false);
+    setJustification("");
+    setFile(undefined);
+    setSelectedAttendance(null);
+  };
 
   const submitJustification = async () => {
     if (!selectedAttendance || !justification.trim()) {
-      toast.error("Veuillez saisir une justification")
-      return
+      toast.error("Veuillez saisir une justification");
+      return;
     }
+
     try {
-      setSubmitting(true)
+      setSubmitting(true);
       await attendanceAPI.submitJustification(
         selectedAttendance.id,
         justification,
-        format(new Date(selectedAttendance.date), 'yyyy-MM-dd'),
-        file
-      )
-      await fetchAttendance()
-      handleCloseModal()
-      toast.success("Justification soumise avec succès")
+        format(new Date(selectedAttendance.date), "yyyy-MM-dd"),
+        file,
+      );
+      await fetchAttendance();
+      handleCloseModal();
+      toast.success("Justification soumise avec succès");
     } catch (err) {
-      console.error('Error submitting justification:', err)
-      toast.error("Erreur lors de la soumission de la justification")
+      console.error("Error submitting justification:", err);
+      toast.error("Erreur lors de la soumission de la justification");
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
   const getAttendanceRate = () => {
-    if (stats.total === 0) return 0
-    return Math.round((stats.present / stats.total) * 100)
-  }
+    if (stats.total === 0) return 0;
+    return Math.round((stats.present / stats.total) * 100);
+  };
 
   const clearFilters = () => {
-    setSearchDate("")
-    setStatusFilter("all")
-    setCurrentPage(1)
-  }
-
-  // ── Loading / Error ──────────────────────────────────────────────────────────
+    setSearchDate("");
+    setStatusFilter("all");
+    setCurrentPage(1);
+  };
 
   if (loading) {
     return (
-      <div className="flex min-h-[80vh] items-center justify-center bg-[#f5f1e8]">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="font-medium text-slate-600">Chargement de vos données d'assiduité...</p>
+      <div className="flex min-h-[80vh] items-center justify-center bg-[radial-gradient(circle_at_top,_#fff7ed,_#f7f0e6_55%,_#efe5d4)]">
+        <div className="space-y-4 text-center">
+          <div className="mx-auto h-16 w-16 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
+          <p className="font-medium text-slate-600">Chargement de vos données d&apos;assiduité...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
     return (
-      <div className="flex min-h-[80vh] items-center justify-center bg-[#f5f1e8]">
-        <Card className="mx-auto max-w-md border border-red-200 shadow-sm">
+      <div className="flex min-h-[80vh] items-center justify-center bg-[radial-gradient(circle_at_top,_#fff7ed,_#f7f0e6_55%,_#efe5d4)]">
+        <Card className="mx-auto max-w-md rounded-[2rem] border border-red-200 shadow-sm">
           <CardContent className="p-6 text-center">
-            <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Erreur de chargement</h3>
+            <XCircle className="mx-auto mb-4 h-12 w-12 text-red-500" />
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">Erreur de chargement</h3>
             <p className="text-gray-600">{error}</p>
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
-  // ── Render ───────────────────────────────────────────────────────────────────
-
   return (
-    <div className="min-h-screen bg-[#f5f1e8]">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#fff7ed,_#f7f0e6_55%,_#efe5d4)]">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="space-y-6">
+          <section className="relative overflow-hidden rounded-[2.2rem] border border-[#f1d7b4] bg-slate-950 text-white shadow-[0_25px_80px_rgba(15,23,42,0.18)]">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(245,158,11,0.3),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(251,146,60,0.22),_transparent_35%),linear-gradient(135deg,_#111827,_#1f2937_55%,_#7c2d12_125%)]" />
+            <div className="relative grid gap-8 px-6 py-7 lg:grid-cols-[1.3fr_0.95fr] lg:px-8">
+              <div className="space-y-5">
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.2em] text-orange-100">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Ma présence
+                </div>
 
-        {/* Header */}
-        <div className="mb-8">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#d36b2c]">Ma présence</p>
-              <h1 className="mt-2 text-3xl font-semibold text-slate-900">Historique d'assiduité</h1>
-            </div>
-            <div className="flex items-center space-x-2 text-sm text-slate-500">
-              <TrendingUp className="h-4 w-4 text-[#d36b2c]" />
-              <span>{getAttendanceRate()}% de présence</span>
-            </div>
-          </div>
-          <Separator className="bg-gray-200" />
-        </div>
+                <div>
+                  <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+                    Historique d&apos;assiduité
+                  </h1>
+                  <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">
+                    Une vue plus claire de vos présences, retards, absences et justificatifs, pensée pour mobile comme pour desktop.
+                  </p>
+                </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {[
-            { label: 'Présences', value: stats.present, pct: stats.present, Icon: CheckCircle2, accent: 'emerald', hint: 'Jours validés'  },
-            { label: 'Retards', value: stats.late, pct: stats.late, Icon: Clock, accent: 'orange', hint: 'À surveiller' },
-            { label: 'Absences', value: stats.absent, pct: stats.absent, Icon: XCircle, accent: 'red', hint: `Dont ${stats.justifiedAbsentDays} justifiée(s)` },
-            { label: 'Total jours', value: stats.totalDays, pct: null, Icon: Calendar, accent: 'slate', hint: 'Comptabilisés' },
-          ].map(({ label, value, pct, Icon, accent, hint }) => {
-            const accentClasses = {
-              emerald: {
-                iconWrap: 'bg-emerald-50 text-emerald-700',
-              },
-              orange: {
-                iconWrap: 'bg-[#fff1e8] text-[#d36b2c]',
-              },
-              red: {
-                iconWrap: 'bg-red-50 text-red-700',
-              },
-              slate: {
-                iconWrap: 'bg-slate-100 text-slate-700',
-              },
-            } as const
-
-            return (
-            <Card key={label} className="rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-slate-500">{label}</p>
-                    <p className="text-3xl font-semibold text-slate-900">{value}</p>
-                    {hint ? (
-                      <p className="text-xs uppercase tracking-[0.14em] text-slate-400">{hint}</p>
-                    ) : null}
-                    <p className="text-xs text-slate-500">
-                      {pct !== null
-                        ? `${stats.total > 0 ? Math.round((pct / stats.total) * 100) : 0}% du total`
-                        : 'Jours comptabilisés'}
-                    </p>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-orange-50">
+                    <TrendingUp className="h-4 w-4 text-orange-200" />
+                    {getAttendanceRate()}% de présence
                   </div>
-                  <div className={`rounded-2xl p-3 ${accentClasses[accent].iconWrap}`}>
-                    <Icon className="h-8 w-8" />
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-slate-200">
+                    <Calendar className="h-4 w-4 text-orange-200" />
+                    {filteredAttendances.length} résultat(s)
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          )})}
-        </div>
-
-        {/* Filters */}
-        <Card className="mb-6 rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-              <div className="flex items-center space-x-2">
-                <Filter className="w-5 h-5 text-gray-500" />
-                <span className="text-sm font-medium text-gray-700">Filtres :</span>
               </div>
-              <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
-                <div className="relative">
-                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                  <Input
-                    type="date"
-                    value={searchDate}
-                    onChange={(e) => setSearchDate(e.target.value)}
-                    className="pl-10 pr-4 py-2 w-full sm:w-auto"
-                  />
+
+              <div className="rounded-[1.8rem] border border-white/10 bg-white/10 p-5 backdrop-blur">
+                <p className="text-sm font-medium text-orange-100">Lecture rapide</p>
+                <div className="mt-5 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                  <div className="rounded-2xl bg-slate-900/30 p-4">
+                    <p className="text-xs uppercase tracking-[0.16em] text-slate-300">Présences</p>
+                    <p className="mt-2 text-2xl font-semibold text-white">{stats.present}</p>
+                  </div>
+                  <div className="rounded-2xl bg-slate-900/30 p-4">
+                    <p className="text-xs uppercase tracking-[0.16em] text-slate-300">Absences justifiées</p>
+                    <p className="mt-2 text-2xl font-semibold text-white">{stats.justifiedAbsentDays}</p>
+                  </div>
+                  <div className="rounded-2xl bg-slate-900/30 p-4">
+                    <p className="text-xs uppercase tracking-[0.16em] text-slate-300">Jours comptabilisés</p>
+                    <p className="mt-2 text-2xl font-semibold text-white">{stats.totalDays}</p>
+                  </div>
                 </div>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#d36b2c] sm:w-auto"
-                >
-                  <option value="all">Tous les statuts</option>
-                  <option value="present">Présent</option>
-                  <option value="late">En retard</option>
-                  <option value="absent">Absent</option>
-                  <option value="to_justify">À justifier</option>
-                </select>
-                {(searchDate || statusFilter !== "all") && (
-                  <Button variant="outline" size="sm" onClick={clearFilters} className="text-gray-600">
-                    Effacer
-                  </Button>
-                )}
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </section>
 
-        {/* Table */}
-        <Card className="rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
-          <CardHeader className="border-b border-gray-200 bg-white">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-xl font-semibold text-gray-900 flex items-center">
-                <FileText className="mr-2 h-6 w-6 text-[#d36b2c]" />
-                Historique des présences
-              </CardTitle>
-              <Badge variant="outline" className="text-sm">
-                {filteredAttendances.length} résultat(s)
-              </Badge>
-            </div>
-          </CardHeader>
+          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <SummaryCard label="Présences" value={stats.present} hint="Jours validés" icon={CheckCircle2} />
+            <SummaryCard label="Retards" value={stats.late} hint="À surveiller" icon={Clock} />
+            <SummaryCard
+              label="Absences"
+              value={stats.absent}
+              hint={`Dont ${stats.justifiedAbsentDays} justifiée(s)`}
+              icon={XCircle}
+            />
+            <SummaryCard label="Total jours" value={stats.totalDays} hint="Comptabilisés" icon={Calendar} />
+          </section>
 
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-[#fcfaf6]">
-                  <tr>
-                    {['Date', "Heure d'arrivée", 'Statut', 'Justification', 'Actions'].map(h => (
-                      <th key={h} className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {paginatedAttendances.length > 0 ? (
-                    paginatedAttendances.map((attendance) => (
-                      <tr key={attendance.id} className="transition-colors duration-150 hover:bg-[#fcfaf6]">
-                        {/* Date */}
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {format(new Date(attendance.date), 'EEEE dd MMMM yyyy', { locale: fr })}
-                        </td>
+          <Card className="rounded-[2rem] border border-white/70 bg-white/90 shadow-[0_18px_45px_rgba(15,23,42,0.07)] backdrop-blur">
+            <CardContent className="p-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div className="flex items-center gap-2 text-slate-700">
+                  <Filter className="h-5 w-5 text-[#d36b2c]" />
+                  <span className="text-sm font-medium">Filtres</span>
+                </div>
 
-                        {/* Heure */}
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {attendance.scanTime
-                            ? format(new Date(attendance.scanTime), 'HH:mm')
-                            : <span className="text-gray-400 italic">Non enregistré</span>}
-                        </td>
+                <div className="grid w-full gap-3 sm:grid-cols-2 lg:w-auto lg:grid-cols-[auto_auto_auto]">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-3.5 h-4 w-4 text-slate-400" />
+                    <Input
+                      type="date"
+                      value={searchDate}
+                      onChange={(e) => setSearchDate(e.target.value)}
+                      className="h-11 rounded-2xl border-slate-200 pl-10"
+                    />
+                  </div>
 
-                        {/* Statut présence */}
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {attendance.isPresent && !attendance.isLate ? (
-                            <Badge className="bg-green-100 text-green-800 border-green-200">
-                              <CheckCircle2 className="w-3 h-3 mr-1" /> Présent
-                            </Badge>
-                          ) : attendance.isLate ? (
-                            <Badge className="border-[#eadbc5] bg-[#fff1e8] text-[#8b5a2b]">
-                              <Clock className="w-3 h-3 mr-1" /> En retard
-                            </Badge>
-                          ) : (
-                            <Badge className="bg-red-100 text-red-800 border-red-200">
-                              <XCircle className="w-3 h-3 mr-1" /> Absent
-                            </Badge>
-                          )}
-                        </td>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none ring-0 focus:border-[#d36b2c]"
+                  >
+                    <option value="all">Tous les statuts</option>
+                    <option value="present">Présent</option>
+                    <option value="late">En retard</option>
+                    <option value="absent">Absent</option>
+                    <option value="to_justify">À justifier</option>
+                  </select>
 
-                        {/* Statut justification */}
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          {attendance.isPresent && !attendance.isLate
-                            ? <span className="text-gray-400 italic">—</span>
-                            : getStatusBadge(attendance.status)}
-                        </td>
+                  {(searchDate || statusFilter !== "all") && (
+                    <Button
+                      variant="outline"
+                      onClick={clearFilters}
+                      className="h-11 rounded-2xl border-slate-200"
+                    >
+                      Effacer
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-                        {/* Actions */}
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          {(attendance.isLate || !attendance.isPresent) && (
-                            attendance.status === 'TO_JUSTIFY' ? (
-                              <Button
-                                variant="outline" size="sm"
-                                onClick={() => handleJustify(attendance)}
-                                className="border-[#eadbc5] text-[#8b5a2b] hover:bg-[#fff1e8] hover:text-[#8b5a2b]"
-                              >
-                                <FileText className="w-4 h-4 mr-1" /> Justifier
-                              </Button>
-                            ) : attendance.status === 'REJECTED' ? (
-                              <Button
-                                variant="outline" size="sm"
-                                onClick={() => handleJustify(attendance)}
-                                className="text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
-                              >
-                                <AlertCircle className="w-4 h-4 mr-1" /> Rejustifier
-                              </Button>
-                            ) : attendance.status === 'PENDING' ? (
-                              <Button variant="outline" size="sm" disabled
-                                className="text-yellow-600 border-yellow-200 cursor-not-allowed">
-                                <Clock className="w-4 h-4 mr-1" /> En cours
-                              </Button>
+          <Card className="overflow-hidden rounded-[2rem] border border-white/70 bg-white/90 shadow-[0_18px_45px_rgba(15,23,42,0.07)] backdrop-blur">
+            <CardHeader className="border-b border-[#f1e5d6] bg-[linear-gradient(180deg,_#fffaf5,_#fff)]">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <CardTitle className="flex items-center text-xl font-semibold text-slate-900">
+                  <FileText className="mr-2 h-6 w-6 text-[#d36b2c]" />
+                  Historique des présences
+                </CardTitle>
+                <Badge variant="outline" className="w-fit rounded-full border-[#eadbc5] bg-[#fff7ef] text-[#8b5a2b]">
+                  {filteredAttendances.length} résultat(s)
+                </Badge>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-0">
+              <div className="hidden overflow-x-auto lg:block">
+                <table className="w-full">
+                  <thead className="bg-[#fcfaf6]">
+                    <tr>
+                      {["Date", "Heure d'arrivée", "Statut", "Justification", "Actions"].map((h) => (
+                        <th
+                          key={h}
+                          className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-600"
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 bg-white">
+                    {paginatedAttendances.length > 0 ? (
+                      paginatedAttendances.map((attendance) => (
+                        <tr key={attendance.id} className="transition-colors duration-150 hover:bg-[#fcfaf6]">
+                          <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                            {format(new Date(attendance.date), "EEEE dd MMMM yyyy", { locale: fr })}
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
+                            {attendance.scanTime ? (
+                              format(new Date(attendance.scanTime), "HH:mm")
                             ) : (
-                              <span className="text-gray-400 italic">—</span>
-                            )
-                          )}
+                              <span className="italic text-gray-400">Non enregistré</span>
+                            )}
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4">{getPresenceBadge(attendance)}</td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm">
+                            {attendance.isPresent && !attendance.isLate ? (
+                              <span className="italic text-gray-400">—</span>
+                            ) : (
+                              getStatusBadge(attendance.status)
+                            )}
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm">
+                            {(attendance.isLate || !attendance.isPresent) &&
+                              (attendance.status === "TO_JUSTIFY" ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleJustify(attendance)}
+                                  className="border-[#eadbc5] text-[#8b5a2b] hover:bg-[#fff1e8] hover:text-[#8b5a2b]"
+                                >
+                                  <FileText className="mr-1 h-4 w-4" />
+                                  Justifier
+                                </Button>
+                              ) : attendance.status === "REJECTED" ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleJustify(attendance)}
+                                  className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                >
+                                  <AlertCircle className="mr-1 h-4 w-4" />
+                                  Rejustifier
+                                </Button>
+                              ) : attendance.status === "PENDING" ? (
+                                <Button variant="outline" size="sm" disabled className="cursor-not-allowed border-yellow-200 text-yellow-600">
+                                  <Clock className="mr-1 h-4 w-4" />
+                                  En cours
+                                </Button>
+                              ) : (
+                                <span className="italic text-gray-400">—</span>
+                              ))}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                          <div className="flex flex-col items-center space-y-3">
+                            <Calendar className="h-12 w-12 text-gray-300" />
+                            <p className="text-lg font-medium">Aucune donnée trouvée</p>
+                            <p className="text-sm">Aucun enregistrement ne correspond à vos critères</p>
+                          </div>
                         </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                        <div className="flex flex-col items-center space-y-3">
-                          <Calendar className="w-12 h-12 text-gray-300" />
-                          <p className="text-lg font-medium">Aucune donnée trouvée</p>
-                          <p className="text-sm">Aucun enregistrement ne correspond à vos critères</p>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="grid gap-4 p-4 lg:hidden">
+                {paginatedAttendances.length > 0 ? (
+                  paginatedAttendances.map((attendance) => (
+                    <div
+                      key={attendance.id}
+                      className="rounded-[1.6rem] border border-[#efe2d3] bg-[linear-gradient(180deg,_#fffaf5,_#fff)] p-4 shadow-sm"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">
+                            {format(new Date(attendance.date), "EEEE dd MMMM yyyy", { locale: fr })}
+                          </p>
+                          <p className="mt-1 text-sm text-slate-500">
+                            {attendance.scanTime
+                              ? `Arrivée à ${format(new Date(attendance.scanTime), "HH:mm")}`
+                              : "Heure non enregistrée"}
+                          </p>
                         </div>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                        {getPresenceBadge(attendance)}
+                      </div>
 
-            {/* ✅ Pagination contrôlée */}
-            {filteredAttendances.length > itemsPerPage && (
-              <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-                <Pagination
-                  totalItems={filteredAttendances.length}
-                  currentPage={currentPage}
-                  itemsPerPage={itemsPerPage}
-                  onPageChange={(page) => setCurrentPage(page)}
-                  onItemsPerPageChange={(n) => { setItemsPerPage(n); setCurrentPage(1) }}
-                />
+                      <div className="mt-4 flex flex-wrap items-center gap-2">
+                        {attendance.isPresent && !attendance.isLate ? (
+                          <Badge variant="outline" className="border-slate-200 text-slate-500">
+                            Aucun justificatif requis
+                          </Badge>
+                        ) : (
+                          getStatusBadge(attendance.status)
+                        )}
+                      </div>
+
+                      <div className="mt-4">
+                        {(attendance.isLate || !attendance.isPresent) &&
+                          (attendance.status === "TO_JUSTIFY" ? (
+                            <Button
+                              variant="outline"
+                              onClick={() => handleJustify(attendance)}
+                              className="w-full rounded-2xl border-[#eadbc5] text-[#8b5a2b] hover:bg-[#fff1e8] hover:text-[#8b5a2b]"
+                            >
+                              <FileText className="mr-2 h-4 w-4" />
+                              Justifier
+                            </Button>
+                          ) : attendance.status === "REJECTED" ? (
+                            <Button
+                              variant="outline"
+                              onClick={() => handleJustify(attendance)}
+                              className="w-full rounded-2xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                            >
+                              <AlertCircle className="mr-2 h-4 w-4" />
+                              Rejustifier
+                            </Button>
+                          ) : attendance.status === "PENDING" ? (
+                            <Button variant="outline" disabled className="w-full rounded-2xl border-yellow-200 text-yellow-600">
+                              <Clock className="mr-2 h-4 w-4" />
+                              En cours de validation
+                            </Button>
+                          ) : null}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="py-12 text-center text-gray-500">
+                    <Calendar className="mx-auto h-12 w-12 text-gray-300" />
+                    <p className="mt-4 text-lg font-medium">Aucune donnée trouvée</p>
+                    <p className="mt-1 text-sm">Aucun enregistrement ne correspond à vos critères</p>
+                  </div>
+                )}
               </div>
-            )}
-          </CardContent>
-        </Card>
 
-        {/* ── Modal Justification ───────────────────────────────────────────── */}
-        <Dialog open={showJustifyModal} onOpenChange={(open) => { if (!open) handleCloseModal() }}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-semibold">
-                Justifier votre {selectedAttendance?.isLate ? 'retard' : 'absence'}
-              </DialogTitle>
-              <DialogDescription className="text-gray-600">
-                {selectedAttendance
-                  ? `${selectedAttendance.status === 'REJECTED' ? 'Nouvelle justification pour le' : 'Justification pour le'} ${format(new Date(selectedAttendance.date), 'dd MMMM yyyy', { locale: fr })}`
-                  : ''}
-              </DialogDescription>
-            </DialogHeader>
-
-            {submitting ? (
-              <div className="py-8 flex flex-col items-center justify-center space-y-4">
-                <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
-                <p className="text-sm text-gray-600">Envoi de la justification en cours...</p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {/* Justification text */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    Justification <span className="text-red-500">*</span>
-                  </label>
-                  <Textarea
-                    placeholder="Expliquez les raisons de votre absence ou retard..."
-                    value={justification}
-                    onChange={(e) => setJustification(e.target.value)}
-                    className="min-h-[120px] resize-none rounded-2xl"
+              {filteredAttendances.length > itemsPerPage && (
+                <div className="border-t border-gray-200 bg-[#fcfaf6] px-6 py-4">
+                  <Pagination
+                    totalItems={filteredAttendances.length}
+                    currentPage={currentPage}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={(page) => setCurrentPage(page)}
+                    onItemsPerPageChange={(n) => {
+                      setItemsPerPage(n);
+                      setCurrentPage(1);
+                    }}
                   />
                 </div>
+              )}
+            </CardContent>
+          </Card>
 
-                {/* Document */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    Document justificatif <span className="text-gray-400">(optionnel)</span>
-                  </label>
-                  <div className="flex items-center space-x-2">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      className="cursor-pointer"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0]
-                        if (!f) return
-                        if (!f.type.startsWith('image/')) {
-                          toast.error("Veuillez sélectionner une image uniquement")
-                          e.target.value = ''
-                          return
-                        }
-                        if (f.size > 10 * 1024 * 1024) {
-                          toast.error("La taille de l'image ne doit pas dépasser 10 MB")
-                          e.target.value = ''
-                          return
-                        }
-                        setFile(f)
-                      }}
-                    />
-                    <Upload className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  </div>
-
-                  {file && (
-                    <div className="flex items-center justify-between text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                      <div className="flex items-center space-x-2">
-                        <FileText className="w-4 h-4" />
-                        <span className="truncate max-w-[200px]">{file.name}</span>
-                      </div>
-                      <Button variant="ghost" size="sm" onClick={() => setFile(undefined)}
-                        className="h-6 w-6 p-0 hover:bg-gray-200">
-                        <XCircle className="w-4 h-4 text-gray-500" />
-                      </Button>
-                    </div>
-                  )}
-                  <p className="text-xs text-gray-500">Formats acceptés : JPG, PNG, GIF, WebP (max 10 Mo)</p>
-                </div>
+          <Dialog
+            open={showJustifyModal}
+            onOpenChange={(open) => {
+              if (!open) handleCloseModal();
+            }}
+          >
+            <DialogContent className="overflow-hidden rounded-[2rem] border-[#f1d7b4] bg-[linear-gradient(180deg,_#fffaf5,_#fff)] p-0 shadow-[0_25px_80px_rgba(15,23,42,0.16)] sm:max-w-md">
+              <div className="border-b border-[#f4e3cd] bg-[#fff3e6] px-6 py-5">
+                <DialogHeader>
+                  <DialogTitle className="text-xl font-semibold text-slate-900">
+                    Justifier votre {selectedAttendance?.isLate ? "retard" : "absence"}
+                  </DialogTitle>
+                  <DialogDescription className="text-slate-600">
+                    {selectedAttendance
+                      ? `${selectedAttendance.status === "REJECTED" ? "Nouvelle justification pour le" : "Justification pour le"} ${format(new Date(selectedAttendance.date), "dd MMMM yyyy", { locale: fr })}`
+                      : ""}
+                  </DialogDescription>
+                </DialogHeader>
               </div>
-            )}
 
-            <DialogFooter className="flex space-x-2">
-              <Button variant="outline" onClick={handleCloseModal} disabled={submitting}>
-                Annuler
-              </Button>
-              <Button
-                onClick={submitJustification}
-                disabled={!justification.trim() || submitting}
-                className="bg-orange-500 hover:bg-orange-600 text-white"
-              >
+              <div className="p-6">
                 {submitting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                    Envoi...
-                  </>
+                  <div className="flex flex-col items-center justify-center space-y-4 py-8">
+                    <div className="h-12 w-12 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
+                    <p className="text-sm text-gray-600">Envoi de la justification en cours...</p>
+                  </div>
                 ) : (
-                  <>
-                    <FileText className="w-4 h-4 mr-2" />
-                    Envoyer
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">
+                        Justification <span className="text-red-500">*</span>
+                      </label>
+                      <Textarea
+                        placeholder="Expliquez les raisons de votre absence ou retard..."
+                        value={justification}
+                        onChange={(e) => setJustification(e.target.value)}
+                        className="min-h-[120px] resize-none rounded-2xl border-slate-200"
+                      />
+                    </div>
 
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">
+                        Document justificatif <span className="text-gray-400">(optionnel)</span>
+                      </label>
+                      <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          className="cursor-pointer border-0 px-0 shadow-none focus-visible:ring-0"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (!f) return;
+                            if (!f.type.startsWith("image/")) {
+                              toast.error("Veuillez sélectionner une image uniquement");
+                              e.target.value = "";
+                              return;
+                            }
+                            if (f.size > 10 * 1024 * 1024) {
+                              toast.error("La taille de l'image ne doit pas dépasser 10 MB");
+                              e.target.value = "";
+                              return;
+                            }
+                            setFile(f);
+                          }}
+                        />
+                        <Upload className="h-4 w-4 flex-shrink-0 text-gray-400" />
+                      </div>
+
+                      {file && (
+                        <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-3 text-sm text-gray-600">
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            <span className="max-w-[200px] truncate">{file.name}</span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setFile(undefined)}
+                            className="h-7 w-7 rounded-full p-0 hover:bg-slate-200"
+                          >
+                            <XCircle className="h-4 w-4 text-gray-500" />
+                          </Button>
+                        </div>
+                      )}
+
+                      <p className="text-xs text-gray-500">
+                        Formats acceptés : JPG, PNG, GIF, WebP (max 10 Mo)
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <DialogFooter className="border-t border-[#f4e3cd] bg-white px-6 py-4">
+                <Button variant="outline" onClick={handleCloseModal} disabled={submitting} className="rounded-2xl">
+                  Annuler
+                </Button>
+                <Button
+                  onClick={submitJustification}
+                  disabled={!justification.trim() || submitting}
+                  className="rounded-2xl bg-orange-500 text-white hover:bg-orange-600"
+                >
+                  {submitting ? (
+                    <>
+                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Envoi...
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="mr-2 h-4 w-4" />
+                      Envoyer
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
     </div>
-  )
+  );
 }

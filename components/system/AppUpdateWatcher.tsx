@@ -4,14 +4,16 @@ import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
 const VERSION_CHECK_INTERVAL_MS = 60_000;
-const RELOAD_DELAY_MS = 5_000;
+const RELOAD_DELAY_MS = 1_500;
 
 export default function AppUpdateWatcher() {
-  const currentVersion = process.env.NEXT_PUBLIC_APP_BUILD_ID ?? "unknown";
   const hasTriggeredReload = useRef(false);
   const reloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialVersion = useRef<string | null>(null);
 
   useEffect(() => {
+    initialVersion.current = document.body.dataset.appVersion ?? null;
+
     const cleanupTimer = () => {
       if (reloadTimer.current) {
         clearTimeout(reloadTimer.current);
@@ -37,7 +39,9 @@ export default function AppUpdateWatcher() {
       });
 
       reloadTimer.current = setTimeout(() => {
-        console.info(`Reloading app to switch from build ${currentVersion} to ${nextVersion}`);
+        console.info(
+          `Reloading app to switch from build ${initialVersion.current ?? "unknown"} to ${nextVersion}`,
+        );
         window.location.reload();
       }, RELOAD_DELAY_MS);
     };
@@ -61,8 +65,9 @@ export default function AppUpdateWatcher() {
 
         const data = (await response.json()) as { version?: string };
         const latestVersion = data.version;
+        const currentVersion = initialVersion.current;
 
-        if (latestVersion && latestVersion !== currentVersion) {
+        if (latestVersion && currentVersion && latestVersion !== currentVersion) {
           triggerReload(latestVersion);
         }
       } catch (error) {
@@ -95,7 +100,7 @@ export default function AppUpdateWatcher() {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("focus", handleFocus);
     };
-  }, [currentVersion]);
+  }, []);
 
   return null;
 }
