@@ -2121,6 +2121,41 @@ export const attendanceAPI = {
 
     return response.data;
   },
+
+  updateJustification: async (
+    attendanceId: string,
+    justification: string,
+    date?: string,
+    document?: File,
+    removeExistingDocument: boolean = false,
+  ) => {
+    const formData = new FormData();
+    formData.append('justification', justification);
+    if (date) {
+      formData.append('date', date);
+    }
+    if (document) {
+      formData.append('document', document);
+    }
+    if (removeExistingDocument) {
+      formData.append('removeExistingDocument', 'true');
+    }
+
+    const response = await api.put(`/attendance/absence/${attendanceId}/justify`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    return response.data;
+  },
+
+  deleteJustification: async (attendanceId: string, date?: string) => {
+    const response = await api.delete(`/attendance/absence/${attendanceId}/justify`, {
+      params: date ? { date } : undefined,
+    });
+    return response.data;
+  },
  
 async updateJustificationStatus(
   attendanceId: string,
