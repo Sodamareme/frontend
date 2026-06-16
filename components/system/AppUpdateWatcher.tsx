@@ -1,25 +1,14 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { toast } from "sonner";
-
 const VERSION_CHECK_INTERVAL_MS = 60_000;
-const RELOAD_DELAY_MS = 1_500;
 
 export default function AppUpdateWatcher() {
   const hasTriggeredReload = useRef(false);
-  const reloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialVersion = useRef<string | null>(null);
 
   useEffect(() => {
     initialVersion.current = document.body.dataset.appVersion ?? null;
-
-    const cleanupTimer = () => {
-      if (reloadTimer.current) {
-        clearTimeout(reloadTimer.current);
-        reloadTimer.current = null;
-      }
-    };
 
     const triggerReload = (nextVersion: string) => {
       if (hasTriggeredReload.current) {
@@ -32,18 +21,10 @@ export default function AppUpdateWatcher() {
         window.location.reload();
         return;
       }
-
-      toast.info("Nouvelle mise a jour disponible", {
-        description: "L'application va se recharger pour afficher la derniere version.",
-        duration: RELOAD_DELAY_MS,
-      });
-
-      reloadTimer.current = setTimeout(() => {
-        console.info(
-          `Reloading app to switch from build ${initialVersion.current ?? "unknown"} to ${nextVersion}`,
-        );
-        window.location.reload();
-      }, RELOAD_DELAY_MS);
+      console.info(
+        `Reloading app to switch from build ${initialVersion.current ?? "unknown"} to ${nextVersion}`,
+      );
+      window.location.reload();
     };
 
     const checkVersion = async () => {
@@ -95,7 +76,6 @@ export default function AppUpdateWatcher() {
     void checkVersion();
 
     return () => {
-      cleanupTimer();
       window.clearInterval(intervalId);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("focus", handleFocus);

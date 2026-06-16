@@ -23,7 +23,6 @@ import {
   FileText,
   Filter,
   Search,
-  Sparkles,
   TrendingUp,
   Upload,
   XCircle,
@@ -42,7 +41,7 @@ interface AttendanceRecord {
   date: string;
   isPresent: boolean;
   isLate: boolean;
-  scanTime: string | null;
+  scanTime?: string | null;
   justification?: string;
   status: AttendanceStatus;
 }
@@ -51,7 +50,7 @@ function getStatusBadge(status: AttendanceStatus | undefined) {
   switch (status) {
     case "TO_JUSTIFY":
       return (
-        <Badge variant="outline" className="border-[#eadbc5] bg-[#fff1e8] text-[#8b5a2b] text-xs font-medium">
+        <Badge variant="outline" className="border-orange-100 bg-white text-[#F16E00] text-xs font-medium">
           <AlertCircle className="mr-1 h-3 w-3" />
           À justifier
         </Badge>
@@ -94,7 +93,7 @@ function getPresenceBadge(attendance: AttendanceRecord) {
 
   if (attendance.isLate) {
     return (
-      <Badge className="border-[#eadbc5] bg-[#fff1e8] text-[#8b5a2b]">
+      <Badge className="border-orange-100 bg-white text-[#F16E00]">
         <Clock className="mr-1 h-3 w-3" />
         En retard
       </Badge>
@@ -121,16 +120,15 @@ function SummaryCard({
   icon: typeof Calendar;
 }) {
   return (
-    <div className="group relative overflow-hidden rounded-[1.7rem] border border-white/70 bg-white/90 p-5 shadow-[0_18px_45px_rgba(15,23,42,0.07)] backdrop-blur">
-      <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#d36b2c] via-[#f59e0b] to-[#f7c77d]" />
-      <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-[#fff1e8] transition-transform duration-500 group-hover:scale-110" />
+    <div className="group relative overflow-hidden rounded-[1.7rem] border border-orange-100 bg-white p-5 shadow-sm">
+      <div className="absolute inset-x-0 top-0 h-1.5 bg-[#F16E00]" />
       <div className="relative flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-slate-500">{label}</p>
           <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">{value}</p>
           <p className="mt-2 text-xs uppercase tracking-[0.16em] text-slate-400">{hint}</p>
         </div>
-        <div className="rounded-2xl bg-[#fff1e8] p-3 text-[#d36b2c]">
+        <div className="rounded-2xl bg-orange-50 p-3 text-[#F16E00]">
           <Icon className="h-5 w-5" />
         </div>
       </div>
@@ -160,9 +158,11 @@ export default function MyAttendancePage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  const fetchAttendance = async () => {
+  const fetchAttendance = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       const userStr = localStorage.getItem("user");
       if (!userStr) throw new Error("User not found");
       const user = JSON.parse(userStr);
@@ -199,7 +199,7 @@ export default function MyAttendancePage() {
     void fetchAttendance();
   }, []);
 
-  useAutoRefresh(fetchAttendance, { intervalMs: 15_000 });
+  useAutoRefresh(() => fetchAttendance(true), { intervalMs: 15_000 });
 
   useEffect(() => {
     const count = attendances.filter((a) => a.status === "TO_JUSTIFY").length;
@@ -258,7 +258,7 @@ export default function MyAttendancePage() {
         format(new Date(selectedAttendance.date), "yyyy-MM-dd"),
         file,
       );
-      await fetchAttendance();
+      await fetchAttendance(true);
       handleCloseModal();
       toast.success("Justification soumise avec succès");
     } catch (err) {
@@ -282,7 +282,7 @@ export default function MyAttendancePage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[80vh] items-center justify-center bg-[radial-gradient(circle_at_top,_#fff7ed,_#f7f0e6_55%,_#efe5d4)]">
+      <div className="flex min-h-[80vh] items-center justify-center bg-white">
         <div className="space-y-4 text-center">
           <div className="mx-auto h-16 w-16 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
           <p className="font-medium text-slate-600">Chargement de vos données d&apos;assiduité...</p>
@@ -293,7 +293,7 @@ export default function MyAttendancePage() {
 
   if (error) {
     return (
-      <div className="flex min-h-[80vh] items-center justify-center bg-[radial-gradient(circle_at_top,_#fff7ed,_#f7f0e6_55%,_#efe5d4)]">
+      <div className="flex min-h-[80vh] items-center justify-center bg-white">
         <Card className="mx-auto max-w-md rounded-[2rem] border border-red-200 shadow-sm">
           <CardContent className="p-6 text-center">
             <XCircle className="mx-auto mb-4 h-12 w-12 text-red-500" />
@@ -306,53 +306,49 @@ export default function MyAttendancePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#fff7ed,_#f7f0e6_55%,_#efe5d4)]">
+    <div className="min-h-screen bg-white">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <div className="space-y-6">
-          <section className="relative overflow-hidden rounded-[2.2rem] border border-[#f1d7b4] bg-slate-950 text-white shadow-[0_25px_80px_rgba(15,23,42,0.18)]">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(245,158,11,0.3),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(251,146,60,0.22),_transparent_35%),linear-gradient(135deg,_#111827,_#1f2937_55%,_#7c2d12_125%)]" />
-            <div className="relative grid gap-8 px-6 py-7 lg:grid-cols-[1.3fr_0.95fr] lg:px-8">
+          <section className="overflow-hidden rounded-[2rem] border border-orange-100 bg-white shadow-sm">
+            <div className="h-2 w-full bg-[#F16E00]" />
+            <div className="grid gap-8 px-6 py-7 lg:grid-cols-[1.3fr_0.95fr] lg:px-8">
               <div className="space-y-5">
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.2em] text-orange-100">
-                  <Sparkles className="h-3.5 w-3.5" />
+                <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.2em] text-[#F16E00]">
                   Ma présence
                 </div>
 
                 <div>
-                  <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+                  <h1 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
                     Historique d&apos;assiduité
                   </h1>
-                  <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">
-                    Une vue plus claire de vos présences, retards, absences et justificatifs, pensée pour mobile comme pour desktop.
-                  </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-orange-50">
-                    <TrendingUp className="h-4 w-4 text-orange-200" />
+                  <div className="inline-flex items-center gap-2 rounded-full border border-orange-100 bg-white px-4 py-2 text-sm text-slate-700">
+                    <TrendingUp className="h-4 w-4 text-[#F16E00]" />
                     {getAttendanceRate()}% de présence
                   </div>
-                  <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-slate-200">
-                    <Calendar className="h-4 w-4 text-orange-200" />
+                  <div className="inline-flex items-center gap-2 rounded-full border border-orange-100 bg-white px-4 py-2 text-sm text-slate-600">
+                    <Calendar className="h-4 w-4 text-[#F16E00]" />
                     {filteredAttendances.length} résultat(s)
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-[1.8rem] border border-white/10 bg-white/10 p-5 backdrop-blur">
-                <p className="text-sm font-medium text-orange-100">Lecture rapide</p>
+              <div className="rounded-[1.8rem] border border-orange-100 bg-white p-5">
+                <p className="text-sm font-medium text-slate-500">Lecture rapide</p>
                 <div className="mt-5 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-                  <div className="rounded-2xl bg-slate-900/30 p-4">
-                    <p className="text-xs uppercase tracking-[0.16em] text-slate-300">Présences</p>
-                    <p className="mt-2 text-2xl font-semibold text-white">{stats.present}</p>
+                  <div className="rounded-2xl bg-white p-4">
+                    <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Présences</p>
+                    <p className="mt-2 text-2xl font-semibold text-slate-900">{stats.present}</p>
                   </div>
-                  <div className="rounded-2xl bg-slate-900/30 p-4">
-                    <p className="text-xs uppercase tracking-[0.16em] text-slate-300">Absences justifiées</p>
-                    <p className="mt-2 text-2xl font-semibold text-white">{stats.justifiedAbsentDays}</p>
+                  <div className="rounded-2xl bg-white p-4">
+                    <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Absences justifiées</p>
+                    <p className="mt-2 text-2xl font-semibold text-slate-900">{stats.justifiedAbsentDays}</p>
                   </div>
-                  <div className="rounded-2xl bg-slate-900/30 p-4">
-                    <p className="text-xs uppercase tracking-[0.16em] text-slate-300">Jours comptabilisés</p>
-                    <p className="mt-2 text-2xl font-semibold text-white">{stats.totalDays}</p>
+                  <div className="rounded-2xl bg-white p-4">
+                    <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Jours comptabilisés</p>
+                    <p className="mt-2 text-2xl font-semibold text-slate-900">{stats.totalDays}</p>
                   </div>
                 </div>
               </div>
@@ -371,11 +367,11 @@ export default function MyAttendancePage() {
             <SummaryCard label="Total jours" value={stats.totalDays} hint="Comptabilisés" icon={Calendar} />
           </section>
 
-          <Card className="rounded-[2rem] border border-white/70 bg-white/90 shadow-[0_18px_45px_rgba(15,23,42,0.07)] backdrop-blur">
+          <Card className="rounded-[2rem] border border-orange-100 bg-white shadow-sm">
             <CardContent className="p-6">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div className="flex items-center gap-2 text-slate-700">
-                  <Filter className="h-5 w-5 text-[#d36b2c]" />
+                  <Filter className="h-5 w-5 text-[#F16E00]" />
                   <span className="text-sm font-medium">Filtres</span>
                 </div>
 
@@ -393,7 +389,7 @@ export default function MyAttendancePage() {
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none ring-0 focus:border-[#d36b2c]"
+                    className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none ring-0 focus:border-[#F16E00]"
                   >
                     <option value="all">Tous les statuts</option>
                     <option value="present">Présent</option>
@@ -416,14 +412,14 @@ export default function MyAttendancePage() {
             </CardContent>
           </Card>
 
-          <Card className="overflow-hidden rounded-[2rem] border border-white/70 bg-white/90 shadow-[0_18px_45px_rgba(15,23,42,0.07)] backdrop-blur">
-            <CardHeader className="border-b border-[#f1e5d6] bg-[linear-gradient(180deg,_#fffaf5,_#fff)]">
+          <Card className="overflow-hidden rounded-[2rem] border border-orange-100 bg-white shadow-sm">
+            <CardHeader className="border-b border-orange-100 bg-white">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <CardTitle className="flex items-center text-xl font-semibold text-slate-900">
-                  <FileText className="mr-2 h-6 w-6 text-[#d36b2c]" />
+                  <FileText className="mr-2 h-6 w-6 text-[#F16E00]" />
                   Historique des présences
                 </CardTitle>
-                <Badge variant="outline" className="w-fit rounded-full border-[#eadbc5] bg-[#fff7ef] text-[#8b5a2b]">
+                <Badge variant="outline" className="w-fit rounded-full border-orange-100 bg-white text-[#F16E00]">
                   {filteredAttendances.length} résultat(s)
                 </Badge>
               </div>
@@ -432,7 +428,7 @@ export default function MyAttendancePage() {
             <CardContent className="p-0">
               <div className="hidden overflow-x-auto lg:block">
                 <table className="w-full">
-                  <thead className="bg-[#fcfaf6]">
+                  <thead className="bg-white">
                     <tr>
                       {["Date", "Heure d'arrivée", "Statut", "Justification", "Actions"].map((h) => (
                         <th
@@ -447,7 +443,7 @@ export default function MyAttendancePage() {
                   <tbody className="divide-y divide-gray-200 bg-white">
                     {paginatedAttendances.length > 0 ? (
                       paginatedAttendances.map((attendance) => (
-                        <tr key={attendance.id} className="transition-colors duration-150 hover:bg-[#fcfaf6]">
+                        <tr key={attendance.id} className="transition-colors duration-150 hover:bg-orange-50">
                           <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
                             {format(new Date(attendance.date), "EEEE dd MMMM yyyy", { locale: fr })}
                           </td>
@@ -473,7 +469,7 @@ export default function MyAttendancePage() {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleJustify(attendance)}
-                                  className="border-[#eadbc5] text-[#8b5a2b] hover:bg-[#fff1e8] hover:text-[#8b5a2b]"
+                                  className="border-orange-100 text-[#F16E00] hover:bg-orange-50 hover:text-[#F16E00]"
                                 >
                                   <FileText className="mr-1 h-4 w-4" />
                                   Justifier
@@ -519,7 +515,7 @@ export default function MyAttendancePage() {
                   paginatedAttendances.map((attendance) => (
                     <div
                       key={attendance.id}
-                      className="rounded-[1.6rem] border border-[#efe2d3] bg-[linear-gradient(180deg,_#fffaf5,_#fff)] p-4 shadow-sm"
+                      className="rounded-[1.6rem] border border-orange-100 bg-white p-4 shadow-sm"
                     >
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
@@ -551,7 +547,7 @@ export default function MyAttendancePage() {
                             <Button
                               variant="outline"
                               onClick={() => handleJustify(attendance)}
-                              className="w-full rounded-2xl border-[#eadbc5] text-[#8b5a2b] hover:bg-[#fff1e8] hover:text-[#8b5a2b]"
+                              className="w-full rounded-2xl border-orange-100 text-[#F16E00] hover:bg-orange-50 hover:text-[#F16E00]"
                             >
                               <FileText className="mr-2 h-4 w-4" />
                               Justifier
@@ -584,7 +580,7 @@ export default function MyAttendancePage() {
               </div>
 
               {filteredAttendances.length > itemsPerPage && (
-                <div className="border-t border-gray-200 bg-[#fcfaf6] px-6 py-4">
+                <div className="border-t border-gray-200 bg-white px-6 py-4">
                   <Pagination
                     totalItems={filteredAttendances.length}
                     currentPage={currentPage}
@@ -606,8 +602,8 @@ export default function MyAttendancePage() {
               if (!open) handleCloseModal();
             }}
           >
-            <DialogContent className="overflow-hidden rounded-[2rem] border-[#f1d7b4] bg-[linear-gradient(180deg,_#fffaf5,_#fff)] p-0 shadow-[0_25px_80px_rgba(15,23,42,0.16)] sm:max-w-md">
-              <div className="border-b border-[#f4e3cd] bg-[#fff3e6] px-6 py-5">
+            <DialogContent className="overflow-hidden rounded-[2rem] border-orange-100 bg-white p-0 shadow-[0_25px_80px_rgba(15,23,42,0.16)] sm:max-w-md">
+              <div className="border-b border-orange-100 bg-white px-6 py-5">
                 <DialogHeader>
                   <DialogTitle className="text-xl font-semibold text-slate-900">
                     Justifier votre {selectedAttendance?.isLate ? "retard" : "absence"}
@@ -693,7 +689,7 @@ export default function MyAttendancePage() {
                 )}
               </div>
 
-              <DialogFooter className="border-t border-[#f4e3cd] bg-white px-6 py-4">
+              <DialogFooter className="border-t border-orange-100 bg-white px-6 py-4">
                 <Button variant="outline" onClick={handleCloseModal} disabled={submitting} className="rounded-2xl">
                   Annuler
                 </Button>

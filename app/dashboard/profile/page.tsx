@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { User, Phone, Mail, MapPin, Calendar, BookOpen, School, Package, FileText, CheckCircle, XCircle, Camera, Sparkles, ShieldCheck, ArrowRight } from "lucide-react"
+import { User, Phone, Mail, MapPin, Calendar, BookOpen, School, Package, FileText, CheckCircle, XCircle, Camera, ShieldCheck, ArrowRight } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -9,9 +9,14 @@ import { Progress } from "@/components/ui/progress"
 import { UserCircle, GraduationCap, PackageCheck, Files } from 'lucide-react'
 import EditablePersonalInfo from '@/components/EditablePersonalInfo'
 import { learnersAPI } from "@/lib/api"
-import type { LearnerDetails } from "@/lib/api"
+import type { LearnerDetailsExtended } from "@/lib/api"
 import { getAuthToken } from "@/lib/api"
 import { useAutoRefresh } from "@/hooks/useAutoRefresh"
+
+type ProfileLearnerDetails = Omit<LearnerDetailsExtended, "documents"> & {
+  documents?: unknown[];
+  qrCode?: string;
+}
 
 // ─── URL de base de l'API ─────────────────────────────────────────────────────
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
@@ -20,14 +25,17 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
 // Page principale
 // ─────────────────────────────────────────────────────────────────────────────
 export default function ProfilePage() {
-  const [learnerDetails, setLearnerDetails] = useState<LearnerDetails | null>(null)
+  const [learnerDetails, setLearnerDetails] = useState<ProfileLearnerDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [saveLoading, setSaveLoading] = useState(false)
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
-  const fetchLearnerData = async () => {
+  const fetchLearnerData = async (silent = false) => {
     try {
+      if (!silent) {
+        setLoading(true)
+      }
       const userStr = localStorage.getItem('user')
       if (!userStr) throw new Error('Utilisateur non connecté')
 
@@ -35,7 +43,13 @@ export default function ProfilePage() {
       if (!user?.email) throw new Error('Email utilisateur introuvable')
 
       const details = await learnersAPI.getLearnerByEmail(user.email)
-      setLearnerDetails(details)
+      setLearnerDetails({
+        ...details,
+        documents: Array.isArray((details as unknown as { documents?: unknown }).documents)
+          ? ((details as unknown as { documents?: unknown[] }).documents ?? [])
+          : [],
+        qrCode: (details as { qrCode?: string }).qrCode,
+      })
     } catch (err: any) {
       console.error('Error fetching learner data:', err)
       setError(err.message || 'Impossible de charger les données du profil')
@@ -48,7 +62,7 @@ export default function ProfilePage() {
     void fetchLearnerData()
   }, [])
 
-  useAutoRefresh(fetchLearnerData, { intervalMs: 20_000 })
+  useAutoRefresh(() => fetchLearnerData(true), { intervalMs: 20_000 })
 
   // ── Sauvegarder les infos personnelles ──────────────────────────────────────
   const handleSaveLearnerData = async (formData: any) => {
@@ -109,7 +123,7 @@ export default function ProfilePage() {
   // ── États de chargement / erreur ─────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f5f1e8]">
+      <div className="flex min-h-screen items-center justify-center bg-white">
         <div className="text-center">
           <div className="mx-auto mb-4 h-14 w-14 animate-spin rounded-full border-4 border-[#d36b2c] border-t-transparent" />
           <p className="text-slate-600">Chargement de votre profil...</p>
@@ -120,7 +134,7 @@ export default function ProfilePage() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#f5f1e8] p-4">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-white p-4">
         <div className="max-w-md rounded-3xl border border-red-200 bg-red-50 p-6 text-center text-red-700 shadow-sm">
           <XCircle className="h-12 w-12 mx-auto mb-4 text-red-500" />
           <h2 className="text-lg font-semibold mb-2">Erreur de chargement</h2>
@@ -138,14 +152,14 @@ export default function ProfilePage() {
 
   if (!learnerDetails) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#f5f1e8] p-4">
-        <div className="max-w-md rounded-3xl border border-[#eadbc5] bg-[#fbf8f2] p-6 text-center text-slate-700 shadow-sm">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-white p-4">
+        <div className="max-w-md rounded-3xl border border-orange-100 bg-white p-6 text-center text-slate-700 shadow-sm">
           <User className="h-12 w-12 mx-auto mb-4 text-orange-500" />
           <h2 className="text-lg font-semibold mb-2">Profil non trouvé</h2>
           <p>Aucune donnée de profil disponible pour cet utilisateur</p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-4 rounded-2xl bg-[#d36b2c] px-4 py-2 text-white transition-colors hover:bg-[#bb5c22]"
+            className="mt-4 rounded-2xl bg-[#F16E00] px-4 py-2 text-white transition-colors hover:bg-[#d95f00]"
           >
             Actualiser
           </button>
@@ -175,7 +189,7 @@ function LearnerProfile({
   saveLoading,
   saveMessage,
 }: {
-  learner: LearnerDetails
+  learner: ProfileLearnerDetails
   onSave: (formData: any) => Promise<void>
   onPhotoUpdate: (newPhotoUrl: string) => void
   saveLoading: boolean
@@ -253,7 +267,7 @@ function LearnerProfile({
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#fff7ed,_#f7f0e6_55%,_#efe5d4)]">
+    <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
 
         {/* ── Message de sauvegarde ─────────────────────────────────────────── */}
@@ -292,16 +306,16 @@ function LearnerProfile({
         )}
 
         {/* ── Header avec bannière ──────────────────────────────────────────── */}
-        <div className="relative mb-8 overflow-hidden rounded-[2.2rem] border border-[#f1d7b4] bg-slate-950 text-white shadow-[0_25px_80px_rgba(15,23,42,0.18)]">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(245,158,11,0.3),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(251,146,60,0.22),_transparent_35%),linear-gradient(135deg,_#111827,_#1f2937_55%,_#7c2d12_125%)]" />
-          <Card className="relative border-0 bg-transparent shadow-none">
+        <div className="mb-8 overflow-hidden rounded-[2rem] border border-orange-100 bg-white shadow-sm">
+          <div className="h-2 w-full bg-[#F16E00]" />
+          <Card className="border-0 bg-transparent shadow-none">
             <CardContent className="p-6">
               <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6">
 
                 {/* ── Avatar + bouton modifier photo ──────────────────────── */}
                 <div className="relative flex-shrink-0 group">
                   {/* Avatar */}
-                  <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-white/80 bg-[#f3eadc] shadow-[0_14px_30px_rgba(15,23,42,0.18)]">
+                  <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-white bg-slate-100 shadow-sm">
                     {learner.photoUrl ? (
                       <img
                         src={learner.photoUrl}
@@ -309,7 +323,7 @@ function LearnerProfile({
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-[#d36b2c]">
+                      <div className="flex h-full w-full items-center justify-center bg-[#F16E00]">
                         <span className="text-3xl font-bold text-white">
                           {learner.firstName?.[0]}{learner.lastName?.[0]}
                         </span>
@@ -344,7 +358,7 @@ function LearnerProfile({
                     className={`absolute bottom-0 right-0 p-2 rounded-full border-2 border-white shadow-md cursor-pointer transition-colors ${
                       photoUploading
                         ? 'bg-gray-400 cursor-not-allowed pointer-events-none'
-                        : 'bg-[#d36b2c] hover:bg-[#bb5c22]'
+                        : 'bg-[#F16E00] hover:bg-[#d95f00]'
                     }`}
                     title="Changer la photo"
                   >
@@ -374,44 +388,39 @@ function LearnerProfile({
 
                 {/* ── Infos principales ────────────────────────────────────── */}
                 <div className="flex-1 text-center sm:text-left">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.2em] text-orange-100">
-                    <Sparkles className="h-3.5 w-3.5" />
+                  <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.2em] text-[#F16E00]">
                     Mon profil
                   </div>
-                  <h1 className="mb-2 mt-4 text-3xl font-semibold text-white sm:text-4xl">
+                  <h1 className="mb-2 mt-4 text-3xl font-semibold text-slate-900 sm:text-4xl">
                     {learner.firstName} {learner.lastName}
                   </h1>
-                  <p className="mb-4 text-lg text-slate-200">
-                    Matricule : <span className="font-mono font-semibold text-white">{learner.matricule}</span>
-                  </p>
-
-                  <p className="max-w-2xl text-sm leading-6 text-slate-300">
-                    Retrouvez vos informations, votre parcours, votre kit et vos justificatifs dans une interface plus simple, plus nette et plus agréable sur mobile.
+                  <p className="mb-4 text-lg text-slate-600">
+                    Matricule : <span className="font-mono font-semibold text-slate-900">{learner.matricule}</span>
                   </p>
 
                   <div className="mt-5 flex flex-wrap gap-3 justify-center sm:justify-start">
-                    <Badge className="border border-white/10 bg-white/10 px-4 py-2 text-orange-50 hover:bg-white/15">
+                    <Badge className="border border-orange-100 bg-white px-4 py-2 text-[#F16E00] hover:bg-orange-50">
                       <School className="h-4 w-4 mr-2" />
                       {learner.referential?.name}
                     </Badge>
-                    <Badge className="border border-white/10 bg-white/10 px-4 py-2 text-orange-50 hover:bg-white/15">
+                    <Badge className="border border-orange-100 bg-white px-4 py-2 text-[#F16E00] hover:bg-orange-50">
                       <Calendar className="h-4 w-4 mr-2" />
                       {learner.promotion?.name}
                     </Badge>
                   </div>
 
                   <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
-                      <p className="text-xs uppercase tracking-[0.16em] text-slate-300">Statut</p>
-                      <p className="mt-2 font-semibold text-white">{learner.status === "ACTIVE" ? "Apprenant actif" : learner.status}</p>
+                    <div className="rounded-2xl border border-orange-100 bg-white p-4">
+                      <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Statut</p>
+                      <p className="mt-2 font-semibold text-slate-900">{learner.status === "ACTIVE" ? "Apprenant actif" : learner.status}</p>
                     </div>
-                    <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
-                      <p className="text-xs uppercase tracking-[0.16em] text-slate-300">Référentiel</p>
-                      <p className="mt-2 font-semibold text-white">{learner.referential?.name || "Non renseigné"}</p>
+                    <div className="rounded-2xl border border-orange-100 bg-white p-4">
+                      <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Référentiel</p>
+                      <p className="mt-2 font-semibold text-slate-900">{learner.referential?.name || "Non renseigné"}</p>
                     </div>
-                    <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
-                      <p className="text-xs uppercase tracking-[0.16em] text-slate-300">Promotion</p>
-                      <p className="mt-2 font-semibold text-white">{learner.promotion?.name || "Non renseignée"}</p>
+                    <div className="rounded-2xl border border-orange-100 bg-white p-4">
+                      <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Promotion</p>
+                      <p className="mt-2 font-semibold text-slate-900">{learner.promotion?.name || "Non renseignée"}</p>
                     </div>
                   </div>
                 </div>
@@ -425,10 +434,10 @@ function LearnerProfile({
           <Tabs defaultValue="personal" className="space-y-6">
 
             {/* Navigation */}
-            <TabsList className="grid h-auto grid-cols-2 gap-2 rounded-[1.7rem] border border-white/70 bg-white/90 p-2 shadow-[0_18px_45px_rgba(15,23,42,0.07)] backdrop-blur sm:grid-cols-4">
+            <TabsList className="grid h-auto grid-cols-2 gap-2 rounded-[1.7rem] border border-orange-100 bg-white p-2 shadow-sm sm:grid-cols-4">
               <TabsTrigger
                 value="personal"
-                className="rounded-[1rem] py-3 transition-all data-[state=active]:bg-[#fff1e8] data-[state=active]:text-[#8b5a2b] data-[state=active]:shadow-none"
+                className="rounded-[1rem] py-3 transition-all data-[state=active]:bg-orange-50 data-[state=active]:text-[#F16E00] data-[state=active]:shadow-none"
               >
                 <span className="sm:hidden flex flex-col items-center">
                   <UserCircle className="h-5 w-5 mb-1" />
@@ -442,7 +451,7 @@ function LearnerProfile({
 
               <TabsTrigger
                 value="academic"
-                className="rounded-[1rem] py-3 transition-all data-[state=active]:bg-[#fff1e8] data-[state=active]:text-[#8b5a2b] data-[state=active]:shadow-none"
+                className="rounded-[1rem] py-3 transition-all data-[state=active]:bg-orange-50 data-[state=active]:text-[#F16E00] data-[state=active]:shadow-none"
               >
                 <span className="sm:hidden flex flex-col items-center">
                   <GraduationCap className="h-5 w-5 mb-1" />
@@ -456,7 +465,7 @@ function LearnerProfile({
 
               <TabsTrigger
                 value="kit"
-                className="rounded-[1rem] py-3 transition-all data-[state=active]:bg-[#fff1e8] data-[state=active]:text-[#8b5a2b] data-[state=active]:shadow-none"
+                className="rounded-[1rem] py-3 transition-all data-[state=active]:bg-orange-50 data-[state=active]:text-[#F16E00] data-[state=active]:shadow-none"
               >
                 <span className="sm:hidden flex flex-col items-center">
                   <PackageCheck className="h-5 w-5 mb-1" />
@@ -470,7 +479,7 @@ function LearnerProfile({
 
               <TabsTrigger
                 value="documents"
-                className="rounded-[1rem] py-3 transition-all data-[state=active]:bg-[#fff1e8] data-[state=active]:text-[#8b5a2b] data-[state=active]:shadow-none"
+                className="rounded-[1rem] py-3 transition-all data-[state=active]:bg-orange-50 data-[state=active]:text-[#F16E00] data-[state=active]:shadow-none"
               >
                 <span className="sm:hidden flex flex-col items-center">
                   <Files className="h-5 w-5 mb-1" />
@@ -488,11 +497,10 @@ function LearnerProfile({
               <EditablePersonalInfo
                 learner={learner}
                 onSave={onSave}
-                loading={saveLoading}
               />
 
-              <Card className="overflow-hidden rounded-[2rem] border border-white/70 bg-white/90 shadow-[0_18px_45px_rgba(15,23,42,0.07)] backdrop-blur">
-                <CardHeader className="rounded-t-[2rem] border-b border-[#f1e5d6] bg-[linear-gradient(180deg,_#fffaf5,_#fff)]">
+              <Card className="overflow-hidden rounded-[2rem] border border-orange-100 bg-white shadow-sm">
+                <CardHeader className="rounded-t-[2rem] border-b border-orange-100 bg-white">
                   <CardTitle className="flex items-center gap-2 text-xl text-slate-900">
                     <User className="h-5 w-5" />
                     Informations du Tuteur
@@ -515,8 +523,8 @@ function LearnerProfile({
 
             {/* ── Tab : Académique ─────────────────────────────────────────── */}
             <TabsContent value="academic" className="space-y-6">
-              <Card className="overflow-hidden rounded-[2rem] border border-white/70 bg-white/90 shadow-[0_18px_45px_rgba(15,23,42,0.07)] backdrop-blur">
-                <CardHeader className="rounded-t-[2rem] border-b border-[#f1e5d6] bg-[linear-gradient(180deg,_#fffaf5,_#fff)]">
+              <Card className="overflow-hidden rounded-[2rem] border border-orange-100 bg-white shadow-sm">
+                <CardHeader className="rounded-t-[2rem] border-b border-orange-100 bg-white">
                   <CardTitle className="flex items-center gap-2 text-xl text-slate-900">
                     <GraduationCap className="h-5 w-5" />
                     Parcours Académique
@@ -524,10 +532,10 @@ function LearnerProfile({
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="grid gap-6 md:grid-cols-2">
-                    <div className="rounded-[1.6rem] border border-[#eadbc5] bg-[linear-gradient(180deg,_#fffaf5,_#fff)] p-6 shadow-sm">
+                    <div className="rounded-[1.6rem] border border-orange-100 bg-white p-6 shadow-sm">
                       <div className="flex items-start gap-4">
-                        <div className="rounded-2xl bg-[#f3eadc] p-3">
-                          <School className="h-6 w-6 text-[#8b5a2b]" />
+                        <div className="rounded-2xl bg-orange-50 p-3">
+                          <School className="h-6 w-6 text-[#F16E00]" />
                         </div>
                         <div className="flex-1">
                           <h3 className="mb-2 text-lg font-semibold text-slate-900">Promotion</h3>
@@ -561,18 +569,18 @@ function LearnerProfile({
 
             {/* ── Tab : Kit ────────────────────────────────────────────────── */}
             <TabsContent value="kit" className="space-y-6">
-              <Card className="overflow-hidden rounded-[2rem] border border-white/70 bg-white/90 shadow-[0_18px_45px_rgba(15,23,42,0.07)] backdrop-blur">
-                <CardHeader className="rounded-t-[2rem] border-b border-[#f1e5d6] bg-[linear-gradient(180deg,_#fffaf5,_#fff)]">
+              <Card className="overflow-hidden rounded-[2rem] border border-orange-100 bg-white shadow-sm">
+                <CardHeader className="rounded-t-[2rem] border-b border-orange-100 bg-white">
                   <CardTitle className="flex items-center gap-2 text-xl text-slate-900">
                     <Package className="h-5 w-5" />
                     Kit ODC
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
-                  <div className="mb-8 rounded-[1.7rem] border border-[#eadbc5] bg-[linear-gradient(180deg,_#fffaf5,_#fff)] p-6 shadow-sm">
+                  <div className="mb-8 rounded-[1.7rem] border border-orange-100 bg-white p-6 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
                     <span className="text-lg font-semibold text-gray-800">Progression du kit</span>
-                    <span className="text-2xl font-bold text-[#d36b2c]">{Math.round(getKitProgress())}%</span>
+                    <span className="text-2xl font-bold text-[#F16E00]">{Math.round(getKitProgress())}%</span>
                     </div>
                     <Progress value={getKitProgress()} className="h-4 bg-gray-200" />
                     <p className="text-sm text-gray-600 mt-2">
@@ -593,10 +601,10 @@ function LearnerProfile({
 
             {/* ── Tab : Documents ──────────────────────────────────────────── */}
             <TabsContent value="documents" className="space-y-6">
-              <Card className="overflow-hidden rounded-[2rem] border border-white/70 bg-white/90 shadow-[0_18px_45px_rgba(15,23,42,0.07)] backdrop-blur">
-                <CardHeader className="border-b border-[#f1e5d6] bg-[linear-gradient(180deg,_#fffaf5,_#fff)]">
+              <Card className="overflow-hidden rounded-[2rem] border border-orange-100 bg-white shadow-sm">
+                <CardHeader className="border-b border-orange-100 bg-white">
                   <CardTitle className="flex items-center gap-3 text-xl text-slate-900">
-                    <div className="rounded-lg bg-[#f3eadc] p-2 text-[#d36b2c]">
+                    <div className="rounded-lg bg-orange-50 p-2 text-[#F16E00]">
                       <FileText className="h-5 w-5" />
                     </div>
                     Justifications d'absence/retard
@@ -642,7 +650,7 @@ function InfoItem({
 }) {
   return (
     <div className="flex items-center gap-3 rounded-[1.3rem] border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50">
-      <div className="rounded-xl bg-[#fff1e8] p-2 text-[#d36b2c]">{icon}</div>
+      <div className="rounded-xl bg-orange-50 p-2 text-[#F16E00]">{icon}</div>
       <div className="flex-1">
         <p className="text-sm font-medium text-slate-500">{label}</p>
         <p className="font-medium text-slate-900">{value || 'Non renseigné'}</p>
@@ -705,8 +713,8 @@ function JustificationItem({ attendance }: { attendance: any }) {
     <div className="flex flex-col gap-3 rounded-[1.5rem] border border-slate-200 bg-white p-4 transition-shadow hover:shadow-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="rounded-lg bg-[#f3eadc] p-2 shadow-sm">
-            <Calendar className="h-5 w-5 text-[#d36b2c]" />
+          <div className="rounded-lg bg-orange-50 p-2 shadow-sm">
+            <Calendar className="h-5 w-5 text-[#F16E00]" />
           </div>
           <div>
             <p className="font-medium text-gray-900">
@@ -740,7 +748,7 @@ function JustificationItem({ attendance }: { attendance: any }) {
             href={attendance.documentUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-2xl bg-[#d36b2c] px-4 py-2 text-sm text-white transition-colors hover:bg-[#bb5c22]"
+            className="inline-flex items-center gap-2 rounded-2xl bg-[#F16E00] px-4 py-2 text-sm text-white transition-colors hover:bg-[#d95f00]"
           >
             <FileText className="h-4 w-4" />
             Voir le document justificatif
@@ -755,8 +763,8 @@ function JustificationItem({ attendance }: { attendance: any }) {
 function EmptyState({ message }: { message: string }) {
   return (
     <div className="py-16 text-center">
-      <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-[#fff1e8]">
-        <ShieldCheck className="h-10 w-10 text-[#d36b2c]" />
+      <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-orange-50">
+        <ShieldCheck className="h-10 w-10 text-[#F16E00]" />
       </div>
       <p className="mt-4 text-lg font-medium text-slate-500">{message}</p>
     </div>

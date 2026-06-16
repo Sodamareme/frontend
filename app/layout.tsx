@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import { Toaster } from "sonner";
 import './globals.css'
 import { ThemeProvider } from '@/components/providers/theme-provider'
@@ -8,13 +7,6 @@ import { AuthProvider } from '@/components/providers/auth-provider'
 import { NotificationProvider } from '@/components/providers/notification-provider'
 import AppUpdateWatcher from '@/components/system/AppUpdateWatcher'
 import { APP_RUNTIME_VERSION } from '@/lib/app-version'
-
-const inter = Inter({ 
-  subsets: ['latin'],
-  display: 'swap',
-  preload: true,
-  variable: '--font-inter'
-})
 
 export const metadata: Metadata = {
   title: 'Sonatel Academy',
@@ -28,7 +20,7 @@ export default function RootLayout({
 }) {
   return (
     <AuthProvider>
-      <html lang="fr" className={inter.variable} suppressHydrationWarning>
+      <html lang="fr" suppressHydrationWarning>
         <head>
           <script src="https://cdn.tailwindcss.com"></script>
           <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
@@ -45,7 +37,7 @@ export default function RootLayout({
           </style>
         </head>
         <body
-          className={inter.className}
+          className="min-h-screen bg-white font-sans text-slate-900 antialiased"
           suppressHydrationWarning
           data-app-version={APP_RUNTIME_VERSION}
         >
