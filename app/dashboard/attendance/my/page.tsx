@@ -20,11 +20,14 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
+  ExternalLink,
   FileText,
   Filter,
+  Pencil,
   Search,
   TrendingUp,
   Upload,
+  Trash2,
   XCircle,
 } from "lucide-react";
 import { format } from "date-fns";
@@ -43,6 +46,7 @@ interface AttendanceRecord {
   isLate: boolean;
   scanTime?: string | null;
   justification?: string;
+  documentUrl?: string | null;
   status: AttendanceStatus;
 }
 
@@ -145,6 +149,7 @@ export default function MyAttendancePage() {
   const [selectedAttendance, setSelectedAttendance] = useState<AttendanceRecord | null>(null);
   const [justification, setJustification] = useState("");
   const [file, setFile] = useState<File | undefined>(undefined);
+  const [removeExistingDocument, setRemoveExistingDocument] = useState(false);
   const [stats, setStats] = useState({
     present: 0,
     absent: 0,
@@ -234,6 +239,7 @@ export default function MyAttendancePage() {
     setSelectedAttendance(attendance);
     setJustification(attendance.justification || "");
     setFile(undefined);
+    setRemoveExistingDocument(false);
     setShowJustifyModal(true);
   };
 
@@ -241,6 +247,7 @@ export default function MyAttendancePage() {
     setShowJustifyModal(false);
     setJustification("");
     setFile(undefined);
+    setRemoveExistingDocument(false);
     setSelectedAttendance(null);
   };
 
@@ -252,18 +259,55 @@ export default function MyAttendancePage() {
 
     try {
       setSubmitting(true);
-      await attendanceAPI.submitJustification(
+      const attendanceDate = format(new Date(selectedAttendance.date), "yyyy-MM-dd");
+      const hasExistingJustification = Boolean(
+        selectedAttendance.justification?.trim() || selectedAttendance.documentUrl,
+      );
+
+      if (hasExistingJustification) {
+        await attendanceAPI.updateJustification(
+          selectedAttendance.id,
+          justification,
+          attendanceDate,
+          file,
+          removeExistingDocument,
+        );
+      } else {
+        await attendanceAPI.submitJustification(
+          selectedAttendance.id,
+          justification,
+          attendanceDate,
+          file,
+        );
+      }
+      await fetchAttendance(true);
+      handleCloseModal();
+      toast.success(hasExistingJustification ? "Justification mise à jour avec succès" : "Justification soumise avec succès");
+    } catch (err) {
+      console.error("Error submitting justification:", err);
+      toast.error("Erreur lors de l'enregistrement de la justification");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const deleteJustification = async () => {
+    if (!selectedAttendance) {
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      await attendanceAPI.deleteJustification(
         selectedAttendance.id,
-        justification,
         format(new Date(selectedAttendance.date), "yyyy-MM-dd"),
-        file,
       );
       await fetchAttendance(true);
       handleCloseModal();
-      toast.success("Justification soumise avec succès");
+      toast.success("Justification supprimée avec succès");
     } catch (err) {
-      console.error("Error submitting justification:", err);
-      toast.error("Erreur lors de la soumission de la justification");
+      console.error("Error deleting justification:", err);
+      toast.error("Erreur lors de la suppression de la justification");
     } finally {
       setSubmitting(false);
     }
@@ -485,10 +529,25 @@ export default function MyAttendancePage() {
                                   Rejustifier
                                 </Button>
                               ) : attendance.status === "PENDING" ? (
-                                <Button variant="outline" size="sm" disabled className="cursor-not-allowed border-yellow-200 text-yellow-600">
-                                  <Clock className="mr-1 h-4 w-4" />
-                                  En cours
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                  <Button variant="outline" size="sm" disabled className="cursor-not-allowed border-yellow-200 text-yellow-600">
+                                    <Clock className="mr-1 h-4 w-4" />
+                                    En cours
+                                  </Button>
+                                  {(attendance.justification?.trim() || attendance.documentUrl) && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleJustify(attendance)}
+                                      aria-label="Modifier la justification"
+                                      title="Modifier la justification"
+                                      className="h-9 w-9 rounded-xl border-orange-100 p-0 text-[#F16E00] hover:bg-orange-50 hover:text-[#F16E00]"
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                      <span className="sr-only">Modifier la justification</span>
+                                    </Button>
+                                  )}
+                                </div>
                               ) : (
                                 <span className="italic text-gray-400">—</span>
                               ))}
@@ -562,10 +621,26 @@ export default function MyAttendancePage() {
                               Rejustifier
                             </Button>
                           ) : attendance.status === "PENDING" ? (
-                            <Button variant="outline" disabled className="w-full rounded-2xl border-yellow-200 text-yellow-600">
-                              <Clock className="mr-2 h-4 w-4" />
-                              En cours de validation
-                            </Button>
+                            <div className="grid gap-2">
+                              <Button variant="outline" disabled className="w-full rounded-2xl border-yellow-200 text-yellow-600">
+                                <Clock className="mr-2 h-4 w-4" />
+                                En cours de validation
+                              </Button>
+                              {(attendance.justification?.trim() || attendance.documentUrl) && (
+                                <div className="flex justify-end">
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => handleJustify(attendance)}
+                                    aria-label="Modifier la justification"
+                                    title="Modifier la justification"
+                                    className="h-11 w-11 rounded-2xl border-orange-100 p-0 text-[#F16E00] hover:bg-orange-50 hover:text-[#F16E00]"
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                    <span className="sr-only">Modifier la justification</span>
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
                           ) : null)}
                       </div>
                     </div>
@@ -636,6 +711,50 @@ export default function MyAttendancePage() {
                       />
                     </div>
 
+                    {selectedAttendance?.documentUrl && !removeExistingDocument && !file && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Document actuel</label>
+                        <div className="flex items-center justify-between rounded-2xl border border-orange-100 bg-orange-50/40 p-3 text-sm">
+                          <div className="flex items-center gap-2 text-slate-700">
+                            <FileText className="h-4 w-4 text-[#F16E00]" />
+                            <span className="truncate">Document déjà envoyé</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(selectedAttendance.documentUrl!, "_blank")}
+                              aria-label="Voir le document"
+                              title="Voir le document"
+                              className="h-9 w-9 rounded-xl border-orange-100 p-0 text-[#F16E00] hover:bg-orange-50 hover:text-[#F16E00]"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                              <span className="sr-only">Voir le document</span>
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setRemoveExistingDocument(true)}
+                              aria-label="Retirer le document"
+                              title="Retirer le document"
+                              className="h-9 w-9 rounded-xl border-red-200 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              <span className="sr-only">Retirer le document</span>
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {removeExistingDocument && !file && (
+                      <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                        Le document actuel sera supprimé lors de l&apos;enregistrement.
+                      </div>
+                    )}
+
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-gray-700">
                         Document justificatif <span className="text-gray-400">(optionnel)</span>
@@ -658,6 +777,7 @@ export default function MyAttendancePage() {
                               e.target.value = "";
                               return;
                             }
+                            setRemoveExistingDocument(false);
                             setFile(f);
                           }}
                         />
@@ -693,6 +813,21 @@ export default function MyAttendancePage() {
                 <Button variant="outline" onClick={handleCloseModal} disabled={submitting} className="rounded-2xl">
                   Annuler
                 </Button>
+                {selectedAttendance &&
+                  selectedAttendance.status === "PENDING" &&
+                  (selectedAttendance.justification?.trim() || selectedAttendance.documentUrl) && (
+                    <Button
+                      variant="outline"
+                      onClick={deleteJustification}
+                      disabled={submitting}
+                      aria-label="Supprimer la justification"
+                      title="Supprimer la justification"
+                      className="h-11 w-11 rounded-2xl border-red-200 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Supprimer la justification</span>
+                    </Button>
+                  )}
                 <Button
                   onClick={submitJustification}
                   disabled={!justification.trim() || submitting}
@@ -706,7 +841,7 @@ export default function MyAttendancePage() {
                   ) : (
                     <>
                       <FileText className="mr-2 h-4 w-4" />
-                      Envoyer
+                      {selectedAttendance?.justification?.trim() || selectedAttendance?.documentUrl ? "Enregistrer" : "Envoyer"}
                     </>
                   )}
                 </Button>
