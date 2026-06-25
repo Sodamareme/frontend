@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import Image from "next/image"
-import { attendanceAPI, learnersAPI, type Learner, type LearnerAttendance } from "@/lib/api"
+import { attendanceAPI, learnersAPI, type Learner, type LearnerAttendance, type AttendanceRangeRecord } from "@/lib/api"
 import { Search, Download, Users, CheckCircle, Clock, AlertTriangle, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -35,6 +35,15 @@ const STATUS_OPTIONS = [
   { value: 'present', label: 'Présent' },
   { value: 'late',    label: 'En retard' },
   { value: 'absent',  label: 'Absent' },
+] as const
+
+const JUSTIFICATION_FILTER_OPTIONS = [
+  { value: 'all', label: 'Tous les justificatifs' },
+  { value: 'approved', label: 'Justifiés' },
+  { value: 'pending', label: 'En attente' },
+  { value: 'rejected', label: 'Rejetés' },
+  { value: 'to_review', label: 'À vérifier' },
+  { value: 'none', label: 'Sans justificatif' },
 ] as const
 
 const EDITABLE_STATUS_OPTIONS = [
@@ -111,6 +120,48 @@ const getMaxDateValue = (filterType: DateFilterType): string => {
   }
 }
 
+const getDateRange = (date: string, filterType: DateFilterType) => {
+  const baseDate = new Date(date)
+  baseDate.setHours(0, 0, 0, 0)
+
+  const start = new Date(baseDate)
+  const end = new Date(baseDate)
+
+  switch (filterType) {
+    case 'week': {
+      const day = start.getDay()
+      const diffToMonday = day === 0 ? 6 : day - 1
+      start.setDate(start.getDate() - diffToMonday)
+      end.setTime(start.getTime())
+      end.setDate(start.getDate() + 6)
+      break
+    }
+    case 'month':
+      start.setDate(1)
+      end.setMonth(start.getMonth() + 1, 0)
+      break
+    case 'year':
+      start.setMonth(0, 1)
+      end.setMonth(11, 31)
+      break
+    case 'total':
+      start.setFullYear(2024, 0, 1)
+      end.setTime(new Date().getTime())
+      break
+    case 'day':
+    default:
+      break
+  }
+
+  start.setHours(0, 0, 0, 0)
+  end.setHours(23, 59, 59, 999)
+
+  return {
+    startDate: start.toISOString().split('T')[0],
+    endDate: end.toISOString().split('T')[0],
+  }
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface AttendanceRecord {
@@ -136,6 +187,27 @@ type EditableStatus = 'present' | 'late' | 'absent'
 interface AttendanceViewData extends AttendanceStats {
   attendance: LearnerAttendance[]
 }
+
+const normalizeRangeRecord = (record: AttendanceRangeRecord): LearnerAttendance => ({
+  id: record.id,
+  date: record.date,
+  scanTime: record.scanTime || undefined,
+  isPresent: record.isPresent,
+  isLate: record.isLate,
+  status: record.status,
+  justification: record.justification || undefined,
+  documentUrl: record.documentUrl || undefined,
+  justificationComment: record.justificationComment || undefined,
+  learner: {
+    id: record.learner.id,
+    firstName: record.learner.firstName,
+    lastName: record.learner.lastName,
+    matricule: record.learner.matricule,
+    photoUrl: record.learner.photoUrl || undefined,
+    address: record.learner.address || undefined,
+    referential: record.learner.referential,
+  },
+})
 
 const normalizeAttendanceStats = (data: any): AttendanceViewData => {
   const attendance = Array.isArray(data?.attendance) ? data.attendance : []
@@ -241,6 +313,28 @@ const getJustificationStatusLabel = (record: AttendanceRecord) => {
     case 'TO_JUSTIFY':
     default:
       return record.justification?.trim() || record.documentUrl ? 'À vérifier' : 'Aucun justificatif'
+  }
+}
+
+const matchesJustificationFilter = (record: AttendanceRecord, filter: string) => {
+  if (filter === 'all' || !filter) return true
+  if (record.isPresent && !record.isLate) return filter === 'none'
+
+  const hasJustification = Boolean(record.justification?.trim() || record.documentUrl)
+
+  switch (filter) {
+    case 'approved':
+      return record.status === 'APPROVED'
+    case 'pending':
+      return record.status === 'PENDING'
+    case 'rejected':
+      return record.status === 'REJECTED'
+    case 'to_review':
+      return record.status === 'TO_JUSTIFY' && hasJustification
+    case 'none':
+      return record.status === 'TO_JUSTIFY' && !hasJustification
+    default:
+      return true
   }
 }
 
@@ -388,6 +482,7 @@ export default function AttendancePage() {
   const [selectedDate, setSelectedDate]     = useState<string>(new Date().toISOString().split('T')[0])
   const [searchQuery, setSearchQuery]       = useState("")
   const [statusFilter, setStatusFilter]     = useState("")
+  const [justificationFilter, setJustificationFilter] = useState("all")
 
   const [stats, setStats]                   = useState<AttendanceStats>({ present: 0, late: 0, absent: 0, total: 0 })
   const [attendanceRecords, setAttendanceRecords] = useState<LearnerAttendance[]>([])
@@ -407,7 +502,7 @@ export default function AttendancePage() {
   const [showJustificationModal, setShowJustificationModal] = useState(false)
 useEffect(() => {
   setCurrentPage(1)
-}, [searchQuery, statusFilter, dateFilter, selectedDate])
+}, [searchQuery, statusFilter, justificationFilter, dateFilter, selectedDate])
   // ── Actions ────────────────────────────────────────────────────────────────
 
   const handleCloseModal = useCallback(() => {
@@ -505,34 +600,66 @@ const handleStatusChange = async (id: string, date: string, newStatus: EditableS
     try {
       setIsLoadingStats(true)
       let data: any
+      let normalizedRecords: LearnerAttendance[] = []
+      const range = getDateRange(selectedDate, dateFilter)
 
       switch (dateFilter) {
         case 'day':
           data = await attendanceAPI.getDailyStats(selectedDate)
+          normalizedRecords = normalizeAttendanceStats(data).attendance
           break
         case 'week': {
           const weekDate = formatDateForInput(selectedDate, 'week')
-          data = await attendanceAPI.getWeeklyStats(weekDate)
+          const [weeklyStats, weeklyRecords] = await Promise.all([
+            attendanceAPI.getWeeklyStats(weekDate),
+            attendanceAPI.getAttendanceRecords(range),
+          ])
+          data = weeklyStats
+          normalizedRecords = weeklyRecords.map(normalizeRangeRecord)
           break
         }
         case 'month': {
           const [year, month] = selectedDate.split('-')
-          data = await attendanceAPI.getMonthlyStats(parseInt(year), parseInt(month))
+          const [monthlyStats, monthlyRecords] = await Promise.all([
+            attendanceAPI.getMonthlyStats(parseInt(year), parseInt(month)),
+            attendanceAPI.getAttendanceRecords(range),
+          ])
+          data = monthlyStats
+          normalizedRecords = monthlyRecords.map(normalizeRangeRecord)
           break
         }
         case 'year': {
           const year = selectedDate.split('-')[0]
-          data = await attendanceAPI.getYearlyStats(parseInt(year))
+          const [yearlyStats, yearlyRecords] = await Promise.all([
+            attendanceAPI.getYearlyStats(parseInt(year)),
+            attendanceAPI.getAttendanceRecords(range),
+          ])
+          data = yearlyStats
+          normalizedRecords = yearlyRecords.map(normalizeRangeRecord)
+          break
+        }
+        case 'total': {
+          const totalRecords = await attendanceAPI.getAttendanceRecords(range)
+          normalizedRecords = totalRecords.map(normalizeRangeRecord)
+          data = {
+            present: normalizedRecords.filter((record) => record.isPresent && !record.isLate).length,
+            late: normalizedRecords.filter((record) => record.isLate).length,
+            absent: normalizedRecords.filter((record) => !record.isPresent).length,
+            total: normalizedRecords.length,
+            attendance: normalizedRecords,
+          }
           break
         }
         default:
           data = await attendanceAPI.getDailyStats(selectedDate)
+          normalizedRecords = normalizeAttendanceStats(data).attendance
       }
 
       const processedStats = normalizeAttendanceStats(data)
+      const recordsToDisplay = normalizedRecords.length > 0 ? normalizedRecords : processedStats.attendance
 
       setStats(processedStats)
-      setAttendanceRecords(processedStats.attendance)
+      setAttendanceRecords(recordsToDisplay)
     } catch (err) {
       console.error('Error fetching stats:', err)
       setError('Erreur lors du chargement des statistiques')
@@ -598,7 +725,9 @@ const handleStatusChange = async (id: string, date: string, newStatus: EditableS
       (statusFilter === 'late'    && record.isLate) ||
       (statusFilter === 'absent'  && !record.isPresent)
 
-    return nameMatch && statusMatch
+    const justificationMatch = matchesJustificationFilter(record as AttendanceRecord, justificationFilter)
+
+    return nameMatch && statusMatch && justificationMatch
   })
 
   const paginatedRecords = filteredRecords.slice(
@@ -621,13 +750,14 @@ const handleStatusChange = async (id: string, date: string, newStatus: EditableS
 
     const dateLabel = selectedDate.replaceAll('-', '')
     const statusLabel = statusFilter && statusFilter !== 'all' ? statusFilter : 'tous'
+    const justificationLabel = justificationFilter && justificationFilter !== 'all' ? justificationFilter : 'tous'
     const searchLabel = searchQuery.trim()
       ? searchQuery.trim().toLowerCase().replace(/\s+/g, '-')
       : 'tous'
 
     exportToCSV(
       exportedRows,
-      `presences-${dateFilter}-${dateLabel}-${statusLabel}-${searchLabel}.csv`
+      `presences-${dateFilter}-${dateLabel}-${statusLabel}-${justificationLabel}-${searchLabel}.csv`
     )
   }
 
@@ -685,29 +815,32 @@ const handleStatusChange = async (id: string, date: string, newStatus: EditableS
               <SelectItem value="week">Hebdomadaire</SelectItem>
               <SelectItem value="month">Mensuel</SelectItem>
               <SelectItem value="year">Annuel</SelectItem>
+              <SelectItem value="total">Total</SelectItem>
             </SelectContent>
           </Select>
 
-          <Input
-            type={getDateInputType()}
-            value={formatDateForInput(selectedDate, dateFilter)}
-            max={getMaxDateValue(dateFilter)}
-            onChange={(e) => {
-              let newDate = e.target.value
-              switch (dateFilter) {
-                case 'week': {
-                  const [year, week] = newDate.split('-W')
-                  const firstDay = new Date(parseInt(year), 0, 1 + (parseInt(week) - 1) * 7)
-                  newDate = firstDay.toISOString().split('T')[0]
-                  break
+          {dateFilter !== 'total' && (
+            <Input
+              type={getDateInputType()}
+              value={formatDateForInput(selectedDate, dateFilter)}
+              max={getMaxDateValue(dateFilter)}
+              onChange={(e) => {
+                let newDate = e.target.value
+                switch (dateFilter) {
+                  case 'week': {
+                    const [year, week] = newDate.split('-W')
+                    const firstDay = new Date(parseInt(year), 0, 1 + (parseInt(week) - 1) * 7)
+                    newDate = firstDay.toISOString().split('T')[0]
+                    break
+                  }
+                  case 'month': newDate = `${newDate}-01`; break
+                  case 'year':  newDate = `${newDate}-01-01`; break
                 }
-                case 'month': newDate = `${newDate}-01`; break
-                case 'year':  newDate = `${newDate}-01-01`; break
-              }
-              setSelectedDate(newDate)
-            }}
-            className="w-[200px] bg-white"
-          />
+                setSelectedDate(newDate)
+              }}
+              className="w-[200px] bg-white"
+            />
+          )}
         </div>
 
         <div className="relative flex-grow">
@@ -727,6 +860,17 @@ const handleStatusChange = async (id: string, date: string, newStatus: EditableS
           </SelectTrigger>
           <SelectContent>
             {STATUS_OPTIONS.map(opt => (
+              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={justificationFilter} onValueChange={setJustificationFilter}>
+          <SelectTrigger className="w-full md:w-[220px] bg-white">
+            <SelectValue placeholder="État justificatif" />
+          </SelectTrigger>
+          <SelectContent>
+            {JUSTIFICATION_FILTER_OPTIONS.map(opt => (
               <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
             ))}
           </SelectContent>

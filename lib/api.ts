@@ -561,6 +561,27 @@ export interface LearnerAttendance {
   };
 }
 
+export interface AttendanceRangeRecord {
+  id: string;
+  date: string;
+  scanTime?: string | null;
+  isPresent: boolean;
+  isLate: boolean;
+  status?: 'TO_JUSTIFY' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  justification?: string | null;
+  documentUrl?: string | null;
+  justificationComment?: string | null;
+  learner: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    matricule: string;
+    photoUrl?: string | null;
+    address?: string | null;
+    referential?: { id?: string; name: string };
+  };
+}
+
 export interface KitExtended {
   id: string;
   laptop: boolean;
@@ -1959,6 +1980,17 @@ export const attendanceAPI = {
   getYearlyStats: async (year: number): Promise<AttendanceStats> => {
     const response = await api.get('/attendance/stats/yearly', {
       params: { year }
+    });
+    return response.data;
+  },
+
+  getAttendanceRecords: async (params: {
+    startDate: string;
+    endDate: string;
+    referentialId?: string;
+  }): Promise<AttendanceRangeRecord[]> => {
+    const response = await api.get('/attendance/records', {
+      params,
     });
     return response.data;
   },
