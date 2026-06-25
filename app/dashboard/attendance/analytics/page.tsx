@@ -207,7 +207,7 @@ export default function AttendanceAnalyticsPage() {
         <div className="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
           <div className="flex items-center gap-3 text-red-500">
             <TrendingDown size={20} />
-            <span className="text-sm font-medium text-gray-600">Absences cumulées</span>
+            <span className="text-sm font-medium text-gray-600">Absences dans le top</span>
           </div>
           <p className="mt-3 text-3xl font-bold text-gray-900">{summary.totalAbsences}</p>
         </div>
@@ -215,7 +215,7 @@ export default function AttendanceAnalyticsPage() {
         <div className="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
           <div className="flex items-center gap-3 text-amber-500">
             <Clock3 size={20} />
-            <span className="text-sm font-medium text-gray-600">Retards cumulés</span>
+            <span className="text-sm font-medium text-gray-600">Retards dans le top</span>
           </div>
           <p className="mt-3 text-3xl font-bold text-gray-900">{summary.totalLate}</p>
         </div>
