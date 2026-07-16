@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Referential } from '@/lib/api';
-import { Users, BookOpen } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 interface ReferentialCardProps {
   referential: Referential;
@@ -96,10 +96,15 @@ export default function ReferentialCard({ referential }: ReferentialCardProps) {
             )}
           </div>
           
-          {/* Learners count */}
+        {/* Learners count */}
           <span className="text-xs text-teal-600 font-medium">
             {referential.learners?.length || 0} apprenants
           </span>
+        </div>
+
+        <div className="mt-3 flex items-center justify-between border-t border-orange-100 pt-3">
+          <span className="text-sm font-medium text-orange-600">Voir détail</span>
+          <ArrowRight className="h-4 w-4 text-orange-600" />
         </div>
       </div>
     </Link>

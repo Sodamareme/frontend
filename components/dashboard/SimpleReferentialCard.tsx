@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Referential } from '@/lib/api';
+import { ArrowRight } from 'lucide-react';
 
 interface SimpleReferentialCardProps {
   referential: Referential;
@@ -43,6 +44,11 @@ export default function SimpleReferentialCard({ referential }: SimpleReferential
         <p className="text-xs text-gray-600">
           Capacité: {referential.capacity} places
         </p>
+
+        <div className="mt-3 flex items-center justify-between border-t border-orange-100 pt-3">
+          <span className="text-sm font-medium text-orange-600">Voir détail</span>
+          <ArrowRight className="h-4 w-4 text-orange-600" />
+        </div>
       </div>
     </Link>
   );

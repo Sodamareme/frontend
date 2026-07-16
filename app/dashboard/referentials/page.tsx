@@ -357,7 +357,7 @@ export default function ReferentialsPage() {
                   <ReferentialCard referential={referential} />
                   
                   {/* Boutons d'action */}
-                  <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <div className="pointer-events-none absolute top-2 right-2 flex gap-1 opacity-0 transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100">
                     {/* Bouton d'édition */}
                     <button
                       onClick={(e) => {
