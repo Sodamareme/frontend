@@ -34,6 +34,7 @@ export interface Referential {
   description?: string  // ✅ Optionnel
   photoUrl?: string
   capacity: number
+  attendanceClosedAt?: string | null
   category: string
   status: string
   modules?: Module[]
@@ -496,6 +497,7 @@ export interface ReferentialExtended {
   description?: string;
   photoUrl?: string;
   capacity: number;
+  attendanceClosedAt?: string | null;
   category: string;
   status: string;
   learners?: Learner[];

@@ -2,20 +2,22 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from "next/navigation"
-import { Referential, referentialsAPI } from '@/lib/api'
-import { Book, ArrowLeft, Calendar, Plus, AlertCircle } from 'lucide-react' // Removed Users icon
+import { ReferentialExtended, referentialsAPI } from '@/lib/api'
+import { Book, ArrowLeft, Calendar, Plus, AlertCircle, Lock, LockOpen } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ReferentialDetailsSkeleton } from '@/components/skeletons/ReferentialDetailsSkeleton';
 import AddModuleModal from '@/components/modals/AddModuleModal';
+import { toast } from 'sonner';
 
 export default function ReferentialDetailsPage() {
   const { id } = useParams() || {}
-  const [referential, setReferential] = useState<Referential | null>(null)
+  const [referential, setReferential] = useState<ReferentialExtended | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const router = useRouter()
   const [isAddModuleModalOpen, setIsAddModuleModalOpen] = useState(false);
+  const [isUpdatingAttendanceClosure, setIsUpdatingAttendanceClosure] = useState(false)
 
   const fetchReferential = async () => {
     try {
@@ -37,6 +39,36 @@ export default function ReferentialDetailsPage() {
   useEffect(() => {
     fetchReferential()
   }, [id])
+
+  const handleAttendanceClosureToggle = async () => {
+    if (!referential || typeof id !== 'string') {
+      return
+    }
+
+    try {
+      setIsUpdatingAttendanceClosure(true)
+
+      const nextAttendanceClosedAt = referential.attendanceClosedAt
+        ? null
+        : new Date().toISOString()
+
+      const updatedReferential = await referentialsAPI.updateReferential(id, {
+        attendanceClosedAt: nextAttendanceClosedAt,
+      })
+
+      setReferential(updatedReferential)
+      toast.success(
+        nextAttendanceClosedAt
+          ? 'Présence clôturée pour ce référentiel'
+          : 'Présence réouverte pour ce référentiel'
+      )
+    } catch (err) {
+      console.error('Error updating referential attendance closure:', err)
+      toast.error("Impossible de mettre à jour l'état de présence du référentiel")
+    } finally {
+      setIsUpdatingAttendanceClosure(false)
+    }
+  }
 
   if (loading) {
     return <ReferentialDetailsSkeleton />;
@@ -101,6 +133,45 @@ export default function ReferentialDetailsPage() {
                 <h1 className="text-2xl font-bold text-gray-800 mb-2">{referential.name}</h1>
               )}
               {referential && <p className="text-gray-600 max-w-2xl">{referential.description}</p>}
+              {referential && (
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <span
+                    className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${
+                      referential.attendanceClosedAt
+                        ? 'bg-red-50 text-red-700 border border-red-200'
+                        : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    }`}
+                  >
+                    {referential.attendanceClosedAt ? (
+                      <>
+                        <Lock className="mr-2 h-4 w-4" />
+                        Présence clôturée
+                      </>
+                    ) : (
+                      <>
+                        <LockOpen className="mr-2 h-4 w-4" />
+                        Présence ouverte
+                      </>
+                    )}
+                  </span>
+
+                  <button
+                    onClick={handleAttendanceClosureToggle}
+                    disabled={isUpdatingAttendanceClosure}
+                    className={`rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors ${
+                      referential.attendanceClosedAt
+                        ? 'bg-emerald-600 hover:bg-emerald-700'
+                        : 'bg-orange-500 hover:bg-orange-600'
+                    } disabled:cursor-not-allowed disabled:opacity-60`}
+                  >
+                    {isUpdatingAttendanceClosure
+                      ? 'Mise à jour...'
+                      : referential.attendanceClosedAt
+                        ? 'Réouvrir la présence'
+                        : 'Clôturer la présence'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
