@@ -443,7 +443,7 @@ export default function PromotionDetailsPage() {
           {/* Right Column - Sidebar */}
           <div className="space-y-6">
             {/* Quick Actions */}
-            {/* <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
               <h3 className="text-lg font-medium text-gray-800 mb-4">Actions rapides</h3>
               <div className="space-y-3">
                 <button 
@@ -468,7 +468,7 @@ export default function PromotionDetailsPage() {
                   Planning
                 </button>
               </div>
-            </div> */}
+            </div>
 
             {/* Coordinator Info */}
             {promotion.coordinator && (
