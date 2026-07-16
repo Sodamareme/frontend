@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from "next/navigation"
 import { ReferentialExtended, referentialsAPI } from '@/lib/api'
-import { Book, ArrowLeft, Calendar, Plus, AlertCircle, Lock, LockOpen } from 'lucide-react'
+import { Book, ArrowLeft, Calendar, Plus, AlertCircle, Lock, Unlock } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ReferentialDetailsSkeleton } from '@/components/skeletons/ReferentialDetailsSkeleton';
@@ -149,7 +149,7 @@ export default function ReferentialDetailsPage() {
                       </>
                     ) : (
                       <>
-                        <LockOpen className="mr-2 h-4 w-4" />
+                        <Unlock className="mr-2 h-4 w-4" />
                         Présence ouverte
                       </>
                     )}
