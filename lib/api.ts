@@ -2515,14 +2515,17 @@ export interface ScheduleEvent {
   id: string;
   title: string;
   description?: string;
-  date: string;
-  startTime: string;
-  endTime: string;
+  startDate: string;
+  endDate: string;
+  type: 'EVENT' | 'HOLIDAY' | 'NO_CLASS' | string;
+  location?: string;
   promotionId: string;
-  moduleId?: string;
-  coachId?: string;
   createdAt: string;
   updatedAt: string;
+  promotion?: {
+    id: string;
+    name: string;
+  };
 }
 
 export const scheduleAPI = {
@@ -2532,7 +2535,7 @@ export const scheduleAPI = {
   getScheduleByPromotionId: async (promotionId: string): Promise<ScheduleEvent[]> => {
     try {
       console.log('📅 Fetching schedule for promotion:', promotionId);
-      const response = await api.get(`/schedules/promotion/${promotionId}`);
+      const response = await api.get(`/events/promotion/${promotionId}`);
       console.log('✅ Schedule received:', response.data);
       return response.data;
     } catch (error: any) {
@@ -2553,7 +2556,7 @@ export const scheduleAPI = {
    */
   createScheduleEvent: async (eventData: Omit<ScheduleEvent, 'id' | 'createdAt' | 'updatedAt'>): Promise<ScheduleEvent> => {
     try {
-      const response = await api.post('/schedules', eventData);
+      const response = await api.post('/events', eventData);
       return response.data;
     } catch (error) {
       console.error('Error creating schedule event:', error);
@@ -2566,7 +2569,7 @@ export const scheduleAPI = {
    */
   updateScheduleEvent: async (id: string, eventData: Partial<ScheduleEvent>): Promise<ScheduleEvent> => {
     try {
-      const response = await api.put(`/schedules/${id}`, eventData);
+      const response = await api.put(`/events/${id}`, eventData);
       return response.data;
     } catch (error) {
       console.error('Error updating schedule event:', error);
@@ -2579,7 +2582,7 @@ export const scheduleAPI = {
    */
   deleteScheduleEvent: async (id: string): Promise<void> => {
     try {
-      await api.delete(`/schedules/${id}`);
+      await api.delete(`/events/${id}`);
     } catch (error) {
       console.error('Error deleting schedule event:', error);
       throw error;
