@@ -203,6 +203,7 @@ export interface AtRiskLearnersResponse {
   };
   mostAbsent: AtRiskLearner[];
   mostLate: AtRiskLearner[];
+  mostRegular: AtRiskLearner[];
 }
 
 interface ReplaceLearnerDto {

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { attendanceAPI, promotionsAPI, referentialsAPI, type AtRiskLearnersResponse, type Promotion, type Referential } from "@/lib/api"
-import { AlertTriangle, Clock3, TrendingDown, Users } from "lucide-react"
+import { AlertTriangle, Award, Clock3, TrendingDown, Users } from "lucide-react"
 
 type AnalyticsPeriod = "week" | "month" | "quarter"
 
@@ -26,6 +26,7 @@ const defaultAnalytics: AtRiskLearnersResponse = {
   },
   mostAbsent: [],
   mostLate: [],
+  mostRegular: [],
 }
 
 const formatDate = (value: string) => {
@@ -165,6 +166,7 @@ export default function AttendanceAnalyticsPage() {
       totalFlaggedLearners,
       totalAbsences: analytics.mostAbsent.reduce((sum, learner) => sum + learner.absenceCount, 0),
       totalLate: analytics.mostLate.reduce((sum, learner) => sum + learner.lateCount, 0),
+      bestAttendanceRate: analytics.mostRegular[0]?.attendanceRate ?? 0,
     }
   }, [analytics])
 
@@ -221,6 +223,14 @@ export default function AttendanceAnalyticsPage() {
         </div>
 
         <div className="rounded-2xl bg-white p-5 shadow-sm border border-gray-100">
+          <div className="flex items-center gap-3 text-orange-500">
+            <Award size={20} />
+            <span className="text-sm font-medium text-gray-600">Meilleur taux</span>
+          </div>
+          <p className="mt-3 text-3xl font-bold text-gray-900">{summary.bestAttendanceRate}%</p>
+        </div>
+
+        <div className="rounded-2xl bg-white p-5 shadow-sm border border-gray-100 md:col-span-4">
           <div className="flex items-center gap-3 text-orange-500">
             <AlertTriangle size={20} />
             <span className="text-sm font-medium text-gray-600">Période analysée</span>
@@ -292,6 +302,16 @@ export default function AttendanceAnalyticsPage() {
         </div>
       ) : (
         <div className="grid gap-6 xl:grid-cols-2">
+          <LeaderboardCard
+            title="Top assidus"
+            subtitle="Apprenants avec la meilleure régularité sur la période."
+            emptyLabel="Aucune présence exploitable sur cette période."
+            rows={analytics.mostRegular}
+            accentClass="bg-orange-100 text-orange-700"
+            valueLabel={(row) => `${row.presentCount} présence${row.presentCount > 1 ? "s" : ""}`}
+            returnTo={returnTo}
+          />
+
           <LeaderboardCard
             title="Top absentéistes"
             subtitle="Apprenants avec le plus d'absences enregistrées sur la période."
