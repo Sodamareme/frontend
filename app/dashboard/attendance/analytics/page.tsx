@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { attendanceAPI, promotionsAPI, referentialsAPI, type AtRiskLearnersResponse, type Promotion, type Referential } from "@/lib/api"
 import { AlertTriangle, Award, Clock3, TrendingDown, Users } from "lucide-react"
 
@@ -104,12 +105,16 @@ function LeaderboardCard({
 }
 
 export default function AttendanceAnalyticsPage() {
+  const searchParams = useSearchParams()
   const [analytics, setAnalytics] = useState<AtRiskLearnersResponse>(defaultAnalytics)
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [referentials, setReferentials] = useState<Referential[]>([])
-  const [period, setPeriod] = useState<AnalyticsPeriod>("month")
-  const [promotionId, setPromotionId] = useState("")
-  const [referentialId, setReferentialId] = useState("")
+  const [period, setPeriod] = useState<AnalyticsPeriod>(() => {
+    const value = searchParams.get("period")
+    return value === "week" || value === "quarter" ? value : "month"
+  })
+  const [promotionId, setPromotionId] = useState(() => searchParams.get("promotionId") || "")
+  const [referentialId, setReferentialId] = useState(() => searchParams.get("referentialId") || "")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
