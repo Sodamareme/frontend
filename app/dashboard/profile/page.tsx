@@ -255,10 +255,24 @@ function LearnerProfile({
 
   const getKitProgress = () => {
     if (!learner.kit) return 0
-    const items = Object.values(learner.kit)
+    const items = [
+      learner.kit.laptop,
+      learner.kit.charger,
+      learner.kit.bag,
+      learner.kit.polo,
+    ]
     const received = items.filter(Boolean).length
     return (received / items.length) * 100
   }
+
+  const kitItems = [
+    learner.kit?.laptop,
+    learner.kit?.charger,
+    learner.kit?.bag,
+    learner.kit?.polo,
+  ]
+  const receivedKitItemsCount = kitItems.filter(Boolean).length
+  const totalKitItemsCount = kitItems.length
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -586,8 +600,7 @@ function LearnerProfile({
                     </div>
                     <Progress value={getKitProgress()} className="h-4 bg-gray-200" />
                     <p className="text-sm text-gray-600 mt-2">
-                      {Object.values(learner.kit || {}).filter(Boolean).length} sur{' '}
-                      {Object.values(learner.kit || {}).length} éléments reçus
+                      {receivedKitItemsCount} sur {totalKitItemsCount} éléments reçus
                     </p>
                   </div>
 
