@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { learnersAPI, type Learner, type AttendanceStats, attendanceAPI, LearnerAttendance } from "@/lib/api"
-import { Calendar, CheckCircle, Clock, Edit, AlertTriangle, ArrowLeft } from "lucide-react"
+import { Calendar, CheckCircle, Clock, Edit, AlertTriangle, ArrowLeft, Save, X } from "lucide-react"
+import { toast } from "sonner"
 
 // Add these helper functions at the top of your component
 const getReferentialBadgeClass = (referentialName: string) => {
@@ -51,6 +52,17 @@ export default function LearnerDetailsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [attendances, setAttendances] = useState<LearnerAttendance[]>([])
+  const [isEditingLearner, setIsEditingLearner] = useState(false)
+  const [isSavingLearner, setIsSavingLearner] = useState(false)
+  const [learnerForm, setLearnerForm] = useState({
+    firstName: "",
+    lastName: "",
+    gender: "MALE",
+    birthDate: "",
+    birthPlace: "",
+    address: "",
+    phone: "",
+  })
 
   const returnTo = searchParams.get("returnTo")
   const listSearchParams = new URLSearchParams(searchParams.toString())
@@ -75,6 +87,15 @@ export default function LearnerDetailsPage() {
         ]);
 
         setLearner(learnerData);
+        setLearnerForm({
+          firstName: learnerData.firstName || "",
+          lastName: learnerData.lastName || "",
+          gender: learnerData.gender || "MALE",
+          birthDate: learnerData.birthDate ? new Date(learnerData.birthDate).toISOString().split("T")[0] : "",
+          birthPlace: learnerData.birthPlace || "",
+          address: learnerData.address || "",
+          phone: learnerData.phone || "",
+        })
         
         if (Array.isArray(attendanceData)) {
           setAttendances(attendanceData);
@@ -173,6 +194,63 @@ export default function LearnerDetailsPage() {
         return "bg-blue-100 text-blue-800"
       default:
         return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  const handleLearnerFormChange = (field: keyof typeof learnerForm, value: string) => {
+    setLearnerForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
+
+  const handleCancelEditLearner = () => {
+    if (!learner) return
+
+    setLearnerForm({
+      firstName: learner.firstName || "",
+      lastName: learner.lastName || "",
+      gender: learner.gender || "MALE",
+      birthDate: learner.birthDate ? new Date(learner.birthDate).toISOString().split("T")[0] : "",
+      birthPlace: learner.birthPlace || "",
+      address: learner.address || "",
+      phone: learner.phone || "",
+    })
+    setIsEditingLearner(false)
+  }
+
+  const handleSaveLearner = async () => {
+    if (!learner) return
+
+    try {
+      setIsSavingLearner(true)
+      const updatedLearner = await learnersAPI.updateLearner(learner.id, {
+        firstName: learnerForm.firstName.trim(),
+        lastName: learnerForm.lastName.trim(),
+        gender: learnerForm.gender as "MALE" | "FEMALE",
+        birthDate: learnerForm.birthDate,
+        birthPlace: learnerForm.birthPlace.trim(),
+        address: learnerForm.address.trim(),
+        phone: learnerForm.phone.trim(),
+      })
+
+      setLearner(updatedLearner as Learner)
+      setLearnerForm({
+        firstName: updatedLearner.firstName || "",
+        lastName: updatedLearner.lastName || "",
+        gender: updatedLearner.gender || "MALE",
+        birthDate: updatedLearner.birthDate ? new Date(updatedLearner.birthDate).toISOString().split("T")[0] : "",
+        birthPlace: updatedLearner.birthPlace || "",
+        address: updatedLearner.address || "",
+        phone: updatedLearner.phone || "",
+      })
+      setIsEditingLearner(false)
+      toast.success("Informations de l'apprenant mises à jour")
+    } catch (error: any) {
+      console.error("Error updating learner:", error)
+      toast.error(error?.message || "Erreur lors de la mise à jour de l'apprenant")
+    } finally {
+      setIsSavingLearner(false)
     }
   }
 
@@ -342,9 +420,34 @@ export default function LearnerDetailsPage() {
             <div className="bg-white rounded-lg shadow-sm mb-6">
               <div className="p-6 flex items-center justify-between border-b border-gray-100">
                 <h2 className="text-xl font-bold text-gray-800">Informations de l'apprenant</h2>
-                <button className="text-gray-400 hover:text-gray-600">
-                  <Edit size={18} />
-                </button>
+                {isEditingLearner ? (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleSaveLearner}
+                      disabled={isSavingLearner}
+                      className="inline-flex items-center rounded-lg bg-orange-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <Save size={16} className="mr-2" />
+                      {isSavingLearner ? "Enregistrement..." : "Enregistrer"}
+                    </button>
+                    <button
+                      onClick={handleCancelEditLearner}
+                      disabled={isSavingLearner}
+                      className="inline-flex items-center rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <X size={16} className="mr-2" />
+                      Annuler
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setIsEditingLearner(true)}
+                    className="text-gray-400 hover:text-gray-600"
+                    title="Modifier les informations"
+                  >
+                    <Edit size={18} />
+                  </button>
+                )}
               </div>
 
               <div className="p-6">
@@ -352,38 +455,112 @@ export default function LearnerDetailsPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm text-gray-500 mb-1">Prénom(s)</label>
-                      <div className="p-3 bg-gray-50 rounded-md text-gray-700">{learner.firstName}</div>
+                      {isEditingLearner ? (
+                        <input
+                          type="text"
+                          value={learnerForm.firstName}
+                          onChange={(event) => handleLearnerFormChange("firstName", event.target.value)}
+                          className="w-full rounded-md border border-gray-200 bg-white p-3 text-gray-700 focus:border-orange-400 focus:outline-none"
+                        />
+                      ) : (
+                        <div className="p-3 bg-gray-50 rounded-md text-gray-700">{learner.firstName}</div>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm text-gray-500 mb-1">Nom</label>
-                      <div className="p-3 bg-gray-50 rounded-md text-gray-700">{learner.lastName}</div>
+                      {isEditingLearner ? (
+                        <input
+                          type="text"
+                          value={learnerForm.lastName}
+                          onChange={(event) => handleLearnerFormChange("lastName", event.target.value)}
+                          className="w-full rounded-md border border-gray-200 bg-white p-3 text-gray-700 focus:border-orange-400 focus:outline-none"
+                        />
+                      ) : (
+                        <div className="p-3 bg-gray-50 rounded-md text-gray-700">{learner.lastName}</div>
+                      )}
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="relative">
                       <label className="block text-sm text-gray-500 mb-1">Date de naissance</label>
-                      <div className="p-3 bg-gray-50 rounded-md text-gray-700 pr-10">
-                        {formatDate(learner.birthDate)}
-                      </div>
-                      <div className="absolute right-3 top-9 text-orange-500">
-                        <Calendar size={16} />
-                      </div>
+                      {isEditingLearner ? (
+                        <input
+                          type="date"
+                          value={learnerForm.birthDate}
+                          onChange={(event) => handleLearnerFormChange("birthDate", event.target.value)}
+                          className="w-full rounded-md border border-gray-200 bg-white p-3 text-gray-700 focus:border-orange-400 focus:outline-none"
+                        />
+                      ) : (
+                        <>
+                          <div className="p-3 bg-gray-50 rounded-md text-gray-700 pr-10">
+                            {formatDate(learner.birthDate)}
+                          </div>
+                          <div className="absolute right-3 top-9 text-orange-500">
+                            <Calendar size={16} />
+                          </div>
+                        </>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm text-gray-500 mb-1">Lieu de naissance</label>
-                      <div className="p-3 bg-gray-50 rounded-md text-gray-700">{learner.birthPlace || "N/A"}</div>
+                      {isEditingLearner ? (
+                        <input
+                          type="text"
+                          value={learnerForm.birthPlace}
+                          onChange={(event) => handleLearnerFormChange("birthPlace", event.target.value)}
+                          className="w-full rounded-md border border-gray-200 bg-white p-3 text-gray-700 focus:border-orange-400 focus:outline-none"
+                        />
+                      ) : (
+                        <div className="p-3 bg-gray-50 rounded-md text-gray-700">{learner.birthPlace || "N/A"}</div>
+                      )}
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-sm text-gray-500 mb-1">Adresse</label>
-                    <div className="p-3 bg-gray-50 rounded-md text-gray-700">{learner.address || "N/A"}</div>
+                    {isEditingLearner ? (
+                      <input
+                        type="text"
+                        value={learnerForm.address}
+                        onChange={(event) => handleLearnerFormChange("address", event.target.value)}
+                        className="w-full rounded-md border border-gray-200 bg-white p-3 text-gray-700 focus:border-orange-400 focus:outline-none"
+                      />
+                    ) : (
+                      <div className="p-3 bg-gray-50 rounded-md text-gray-700">{learner.address || "N/A"}</div>
+                    )}
                   </div>
 
                   <div>
                     <label className="block text-sm text-gray-500 mb-1">Téléphone</label>
-                    <div className="p-3 bg-gray-50 rounded-md text-gray-700">{learner.phone}</div>
+                    {isEditingLearner ? (
+                      <input
+                        type="tel"
+                        value={learnerForm.phone}
+                        onChange={(event) => handleLearnerFormChange("phone", event.target.value)}
+                        className="w-full rounded-md border border-gray-200 bg-white p-3 text-gray-700 focus:border-orange-400 focus:outline-none"
+                      />
+                    ) : (
+                      <div className="p-3 bg-gray-50 rounded-md text-gray-700">{learner.phone}</div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm text-gray-500 mb-1">Sexe</label>
+                    {isEditingLearner ? (
+                      <select
+                        value={learnerForm.gender}
+                        onChange={(event) => handleLearnerFormChange("gender", event.target.value)}
+                        className="w-full rounded-md border border-gray-200 bg-white p-3 text-gray-700 focus:border-orange-400 focus:outline-none"
+                      >
+                        <option value="MALE">Masculin</option>
+                        <option value="FEMALE">Féminin</option>
+                      </select>
+                    ) : (
+                      <div className="p-3 bg-gray-50 rounded-md text-gray-700">
+                        {learner.gender === "FEMALE" ? "Féminin" : "Masculin"}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
