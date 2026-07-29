@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { CalendarDays, Users, Book, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import fr from 'date-fns/locale/fr';
@@ -20,6 +21,8 @@ interface ModuleCardProps {
 }
 
 export default function ModuleCard({ module, onClick }: ModuleCardProps) {
+  const [imageFailed, setImageFailed] = useState(false);
+
   return (
     <div 
       className="group bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-lg border border-gray-100 hover:border-orange-500"
@@ -27,24 +30,12 @@ export default function ModuleCard({ module, onClick }: ModuleCardProps) {
     >
       {/* Module Image Section */}
       <div className="h-48 relative overflow-hidden bg-gray-100">
-        {module.photoUrl ? (
+        {module.photoUrl && !imageFailed ? (
           <img
             src={getImageUrl(module.photoUrl)}
             alt={module.name}
             className="w-full h-full object-cover transform transition-transform duration-300 group-hover:scale-110"
-            onError={(e) => {
-              // Fallback en cas d'erreur de chargement de l'image
-              const target = e.target as HTMLImageElement;
-              target.onerror = null;
-              target.style.display = 'none';
-              const parent = target.parentElement;
-              if (parent) {
-                const fallback = document.createElement('div');
-                fallback.className = 'w-full h-full flex items-center justify-center bg-orange-50';
-                fallback.innerHTML = '<svg class="w-16 h-16 text-orange-200" ...></svg>';
-                parent.appendChild(fallback);
-              }
-            }}
+            onError={() => setImageFailed(true)}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-orange-50">

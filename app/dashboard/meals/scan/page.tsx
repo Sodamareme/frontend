@@ -11,7 +11,6 @@ interface Student {
   id: string;
   firstName: string;
   lastName: string;
-  email: string;
   program: string;
   year: number;
   studentNumber: string;
@@ -573,8 +572,8 @@ export default function ScanPage() {
                     <div className="w-5 h-5 text-gray-400">@</div>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Email</p>
-                    <p className="font-medium text-gray-900">{scannedStudent.user.email}</p>
+                    <p className="text-sm text-gray-600">Identifiant QR</p>
+                    <p className="font-medium text-gray-900">{scannedStudent.studentNumber}</p>
                   </div>
                 </div>
 
