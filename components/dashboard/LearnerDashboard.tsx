@@ -127,7 +127,7 @@ export default function LearnerDashboard() {
 
         try {
           const regularityData = await learnersAPI.getLearnerRegularity({
-            period: "month",
+            period: "year",
           });
           setRegularity(regularityData);
         } catch (regularityError) {
