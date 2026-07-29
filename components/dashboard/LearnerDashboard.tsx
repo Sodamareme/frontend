@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { learnersAPI, referentialsAPI } from "@/lib/api";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import type { AttendanceStats, LearnerDetailsExtended, Module } from "@/lib/api";
+import type { AttendanceStats, LearnerDetailsExtended, LearnerRegularityResponse, Module } from "@/lib/api";
 import ModuleCard from "@/components/modules/ModuleCard";
 import {
   ArrowRight,
+  Award,
   BookOpen,
   CheckCircle2,
   Clock3,
@@ -79,6 +80,7 @@ export default function LearnerDashboard() {
   });
   const [showQRCode, setShowQRCode] = useState(false);
   const [modules, setModules] = useState<Module[]>([]);
+  const [regularity, setRegularity] = useState<LearnerRegularityResponse | null>(null);
 
   const fetchData = async (silent = false) => {
     try {
@@ -112,6 +114,9 @@ export default function LearnerDashboard() {
         });
 
         const statsData = await learnersAPI.getLearnerAttendanceStats(details.id);
+        const regularityData = await learnersAPI.getLearnerRegularity({
+          period: "month",
+        });
         setAttendanceStats({
           attendance: details.attendances || [],
           present: statsData.presentDays ?? 0,
@@ -122,6 +127,7 @@ export default function LearnerDashboard() {
           justifiedAbsentDays: statsData.justifiedAbsentDays ?? 0,
           unjustifiedAbsentDays: statsData.unjustifiedAbsentDays ?? 0,
         });
+        setRegularity(regularityData);
 
         if (details.referential?.id) {
           const referentialData = await referentialsAPI.getReferentialById(details.referential.id);
@@ -156,6 +162,29 @@ export default function LearnerDashboard() {
     if (!attendanceStats) return 0;
     const total = attendanceStats.present + attendanceStats.late + attendanceStats.absent;
     return total > 0 ? Math.round((attendanceStats.present / total) * 100) : 0;
+  })();
+
+  const rankingMood = (() => {
+    const rank = regularity?.learner?.rank;
+    const total = regularity?.totalLearners || 0;
+
+    if (!rank || total === 0) {
+      return { emoji: "✨", title: "En route", note: "Le classement arrive." };
+    }
+
+    if (rank === 1) {
+      return { emoji: "🏆", title: "Boss du pointage", note: "Vous menez la danse." };
+    }
+
+    if (rank <= 3) {
+      return { emoji: "🔥", title: "Podium en vue", note: "Vous êtes dans le trio de tête." };
+    }
+
+    if (rank <= 10) {
+      return { emoji: "🚀", title: "Très solide", note: "Encore un petit effort pour grimper." };
+    }
+
+    return { emoji: "💪", title: "Ça monte", note: "Le top vous attend." };
   })();
 
   if (loading.learner) {
@@ -295,6 +324,86 @@ export default function LearnerDashboard() {
               note="Parcours actif"
               icon={Layers3}
             />
+          </section>
+
+          <section className="grid gap-6 xl:grid-cols-[0.92fr_1.28fr]">
+            <div className="rounded-[2rem] border border-orange-100 bg-white p-6 shadow-sm">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-[#F16E00]">Classement</p>
+                  <h2 className="mt-2 text-2xl font-semibold text-slate-900">
+                    {rankingMood.emoji} Assiduité
+                  </h2>
+                  <p className="mt-2 text-sm text-slate-500">{rankingMood.note}</p>
+                </div>
+                <div className="rounded-2xl bg-orange-50 p-3 text-[#F16E00]">
+                  <Award className="h-6 w-6" />
+                </div>
+              </div>
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-orange-100 bg-white p-4">
+                  <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Votre rang</p>
+                  <p className="mt-2 text-3xl font-semibold text-slate-900">
+                    {regularity?.learner?.rank ? `#${regularity.learner.rank}` : "-"}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-orange-100 bg-white p-4">
+                  <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Taux</p>
+                  <p className="mt-2 text-3xl font-semibold text-slate-900">
+                    {regularity?.learner ? `${regularity.learner.attendanceRate}%` : "-"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 rounded-2xl bg-orange-50 px-4 py-3 text-sm text-slate-700">
+                {rankingMood.title}
+                {regularity?.totalLearners ? ` • ${regularity.learner?.rank || "-"} sur ${regularity.totalLearners}` : ""}
+              </div>
+            </div>
+
+            <div className="rounded-[2rem] border border-orange-100 bg-white p-6 shadow-sm">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-[#F16E00]">Top 5</p>
+                  <h2 className="mt-2 text-2xl font-semibold text-slate-900">Les plus réguliers</h2>
+                  <p className="mt-2 text-sm text-slate-500">
+                    {regularity?.referential?.name || "Votre référentiel"}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-orange-50 p-3 text-[#F16E00]">
+                  <GraduationCap className="h-6 w-6" />
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-3">
+                {regularity?.topRegular?.length ? regularity.topRegular.map((row, index) => (
+                  <div
+                    key={row.learnerId}
+                    className="flex items-center justify-between rounded-2xl border border-orange-100 bg-white px-4 py-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-50 text-sm font-semibold text-[#F16E00]">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <p className="font-medium text-slate-900">
+                          {row.firstName} {row.lastName}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {row.presentCount} présences
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-sm font-semibold text-slate-900">{row.attendanceRate}%</p>
+                  </div>
+                )) : (
+                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                    Le classement se prépare.
+                  </div>
+                )}
+              </div>
+            </div>
           </section>
 
           <section className="grid gap-6 xl:grid-cols-[0.92fr_1.28fr]">
