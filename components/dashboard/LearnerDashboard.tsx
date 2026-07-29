@@ -114,9 +114,6 @@ export default function LearnerDashboard() {
         });
 
         const statsData = await learnersAPI.getLearnerAttendanceStats(details.id);
-        const regularityData = await learnersAPI.getLearnerRegularity({
-          period: "month",
-        });
         setAttendanceStats({
           attendance: details.attendances || [],
           present: statsData.presentDays ?? 0,
@@ -127,7 +124,16 @@ export default function LearnerDashboard() {
           justifiedAbsentDays: statsData.justifiedAbsentDays ?? 0,
           unjustifiedAbsentDays: statsData.unjustifiedAbsentDays ?? 0,
         });
-        setRegularity(regularityData);
+
+        try {
+          const regularityData = await learnersAPI.getLearnerRegularity({
+            period: "month",
+          });
+          setRegularity(regularityData);
+        } catch (regularityError) {
+          console.error("Error fetching learner regularity:", regularityError);
+          setRegularity(null);
+        }
 
         if (details.referential?.id) {
           const referentialData = await referentialsAPI.getReferentialById(details.referential.id);
