@@ -130,10 +130,7 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
     headers,
   })
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        console.warn(`Unauthorized fetch request ignored for session continuity: ${url}`);
-      }
+  if (!response.ok) {
     
     let errorMessage = `Erreur HTTP ${response.status}`;
     try {
@@ -302,13 +299,7 @@ api.interceptors.request.use(
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      const failingUrl = error.config?.url || 'unknown-url';
-      console.warn(`Unauthorized axios request ignored for session continuity: ${failingUrl}`);
-    }
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 // Auth API calls
@@ -2406,7 +2397,6 @@ export const usersAPI = {
       const response = await api.get(`/users/email/${email}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching user by email:', error);
       return null;
     }
   },
@@ -2416,7 +2406,6 @@ export const usersAPI = {
       const response = await api.get(`/users/${id}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching user by id:', error);
       return null;
     }
   },
@@ -2427,7 +2416,6 @@ export const usersAPI = {
       const user = response.data;
       
       if (!user || !user.details) {
-        console.log('No user details found for:', email);
         return null;
       }
 
@@ -2441,7 +2429,6 @@ export const usersAPI = {
         photoUrl
       };
     } catch (error) {
-      console.error('Error fetching user details:', error);
       return null;
     }
   },
@@ -2456,7 +2443,6 @@ export const usersAPI = {
       });
 
       if (!response.ok) {
-        console.warn(`Skipping user photo fetch for ${email}: HTTP ${response.status}`);
         return null;
       }
 

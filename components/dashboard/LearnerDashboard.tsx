@@ -131,7 +131,6 @@ export default function LearnerDashboard() {
           });
           setRegularity(regularityData);
         } catch (regularityError) {
-          console.error("Error fetching learner regularity:", regularityError);
           setRegularity(null);
         }
 
@@ -143,7 +142,6 @@ export default function LearnerDashboard() {
         }
       }
     } catch (err: any) {
-      console.error("Error fetching learner dashboard:", err);
       setError({
         learner: err.response?.data?.message || "Impossible de charger le profil apprenant",
         stats: "Impossible de charger les statistiques de presence",

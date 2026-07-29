@@ -45,11 +45,9 @@ const [photoFile, setPhotoFile] = useState<File | null>(null);
         
         const [promotionsData, referentialsData] = await Promise.all([
           promotionsAPI.getAllPromotions().catch(err => {
-            console.error('Erreur lors du chargement des promotions:', err);
             return [];
           }),
           referentialsAPI.getAllReferentials().catch(err => {
-            console.error('Erreur lors du chargement des référentiels:', err);
             return [];
           })
         ]);
@@ -68,7 +66,6 @@ const [photoFile, setPhotoFile] = useState<File | null>(null);
           setDataError(prev => prev ? `${prev} Aucun référentiel disponible.` : 'Aucun référentiel disponible.');
         }
       } catch (error) {
-        console.error('Erreur lors du chargement des données:', error);
         setDataError('Impossible de charger les données. Veuillez réessayer plus tard.');
       } finally {
         setLoadingData(false);
@@ -106,7 +103,6 @@ const [photoFile, setPhotoFile] = useState<File | null>(null);
       setLoading(true);
       
       const response = await authAPI.login(email, password);
-      console.log('Login response:', response);
       
       // Le backend renvoie access_token (avec underscore)
       const token = response?.access_token || response?.accessToken || response?.token;

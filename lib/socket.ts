@@ -16,17 +16,9 @@ class SocketService {
       reconnectionAttempts: 5,
     });
 
-    this.socket.on('connect', () => {
-      console.log('✅ Socket connected');
-    });
-
-    this.socket.on('disconnect', () => {
-      console.log('❌ Socket disconnected');
-    });
-
-    this.socket.on('connect_error', (error) => {
-      console.error('❌ Socket connection error:', error);
-    });
+    this.socket.on('connect', () => {});
+    this.socket.on('disconnect', () => {});
+    this.socket.on('connect_error', () => {});
   }
 
   disconnect() {
@@ -38,7 +30,6 @@ class SocketService {
 
   emit(event: string, data?: any) {
     if (!this.socket?.connected) {
-      console.warn('⚠️ Socket not connected, attempting to connect...');
       this.connect();
     }
     this.socket?.emit(event, data);
