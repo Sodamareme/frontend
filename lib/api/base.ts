@@ -37,7 +37,7 @@ export abstract class ApiClient {
     
     const config: RequestInit = {
       ...options,
-      credentials: 'include', // Important pour les cookies CORS
+      credentials: 'include',
       headers: {
         ...defaultHeaders,
         ...options.headers,
@@ -45,7 +45,6 @@ export abstract class ApiClient {
     };
     
     try {
-      console.log(`📡 API Request: ${options.method || 'GET'} ${url}`);
       const response = await fetch(url, config);
       
       if (!response.ok) {
@@ -69,7 +68,6 @@ export abstract class ApiClient {
         return response.text() as any;
       }
     } catch (error) {
-      console.error(`❌ API request failed for ${url}:`, error);
       throw error;
     }
   }

@@ -51,7 +51,6 @@ export default function ProfilePage() {
         qrCode: (details as { qrCode?: string }).qrCode,
       })
     } catch (err: any) {
-      console.error('Error fetching learner data:', err)
       setError(err.message || 'Impossible de charger les données du profil')
     } finally {
       setLoading(false)
@@ -62,7 +61,7 @@ export default function ProfilePage() {
     void fetchLearnerData()
   }, [])
 
-  useAutoRefresh(() => fetchLearnerData(true), { intervalMs: 20_000 })
+  useAutoRefresh(() => fetchLearnerData(true), { intervalMs: 60_000 })
 
   // ── Sauvegarder les infos personnelles ──────────────────────────────────────
   const handleSaveLearnerData = async (formData: any) => {
@@ -107,7 +106,6 @@ export default function ProfilePage() {
       setSaveMessage({ type: 'success', message: 'Informations mises à jour avec succès' })
       setTimeout(() => setSaveMessage(null), 3000)
     } catch (error: any) {
-      console.error('Erreur lors de la sauvegarde:', error)
       setSaveMessage({
         type: 'error',
         message: error.message || 'Erreur lors de la sauvegarde. Veuillez réessayer.',

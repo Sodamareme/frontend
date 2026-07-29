@@ -8,8 +8,18 @@ class SocketService {
   connect() {
     if (this.socket?.connected) return;
 
-    this.socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000', {
-      transports: ['websocket'],
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    const socketOrigin = (() => {
+      try {
+        return new URL(apiUrl).origin;
+      } catch {
+        return apiUrl;
+      }
+    })();
+
+    this.socket = io(socketOrigin, {
+      path: '/api/socket.io',
+      transports: ['websocket', 'polling'],
       autoConnect: true,
       reconnection: true,
       reconnectionDelay: 1000,

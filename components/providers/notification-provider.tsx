@@ -41,7 +41,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     const setup = async () => {
       try {
-        await socketService.connect(token);
+        socketService.connect();
 
         if (!mounted) return;
 
@@ -56,12 +56,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
               action: {
                 label: "Voir",
                 onClick: () => {
-                                    handleJustificationClick({ id: notification.attendanceId });
-                  
-                  function handleJustificationClick({ id }: { id: string }) {
-                    console.log(`Justification clicked for attendance ID: ${id}`);
-                    // Add your logic here, e.g., navigation or API call
-                  }
                   resolve();
                 }
               },
@@ -71,10 +65,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         });
 
         cleanup = async () => {
-          await socketService.disconnect();
+          socketService.disconnect();
         };
       } catch (error) {
-        console.error('Setup error:', error);
       }
     };
 
@@ -83,7 +76,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     return () => {
       mounted = false;
       if (cleanup) {
-        cleanup().catch(console.error);
+        cleanup().catch(() => undefined);
       }
     };
   }, []);
@@ -103,7 +96,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         )
       );
     } catch (error) {
-      console.error('Error marking notification as read:', error);
     }
   };
 

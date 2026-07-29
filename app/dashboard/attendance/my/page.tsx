@@ -193,7 +193,6 @@ export default function MyAttendancePage() {
         ),
       });
     } catch (err) {
-      console.error("Error fetching attendance:", err);
       setError("Failed to load attendance data");
     } finally {
       setLoading(false);
@@ -204,7 +203,7 @@ export default function MyAttendancePage() {
     void fetchAttendance();
   }, []);
 
-  useAutoRefresh(() => fetchAttendance(true), { intervalMs: 15_000 });
+  useAutoRefresh(() => fetchAttendance(true), { intervalMs: 60_000 });
 
   useEffect(() => {
     const count = attendances.filter((a) => a.status === "TO_JUSTIFY").length;

@@ -1139,11 +1139,9 @@ export const referentialsAPI = {
   
   getReferentialById: async (id: string): Promise<ReferentialExtended> => {
     try {
-      const response = await api.get(`/referentials/${id}?include=modules,learners,promotions`);
-      console.log('API Response:', response.data);
+      const response = await api.get(`/referentials/${id}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching referential:', error);
       throw error;
     }
   },
@@ -1217,7 +1215,7 @@ export const referentialsAPI = {
   },
 
   getReferentialByIdSimple: async (id: string): Promise<Referential> => {
-    return fetchWithAuth(`/referentials/${id}`)
+    return fetchWithAuth(`/referentials/${id}/public`)
   },
 
   createReferentialSimple: async (data: Partial<Referential>): Promise<Referential> => {

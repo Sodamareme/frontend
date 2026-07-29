@@ -135,7 +135,7 @@ export default function LearnerDashboard() {
         }
 
         if (details.referential?.id) {
-          const referentialData = await referentialsAPI.getReferentialById(details.referential.id);
+          const referentialData = await referentialsAPI.getReferentialByIdSimple(details.referential.id);
           setModules(referentialData.modules || []);
         } else {
           setModules([]);
@@ -160,7 +160,7 @@ export default function LearnerDashboard() {
     void fetchData();
   }, []);
 
-  useAutoRefresh(() => fetchData(true), { intervalMs: 20_000 });
+  useAutoRefresh(() => fetchData(true), { intervalMs: 60_000 });
 
   const attendanceRate = (() => {
     if (!attendanceStats) return 0;
