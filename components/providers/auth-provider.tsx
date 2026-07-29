@@ -86,10 +86,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
-    removeAuthToken();
-    removeStoredUser();
-    setUser(null);
-    router.push('/');
+    void authAPI.logout().finally(() => {
+      setUser(null);
+      router.push('/');
+    });
   };
 
   const value = {

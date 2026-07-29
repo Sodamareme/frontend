@@ -196,6 +196,7 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const response = await fetch(`${API_BASE_URL}${url}`, {
     ...options,
     cache: 'no-store',
+    credentials: 'include',
     headers,
   })
 
@@ -328,6 +329,7 @@ interface ReplacementResponse {
 // Configure axios
 const api = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
     'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -393,11 +395,25 @@ export const authAPI = {
   }
 },
 
+  logout: async (): Promise<void> => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        cache: 'no-store',
+        credentials: 'include',
+      });
+    } finally {
+      removeAuthToken();
+      removeStoredUser();
+    }
+  },
+
   loginSimple: async (email: string, password: string): Promise<{ token: string, user: User }> => {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
+      credentials: 'include',
     })
 
     if (!response.ok) {
@@ -489,11 +505,6 @@ export const authAPI = {
       };
     }
   },
-  logout: async (): Promise<void> => {
-    removeAuthToken();
-    removeStoredUser();
-  },
-
   getCurrentUser: async (): Promise<User> => {
     return fetchWithAuth('/auth/me')
   },
