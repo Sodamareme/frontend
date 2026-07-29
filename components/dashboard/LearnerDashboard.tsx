@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { learnersAPI, referentialsAPI } from "@/lib/api";
+import { attendanceAPI, learnersAPI, referentialsAPI } from "@/lib/api";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import type { AttendanceStats, LearnerDetailsExtended, LearnerRegularityResponse, Module } from "@/lib/api";
 import ModuleCard from "@/components/modules/ModuleCard";
@@ -126,7 +126,7 @@ export default function LearnerDashboard() {
         });
 
         try {
-          const regularityData = await learnersAPI.getLearnerRegularity({
+          const regularityData = await attendanceAPI.getLearnerRegularity({
             period: "year",
           });
           setRegularity(regularityData);
