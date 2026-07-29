@@ -40,12 +40,9 @@ export default function GradesFilterPage() {
     const fetchReferentials = async () => {
       try {
         setLoading(true);
-        console.log('🔄 Fetching referentials...');
         const refsData = await referentialsAPI.getAllReferentials();
-        console.log('✅ Referentials loaded:', refsData);
         setReferentials(refsData);
       } catch (err) {
-        console.error('❌ Error fetching referentials:', err);
         setError('Erreur lors du chargement des référentiels');
         toast.error('Erreur lors du chargement des référentiels');
       } finally {
@@ -68,17 +65,13 @@ export default function GradesFilterPage() {
 
       try {
         setLoadingModules(true);
-        console.log('🔄 Fetching modules for referential:', selectedReferential);
         
         const allModules = await modulesAPI.getAllModules();
         const filteredModules = allModules.filter(m => m.refId === selectedReferential);
-        
-        console.log('✅ Modules filtered:', filteredModules.length);
         setModules(filteredModules);
         
         setSelectedModule('all');
       } catch (err) {
-        console.error('❌ Error fetching modules:', err);
         toast.error('Erreur lors du chargement des modules');
         setModules([]);
       } finally {
@@ -99,23 +92,18 @@ export default function GradesFilterPage() {
 
       try {
         setLoadingGrades(true);
-        console.log('🔄 Fetching grades...');
         
         let gradesData: Grade[] = [];
         
         if (selectedModule === 'all') {
-          console.log('📊 Loading grades for all modules');
           const gradesPromises = modules.map(module => 
             gradesAPI.getGradesByModule(module.id)
           );
           const allGradesArrays = await Promise.all(gradesPromises);
           gradesData = allGradesArrays.flat();
         } else {
-          console.log('📊 Loading grades for module:', selectedModule);
           gradesData = await gradesAPI.getGradesByModule(selectedModule);
         }
-
-        console.log('✅ Grades received:', gradesData);
 
         const allLearners = await learnersAPI.getAllLearners();
         
@@ -128,10 +116,8 @@ export default function GradesFilterPage() {
           };
         });
 
-        console.log('✅ Enriched grades:', enrichedGrades);
         setGrades(enrichedGrades);
       } catch (err) {
-        console.error('❌ Error fetching grades:', err);
         toast.error('Erreur lors du chargement des notes');
         setGrades([]);
       } finally {

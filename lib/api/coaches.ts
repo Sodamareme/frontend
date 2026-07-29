@@ -71,13 +71,10 @@ export const coachesAPI = {
   // GET ALL COACHES
   getAllCoaches: async (): Promise<Coach[]> => {
     try {
-      console.log('🔄 Fetching all coaches...');
       const response = await api.get('/coaches');
-      console.log('✅ Coaches received:', response.data);
       return response.data;
     } catch (error) {
       const apiError = handleApiError(error);
-      console.error('❌ Failed to fetch coaches:', apiError);
       throw new Error(apiError.message);
     }
   },
@@ -96,19 +93,14 @@ export const coachesAPI = {
   // CREATE COACH
   createCoach: async (formData: FormData): Promise<Coach> => {
     try {
-      console.log('🚀 Sending coach creation request...');
-      
       const response = await api.post('/coaches', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      
-      console.log('✅ Coach created successfully:', response.data);
       return response.data;
     } catch (error) {
       const apiError = handleApiError(error);
-      console.error('❌ Failed to create coach:', apiError);
       throw new Error(apiError.message);
     }
   },
@@ -116,17 +108,14 @@ export const coachesAPI = {
   // UPDATE COACH
   updateCoach: async (id: string, formData: FormData): Promise<Coach> => {
     try {
-      console.log('🔄 Updating coach:', id);
       const response = await api.put(`/coaches/${id}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      console.log('✅ Coach updated successfully:', response.data);
       return response.data;
     } catch (error) {
       const apiError = handleApiError(error);
-      console.error('❌ Failed to update coach:', apiError);
       throw new Error(apiError.message);
     }
   },
@@ -144,12 +133,9 @@ export const coachesAPI = {
   // SCAN ATTENDANCE
   scanAttendance: async (qrData: string) => {
     try {
-      console.log('📱 Scanning QR Code...');
       const response = await api.post('/coaches/scan-attendance', { qrData });
-      console.log('✅ Scan successful:', response.data);
       return response.data;
     } catch (error: any) {
-      console.error('❌ Scan error:', error);
       const apiError = handleApiError(error);
       throw apiError;
     }
@@ -162,21 +148,14 @@ export const coachesAPI = {
     endDate?: string
   ): Promise<AttendanceRecord[]> => {
     try {
-      console.log('🔄 Fetching attendance history for coach:', coachId);
-      
       const params = new URLSearchParams();
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
       
       const url = `/coaches/${coachId}/attendance${params.toString() ? `?${params.toString()}` : ''}`;
-      console.log('Request URL:', url);
-      
       const response = await api.get(url);
-      console.log('✅ Attendance history received:', response.data);
-      
       return response.data;
     } catch (error: any) {
-      console.error('❌ Error fetching attendance history:', error);
       const apiError = handleApiError(error);
       throw new Error(apiError.message);
     }
@@ -185,12 +164,9 @@ export const coachesAPI = {
   // GET TODAY'S ATTENDANCE
   getTodayAttendance: async (): Promise<AttendanceRecord[]> => {
     try {
-      console.log('🔄 Fetching today\'s attendance...');
       const response = await api.get('/coaches/attendance/today');
-      console.log('✅ Today\'s attendance received:', response.data);
       return response.data;
     } catch (error: any) {
-      console.error('❌ Error fetching today\'s attendance:', error);
       const apiError = handleApiError(error);
       throw new Error(apiError.message);
     }

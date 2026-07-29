@@ -83,10 +83,6 @@ const loadData = async () => {
       coachesAPI.getMyTodayAttendance().catch(() => null),
     ]);
 
-    // 👇 Ajoute ce log pour voir le format exact
-    console.log('=== ATTENDANCE[0] RAW ===', JSON.stringify(attendanceData?.[0], null, 2));
-    console.log('=== TODAY RAW ===', JSON.stringify(todayData, null, 2));
-
     setCoachProfile(profileData);
     setAttendances(attendanceData || []);
     setStats(statsData);

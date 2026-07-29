@@ -45,9 +45,6 @@ export default function CoachScanHistory({ coachId, onBack }: CoachScanHistoryPr
     loadData();
   }, [coachId]);
 useEffect(() => {
-  if (attendance.length > 0) {
-    console.log('Premier record frontend:', JSON.stringify(attendance[0]));
-  }
 }, [attendance]);
   const loadData = async () => {
     try {
@@ -71,7 +68,6 @@ useEffect(() => {
         setAttendance([]);
       }
     } catch (error: any) {
-      console.error('❌ Erreur chargement coach:', error);
       toast.error('Erreur lors du chargement des données');
     } finally {
       setLoading(false);
