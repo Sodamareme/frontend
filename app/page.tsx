@@ -3,7 +3,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { authAPI, pendingLearnersAPI, promotionsAPI, referentialsAPI, Promotion, Referential, setAuthToken } from '@/lib/api';
+import { authAPI, pendingLearnersAPI, promotionsAPI, referentialsAPI, Promotion, Referential, setAuthToken, setStoredUser } from '@/lib/api';
 import { Eye, EyeOff, Mail, Lock, AlertCircle, UserPlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AddLearnerModal from '../components/modals/AddLearnerModal';
@@ -109,10 +109,10 @@ const [photoFile, setPhotoFile] = useState<File | null>(null);
       
       if (response && token) {
         setAuthToken(token);
-        localStorage.setItem('user', JSON.stringify({
+        setStoredUser({
           email: response.user?.email,
           role: response.user?.role,
-        }));
+        });
         router.push('/dashboard');
       } else {
         setError('Connexion échouée. Veuillez réessayer.');

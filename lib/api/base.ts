@@ -1,3 +1,5 @@
+import { getAuthToken } from '../api';
+
 // Classe de base pour les clients API
 export abstract class ApiClient {
   protected baseURL: string;
@@ -9,12 +11,7 @@ export abstract class ApiClient {
   }
   
   protected getAuthToken(): string {
-    // ATTENTION: localStorage n'est pas disponible dans les artifacts Claude
-    // mais fonctionne dans votre application Next.js
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('token') || '';
-    }
-    return '';
+    return getAuthToken() || '';
   }
   
   protected async request<T = any>(

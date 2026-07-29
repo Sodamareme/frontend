@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { authAPI, getAuthToken, removeAuthToken, setAuthToken } from '@/lib/api';
+import { authAPI, getAuthToken, getStoredUser, removeAuthToken, removeStoredUser, setAuthToken, setStoredUser } from '@/lib/api';
 import { jwtDecode } from 'jwt-decode';
 
 // Define the user type
@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         setIsLoading(true);
         const token = getAuthToken();
-        const storedUser = localStorage.getItem('user');
+        const storedUser = getStoredUser<User>();
 
         if (token && storedUser) {
           // Decode the token to check if it's expired
@@ -46,17 +46,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const currentTime = Date.now() / 1000;
 
           if (decodedToken.exp > currentTime) {
-            setUser(JSON.parse(storedUser));
+            setUser(storedUser);
           } else {
-            // Token is expired, clear storage
             removeAuthToken();
-            localStorage.removeItem('user');
+            removeStoredUser();
             setUser(null);
           }
         }
       } catch (error) {
         removeAuthToken();
-        localStorage.removeItem('user');
+        removeStoredUser();
         setUser(null);
       } finally {
         setIsLoading(false);
@@ -76,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (token) {
         setAuthToken(token);
       }
-      localStorage.setItem('user', JSON.stringify(response.user));
+      setStoredUser(response.user);
       setUser(response.user);
       router.push('/dashboard');
     } catch (error: any) {
@@ -87,9 +86,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
-    // Clear the token and user from localStorage
     removeAuthToken();
-    localStorage.removeItem('user');
+    removeStoredUser();
     setUser(null);
     router.push('/');
   };

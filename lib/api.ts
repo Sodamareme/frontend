@@ -85,28 +85,97 @@ export interface LearnerDetails {
 // Configuration de l'API
 // Correct :
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+const ACCESS_TOKEN_KEY = 'accessToken'
+const USER_STORAGE_KEY = 'user'
 
 const canUseStorage = () => typeof window !== 'undefined';
 
+const getStorageValue = (key: string) => {
+  if (!canUseStorage()) return null;
+  return sessionStorage.getItem(key) ?? localStorage.getItem(key);
+};
+
+const setSessionValue = (key: string, value: string) => {
+  if (!canUseStorage()) return;
+  sessionStorage.setItem(key, value);
+  localStorage.removeItem(key);
+};
+
+const removeStorageValue = (key: string) => {
+  if (!canUseStorage()) return;
+  sessionStorage.removeItem(key);
+  localStorage.removeItem(key);
+};
+
+export const getStoredUser = <T = { email?: string; role?: string }>() => {
+  const user = getStorageValue(USER_STORAGE_KEY);
+  if (!user) return null;
+
+  try {
+    if (localStorage.getItem(USER_STORAGE_KEY) && !sessionStorage.getItem(USER_STORAGE_KEY)) {
+      sessionStorage.setItem(USER_STORAGE_KEY, user);
+      localStorage.removeItem(USER_STORAGE_KEY);
+    }
+
+    return JSON.parse(user) as T;
+  } catch {
+    removeStorageValue(USER_STORAGE_KEY);
+    return null;
+  }
+};
+
+export const setStoredUser = (user: unknown) => {
+  if (!canUseStorage()) return;
+  setSessionValue(USER_STORAGE_KEY, JSON.stringify(user));
+};
+
+export const removeStoredUser = () => {
+  removeStorageValue(USER_STORAGE_KEY);
+};
+
 export const getAuthToken = () => {
   if (!canUseStorage()) return null;
-  return (
-    localStorage.getItem('accessToken') ||
+  const sessionToken =
+    sessionStorage.getItem(ACCESS_TOKEN_KEY) ||
+    sessionStorage.getItem('authToken') ||
+    sessionStorage.getItem('token');
+
+  if (sessionToken) {
+    return sessionToken;
+  }
+
+  const legacyToken =
+    localStorage.getItem(ACCESS_TOKEN_KEY) ||
     localStorage.getItem('authToken') ||
-    localStorage.getItem('token')
-  );
+    localStorage.getItem('token');
+
+  if (!legacyToken) {
+    return null;
+  }
+
+  sessionStorage.setItem(ACCESS_TOKEN_KEY, legacyToken);
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('token');
+  return legacyToken;
 }
 
 export const setAuthToken = (token: string) => {
   if (!canUseStorage()) return;
-  localStorage.setItem('accessToken', token);
+  sessionStorage.setItem(ACCESS_TOKEN_KEY, token);
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem('authToken');
   localStorage.removeItem('token');
+  sessionStorage.removeItem('authToken');
+  sessionStorage.removeItem('token');
 }
 
 export const removeAuthToken = () => {
   if (!canUseStorage()) return;
-  localStorage.removeItem('accessToken');
+  sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+  sessionStorage.removeItem('authToken');
+  sessionStorage.removeItem('token');
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem('authToken');
   localStorage.removeItem('token');
 }
@@ -422,7 +491,7 @@ export const authAPI = {
   },
   logout: async (): Promise<void> => {
     removeAuthToken();
-    localStorage.removeItem('user');
+    removeStoredUser();
   },
 
   getCurrentUser: async (): Promise<User> => {

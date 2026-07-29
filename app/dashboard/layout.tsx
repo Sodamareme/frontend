@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import DashboardSidebar from '@/components/dashboard/Sidebar';
 import Header from '@/components/dashboard/Header';
-import { getAuthToken, removeAuthToken } from '@/lib/api';
+import { getAuthToken, getStoredUser, removeAuthToken, removeStoredUser } from '@/lib/api';
 export default function DashboardLayout({
   children,
 }: {
@@ -22,7 +22,7 @@ export default function DashboardLayout({
       if (typeof window === 'undefined') return;
       
       const token = getAuthToken();
-      const userData = localStorage.getItem('user');
+      const userData = getStoredUser();
       
       if (!token || !userData) {
         router.push('/');
@@ -30,11 +30,10 @@ export default function DashboardLayout({
       }
       
       try {
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
+        setUser(userData);
       } catch (error) {
         removeAuthToken();
-        localStorage.removeItem('user');
+        removeStoredUser();
         router.push('/');
         return;
       }

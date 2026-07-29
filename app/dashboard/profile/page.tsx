@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { UserCircle, GraduationCap, PackageCheck, Files } from 'lucide-react'
 import EditablePersonalInfo from '@/components/EditablePersonalInfo'
-import { learnersAPI } from "@/lib/api"
+import { getStoredUser, learnersAPI } from "@/lib/api"
 import type { LearnerDetailsExtended } from "@/lib/api"
 import { getAuthToken } from "@/lib/api"
 import { useAutoRefresh } from "@/hooks/useAutoRefresh"
@@ -36,10 +36,7 @@ export default function ProfilePage() {
       if (!silent) {
         setLoading(true)
       }
-      const userStr = localStorage.getItem('user')
-      if (!userStr) throw new Error('Utilisateur non connecté')
-
-      const user = JSON.parse(userStr)
+      const user = getStoredUser<{ email?: string }>()
       if (!user?.email) throw new Error('Email utilisateur introuvable')
 
       const details = await learnersAPI.getLearnerByEmail(user.email)
@@ -71,8 +68,7 @@ export default function ProfilePage() {
     try {
       if (!learnerDetails?.id) throw new Error("ID de l'apprenant introuvable")
 
-      const userStr = localStorage.getItem('user')
-      const user = userStr ? JSON.parse(userStr) : null
+      const user = getStoredUser<{ token?: string }>()
       const token = user?.token || getAuthToken()
 
       if (!token) throw new Error("Token d'authentification manquant")

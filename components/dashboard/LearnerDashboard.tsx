@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { attendanceAPI, learnersAPI, referentialsAPI } from "@/lib/api";
+import { attendanceAPI, getStoredUser, learnersAPI, referentialsAPI } from "@/lib/api";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import type { AttendanceStats, LearnerDetailsExtended, LearnerRegularityResponse, Module } from "@/lib/api";
 import ModuleCard from "@/components/modules/ModuleCard";
@@ -92,12 +92,7 @@ export default function LearnerDashboard() {
         });
       }
 
-      const userStr = localStorage.getItem("user");
-      if (!userStr) {
-        throw new Error("User data not found");
-      }
-
-      const user = JSON.parse(userStr);
+      const user = getStoredUser<{ email?: string }>();
       if (!user?.email) {
         throw new Error("User email not found");
       }

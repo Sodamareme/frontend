@@ -5,7 +5,7 @@ import {
   Coffee, Clock, ChevronDown, QrCode, CameraOff,
   RotateCcw, X, User, Calendar, Filter, RefreshCw, CheckCircle, AlertCircle
 } from 'lucide-react';
-import { findbyQRcode } from '@/lib/api';
+import { findbyQRcode, getAuthToken } from '@/lib/api';
 import { getOrCreateMealScanDeviceId } from '@/lib/offline/device-id';
 import {
   enqueuePendingMealScan,
@@ -109,13 +109,6 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 const TOTAL_LEARNERS = 250;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const getAuthToken = () =>
-  localStorage.getItem('accessToken') ||
-  localStorage.getItem('authToken') ||
-  localStorage.getItem('token') ||
-  localStorage.getItem('auth_token') ||
-  '';
 
 const isSameDay = (d1: Date, d2: Date) =>
   d1.getFullYear() === d2.getFullYear() &&
