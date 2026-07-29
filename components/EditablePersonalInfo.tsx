@@ -1,16 +1,43 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { User, Phone, Mail, MapPin, Calendar, Edit2, Save, X } from 'lucide-react';
+
+const normalizeGender = (gender) => {
+  if (gender === 'Masculin') return 'MALE';
+  if (gender === 'Féminin') return 'FEMALE';
+  return gender || '';
+};
+
+const getGenderLabel = (gender) => {
+  if (gender === 'MALE') return 'Masculin';
+  if (gender === 'FEMALE') return 'Féminin';
+  return gender || '';
+};
 
 const EditablePersonalInfo = ({ learner, onSave }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    gender: learner.gender || '',
-    phone: learner.phone || '',
+    firstName: learner.firstName || '',
+    lastName: learner.lastName || '',
+    gender: normalizeGender(learner.gender),
     email: learner.user?.email || '',
+    phone: learner.phone || '',
     address: learner.address || '',
     birthDate: learner.birthDate ? new Date(learner.birthDate).toISOString().split('T')[0] : '',
     birthPlace: learner.birthPlace || ''
   });
+
+  useEffect(() => {
+    setFormData({
+      firstName: learner.firstName || '',
+      lastName: learner.lastName || '',
+      gender: normalizeGender(learner.gender),
+      phone: learner.phone || '',
+      email: learner.user?.email || '',
+      address: learner.address || '',
+      birthDate: learner.birthDate ? new Date(learner.birthDate).toISOString().split('T')[0] : '',
+      birthPlace: learner.birthPlace || ''
+    });
+  }, [learner]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -41,7 +68,9 @@ const EditablePersonalInfo = ({ learner, onSave }) => {
   const handleCancel = () => {
     // Réinitialiser les données du formulaire
     setFormData({
-      gender: learner.gender || '',
+      firstName: learner.firstName || '',
+      lastName: learner.lastName || '',
+      gender: normalizeGender(learner.gender),
       phone: learner.phone || '',
       email: learner.user?.email || '',
       address: learner.address || '',
@@ -66,10 +95,17 @@ const EditablePersonalInfo = ({ learner, onSave }) => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
             >
               <option value="">Sélectionner le genre</option>
-              <option value="Masculin">Masculin</option>
-              <option value="Féminin">Féminin</option>
-              <option value="Autre">Autre</option>
+              <option value="MALE">Masculin</option>
+              <option value="FEMALE">Féminin</option>
             </select>
+          ) : field === 'email' ? (
+            <input
+              type="email"
+              value={formData[field]}
+              disabled
+              className="w-full cursor-not-allowed rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-gray-500"
+              placeholder={label}
+            />
           ) : (
             <input
               type={type}
@@ -82,7 +118,7 @@ const EditablePersonalInfo = ({ learner, onSave }) => {
         </div>
       ) : (
         <p className="text-gray-800 bg-gray-50 px-3 py-2 rounded-md">
-          {value || 'Non renseigné'}
+          {field === 'gender' ? getGenderLabel(value) || 'Non renseigné' : value || 'Non renseigné'}
         </p>
       )}
     </div>
@@ -128,6 +164,18 @@ const EditablePersonalInfo = ({ learner, onSave }) => {
       </div>
       <div className="p-6">
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <InfoItem 
+            icon={<User />} 
+            label="Prénom" 
+            value={formData.firstName} 
+            field="firstName"
+          />
+          <InfoItem 
+            icon={<User />} 
+            label="Nom" 
+            value={formData.lastName} 
+            field="lastName"
+          />
           <InfoItem 
             icon={<User />} 
             label="Genre" 

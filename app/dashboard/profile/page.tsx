@@ -79,6 +79,8 @@ export default function ProfilePage() {
       if (!token) throw new Error("Token d'authentification manquant")
 
       const updateData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         gender: formData.gender,
         phone: formData.phone,
         address: formData.address,
