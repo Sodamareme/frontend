@@ -135,8 +135,12 @@ export default function LearnerDashboard() {
         }
 
         if (details.referential?.id) {
-          const referentialData = await referentialsAPI.getReferentialByIdSimple(details.referential.id);
-          setModules(referentialData.modules || []);
+          try {
+            const referentialData = await referentialsAPI.getReferentialByIdSimple(details.referential.id);
+            setModules(referentialData.modules || []);
+          } catch {
+            setModules(Array.isArray(details.referential.modules) ? details.referential.modules : []);
+          }
         } else {
           setModules([]);
         }
@@ -498,7 +502,6 @@ export default function LearnerDashboard() {
                       <ModuleCard
                         key={module.id}
                         module={module}
-                        onClick={() => console.log(`Module clicked: ${module.name}`)}
                       />
                     ))}
                   </div>

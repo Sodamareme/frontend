@@ -413,7 +413,6 @@ export const authAPI = {
       const response = await api.post('/auth/validate-password-strength', { password });
       return response.data;
     } catch (error: any) {
-      console.error('❌ Password validation failed:', error);
       return {
         isValid: false,
         errors: ['Erreur de validation'],
@@ -664,7 +663,6 @@ export const learnersAPI = {
       const response = await api.get(`/learners/${id}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching learner:', error);
       throw error;
     }
   },
@@ -719,7 +717,6 @@ export const learnersAPI = {
       const response = await api.get(url);
       return response.data;
     } catch (error) {
-      console.error('Error fetching waiting list:', error);
       throw error;
     }
   },
@@ -734,7 +731,6 @@ removeReferentialFromPromotion: async (promotionId: string, referentialId: strin
       const response = await api.post('/learners/replace', data);
       return response.data;
     } catch (error) {
-      console.error('Error replacing learner:', error);
       throw error;
     }
   },
@@ -744,7 +740,6 @@ removeReferentialFromPromotion: async (promotionId: string, referentialId: strin
       const response = await api.get(`/learners/email/${email}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching learner by email:', error);
       throw error;
     }
   },
@@ -873,9 +868,6 @@ createLearner: async (formData: FormData) => {
     return response.data;
     
   } catch (error: any) {
-    if (error.response) {
-      console.error('Backend error:', JSON.stringify(error.response.data, null, 2));
-    }
     throw error;
   }
 },
@@ -895,7 +887,6 @@ createLearner: async (formData: FormData) => {
       const result = await response.json();
       return result.data;
     } catch (error) {
-      console.error('Validate bulk import error:', error);
       throw error;
     }
   },
@@ -916,7 +907,6 @@ createLearner: async (formData: FormData) => {
       const result = await response.json();
       return result.data;
     } catch (error) {
-      console.error('Bulk import error:', error);
       throw error;
     }
   },
@@ -936,7 +926,6 @@ createLearner: async (formData: FormData) => {
       // Retourner la réponse pour traitement par le composant
       return response;
     } catch (error) {
-      console.error('Download template error:', error);
       throw error;
     }
   },
@@ -955,7 +944,6 @@ createLearner: async (formData: FormData) => {
       const result = await response.json();
       return result.data;
     } catch (error) {
-      console.error('Debug QR codes error:', error);
       throw error;
     }
   },
@@ -974,7 +962,6 @@ createLearner: async (formData: FormData) => {
       const result = await response.json();
       return result.data;
     } catch (error) {
-      console.error('Fix QR codes error:', error);
       throw error;
     }
   },
@@ -993,7 +980,6 @@ createLearner: async (formData: FormData) => {
       const result = await response.json();
       return result.data;
     } catch (error) {
-      console.error('Regenerate QR code error:', error);
       throw error;
     }
   },
@@ -1085,16 +1071,9 @@ export const modulesAPI = {
   
   deleteModule: async (id: string) => {
     try {
-      console.log('Tentative de suppression du module:', id);
-      console.log('Token utilisé:', getAuthToken());
-      
       const response = await api.delete(`/modules/${id}`);
-      
-      console.log('Réponse de suppression réussie:', response.data);
       return response.data;
     } catch (error: any) {
-      console.error('Erreur lors de la suppression:', error);
-      
       if (error.response?.status === 401) {
         throw new Error('Vous n\'êtes pas autorisé à effectuer cette action');
       }
@@ -1120,7 +1099,6 @@ export const modulesAPI = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error creating module:', error);
       throw error;
     }
   },
@@ -1175,7 +1153,6 @@ export const referentialsAPI = {
 
       return response.data;
     } catch (error) {
-      console.error('Error creating referential:', error);
       throw error;
     }
   },
@@ -1187,7 +1164,6 @@ export const referentialsAPI = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error adding referentials to promotion:', error);
       throw error;
     }
   },
@@ -1337,26 +1313,14 @@ export const gradesAPI = {
   // ✅ CORRECTION : Utiliser le bon endpoint
   getGradesByModule: async (moduleId: string): Promise<Grade[]> => {
     try {
-      console.log('🔄 Fetching grades for module:', moduleId);
-      
-      // CHANGEMENT ICI : utiliser /grades/module/ au lieu de /modules/
       const response = await api.get(`/grades/module/${moduleId}`);
-      
-      console.log('✅ Grades received:', response.data);
-      
-      // S'assurer que la réponse est un tableau
       if (!Array.isArray(response.data)) {
-        console.warn('⚠️ Response is not an array:', response.data);
         return [];
       }
       
       return response.data;
     } catch (error: any) {
-      console.error('❌ Error fetching grades for module:', error);
-      
-      // Si c'est une erreur 404, retourner un tableau vide au lieu de throw
       if (error.response?.status === 404) {
-        console.log('ℹ️ No grades found for this module (404)');
         return [];
       }
       
@@ -1383,8 +1347,6 @@ export const gradesAPI = {
     comment?: string;
   }): Promise<Grade> => {
     try {
-      console.log('📤 Sending grade data:', gradeData);
-      
       if (!gradeData.moduleId || !gradeData.learnerId) {
         throw new Error('moduleId et learnerId sont requis');
       }
@@ -1399,11 +1361,8 @@ export const gradesAPI = {
         value: gradeData.value,
         comment: gradeData.comment || ''
       });
-      
-      console.log('✅ Grade created:', response.data);
       return response.data;
     } catch (error: any) {
-      console.error('❌ Error creating grade:', error);
       throw error;
     }
   },
@@ -1415,12 +1374,9 @@ export const gradesAPI = {
     comment?: string;
   }): Promise<Grade> => {
     try {
-      console.log('📤 Updating grade:', id, gradeData);
       const response = await api.put(`/grades/${id}`, gradeData);
-      console.log('✅ Grade updated:', response.data);
       return response.data;
     } catch (error) {
-      console.error('❌ Error updating grade:', error);
       throw error;
     }
   },
@@ -1566,14 +1522,6 @@ export const handleApiError = (error: unknown): ApiError => {
     const status = error.response?.status;
     const data = error.response?.data;
 
-    console.error('❌ API Error:', {
-      status,
-      statusText: error.response?.statusText,
-      data,
-      url: error.config?.url,
-      method: error.config?.method,
-    });
-
     // Erreurs spécifiques par code HTTP
     switch (status) {
       case 400:
@@ -1646,9 +1594,7 @@ export const handleApiError = (error: unknown): ApiError => {
 export const coachesAPI = {
  getAllCoaches: async (): Promise<Coach[]> => {
     try {
-      console.log('🔄 Fetching all coaches...');
       const response = await api.get('/coaches');
-      console.log('✅ Coaches received:', response.data);
       return response.data;
     } catch (error) {
       const apiError = handleApiError(error);
@@ -1672,8 +1618,6 @@ export const coachesAPI = {
  
  createCoach: async (formData: FormData): Promise<Coach> => {
   try {
-    console.log('🚀 Sending coach creation request...');
-
     // ✅ Déplacé DANS le try
     const refIds = formData.getAll('refIds');
     formData.delete('refIds'); // Supprimer l'ancienne clé
@@ -1681,42 +1625,25 @@ export const coachesAPI = {
       formData.append('refIds[]', id as string);
     });
 
-    // Log FormData contents
-    console.log('📋 FormData contents:');
-    for (let [key, value] of formData.entries()) {
-      if (value instanceof File) {
-        console.log(`  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
-      } else {
-        console.log(`  ${key}: ${value}`);
-      }
-    }
-
     const response = await api.post('/coaches', formData);
-    // ✅ Supprimer 'Content-Type': 'multipart/form-data' — axios le gère automatiquement
-
-    console.log('✅ Coach created successfully:', response.data);
     return response.data;
   } catch (error) {
     const apiError = handleApiError(error);
-    console.error('❌ Failed to create coach:', apiError);
     throw new Error(apiError.message);
   }
 },
 
   updateCoach: async (id: string, formData: FormData): Promise<Coach> => {
     try {
-      console.log('🔄 Updating coach:', id);
       const response = await api.put(`/coaches/${id}`, formData, {
         timeout: 60000,
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      console.log('✅ Coach updated successfully:', response.data);
       return response.data;
     } catch (error) {
       const apiError = handleApiError(error);
-      console.error('❌ Failed to update coach:', apiError);
       throw new Error(apiError.message);
     }
   },
@@ -1734,7 +1661,6 @@ export const coachesAPI = {
       const response = await api.post('/coaches/scan-attendance', { qrData });
       return response.data;
     } catch (error) {
-      console.error('Error scanning attendance:', error);
       throw error;
     }
   },
@@ -1748,7 +1674,6 @@ export const coachesAPI = {
       const response = await api.get(`/coaches/${coachId}/attendance?${params.toString()}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching attendance:', error);
       throw error;
     }
   },
@@ -1758,23 +1683,14 @@ export const coachesAPI = {
       const response = await api.get('/coaches/attendance/today');
       return response.data;
     } catch (error) {
-      console.error('Error fetching today attendance:', error);
       throw error;
     }
   },
  getMyProfile: async () => {
     try {
-      console.log('👤 Calling GET /coaches/me');
       const response = await api.get('/coaches/me');
-      console.log('✅ Coach profile received:', {
-        id: response.data.id,
-        name: `${response.data.firstName} ${response.data.lastName}`,
-        matricule: response.data.matricule,
-        hasQrCode: !!response.data.qrCode
-      });
       return response.data;
     } catch (error: any) {
-      console.error('❌ Error in getMyProfile:', error.response?.data || error.message);
       throw error;
     }
   },
@@ -1784,18 +1700,12 @@ export const coachesAPI = {
    */
   getMyAttendance: async (startDate?: string, endDate?: string) => {
     try {
-      console.log('📍 Calling GET /coaches/me/attendance', { startDate, endDate });
-      
       const params = new URLSearchParams();
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
       
       const url = `/coaches/me/attendance${params.toString() ? '?' + params.toString() : ''}`;
       const response = await api.get(url);
-      
-      console.log('✅ Attendance data received:', response.data.length, 'records');
-      
-      // S'assurer que les données sont au bon format
    return response.data.map((att: any) => ({
   id: att.id,
   date: att.date,
@@ -1806,8 +1716,6 @@ export const coachesAPI = {
   duration: att.duration
 }));
     } catch (error: any) {
-      console.error('❌ Error in getMyAttendance:', error.response?.data || error.message);
-      // Retourner un tableau vide en cas d'erreur plutôt que de throw
       return [];
     }
   },
@@ -1817,18 +1725,12 @@ export const coachesAPI = {
    */
   getMyAttendanceStats: async (month?: number, year?: number) => {
     try {
-      console.log('📊 Calling GET /coaches/me/attendance/stats', { month, year });
-      
       const params = new URLSearchParams();
       if (month) params.append('month', month.toString());
       if (year) params.append('year', year.toString());
       
       const url = `/coaches/me/attendance/stats${params.toString() ? '?' + params.toString() : ''}`;
       const response = await api.get(url);
-      
-      console.log('✅ Stats data received:', response.data);
-      
-      // S'assurer que toutes les propriétés existent avec des valeurs par défaut
       return {
         presentDays: response.data.presentDays ?? 0,
         lateDays: response.data.lateDays ?? 0,
@@ -1839,8 +1741,6 @@ export const coachesAPI = {
         totalDays: response.data.totalDays ?? 0
       };
     } catch (error: any) {
-      console.error('❌ Error in getMyAttendanceStats:', error.response?.data || error.message);
-      // Retourner des stats vides en cas d'erreur
       return {
         presentDays: 0,
         lateDays: 0,
@@ -1858,16 +1758,11 @@ export const coachesAPI = {
    */
   getMyTodayAttendance: async () => {
     try {
-      console.log('📅 Calling GET /coaches/me/attendance/today');
       const response = await api.get('/coaches/me/attendance/today');
       
       if (!response.data) {
-        console.log('ℹ️ No attendance found for today');
         return null;
       }
-      
-      console.log('✅ Today attendance received:', response.data);
-      
       return {
         id: response.data.id,
         date: response.data.date,
@@ -1877,13 +1772,9 @@ export const coachesAPI = {
         isLate: response.data.isLate ?? false
       };
     } catch (error: any) {
-      // Si pas de données aujourd'hui (404), retourner null
       if (error.response?.status === 404) {
-        console.log('ℹ️ No attendance record for today (404)');
         return null;
       }
-      
-      console.error('❌ Error in getMyTodayAttendance:', error.response?.data || error.message);
       return null;
     }
   },
@@ -1899,12 +1790,9 @@ export const coachesAPI = {
 export const attendanceAPI = {
   getAttendanceByLearner: async (learnerId: string): Promise<LearnerAttendance[]> => {
     try {
-      console.log('Fetching attendance for learner:', learnerId);
       const response = await api.get(`/learners/${learnerId}/attendance`);
-      console.log('Attendance response:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error fetching learner attendance:', error);
       throw error;
     }
   },
@@ -2290,7 +2178,11 @@ export const promotionsAPI = {
       
       const promotions = response.data.map(promotion => ({
         ...promotion,
-        learnerCount: promotion.learners?.length || 0
+        learnerCount:
+          promotion.learnerCount ??
+          promotion._count?.learners ??
+          promotion.learners?.length ??
+          0
       }));
       
       return promotions;
@@ -2528,16 +2420,10 @@ export const scheduleAPI = {
    */
   getScheduleByPromotionId: async (promotionId: string): Promise<ScheduleEvent[]> => {
     try {
-      console.log('📅 Fetching schedule for promotion:', promotionId);
       const response = await api.get(`/events/promotion/${promotionId}`);
-      console.log('✅ Schedule received:', response.data);
       return response.data;
     } catch (error: any) {
-      console.error('❌ Error fetching schedule:', error);
-      
-      // Si l'endpoint n'existe pas encore, retourner un tableau vide
       if (error.response?.status === 404) {
-        console.warn('⚠️ Schedule endpoint not found, returning empty array');
         return [];
       }
       
@@ -2613,16 +2499,10 @@ export const projectsAPI = {
    */
   getProjectsByPromotionId: async (promotionId: string): Promise<Project[]> => {
     try {
-      console.log('📂 Fetching projects for promotion:', promotionId);
       const response = await api.get(`/projects/promotion/${promotionId}`);
-      console.log('✅ Projects received:', response.data);
       return response.data;
     } catch (error: any) {
-      console.error('❌ Error fetching projects:', error);
-      
-      // Si l'endpoint n'existe pas encore, retourner un tableau vide
       if (error.response?.status === 404) {
-        console.warn('⚠️ Projects endpoint not found, returning empty array');
         return [];
       }
       
