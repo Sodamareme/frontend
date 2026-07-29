@@ -85,21 +85,27 @@ export interface LearnerDetails {
 // Configuration de l'API
 // Correct :
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
-// Fonction utilitaire pour récupérer le token (standardisée)
-const getAuthToken = () => {
-  return localStorage.getItem('accessToken') || localStorage.getItem('authToken') || localStorage.getItem('token');
+
+const canUseStorage = () => typeof window !== 'undefined';
+
+export const getAuthToken = () => {
+  if (!canUseStorage()) return null;
+  return (
+    localStorage.getItem('accessToken') ||
+    localStorage.getItem('authToken') ||
+    localStorage.getItem('token')
+  );
 }
 
-// Fonction utilitaire pour définir le token (standardisée)
-const setAuthToken = (token: string) => {
+export const setAuthToken = (token: string) => {
+  if (!canUseStorage()) return;
   localStorage.setItem('accessToken', token);
-  // Nettoyer les autres clés pour éviter la confusion
   localStorage.removeItem('authToken');
   localStorage.removeItem('token');
 }
 
-// Fonction utilitaire pour supprimer le token (standardisée)
-const removeAuthToken = () => {
+export const removeAuthToken = () => {
+  if (!canUseStorage()) return;
   localStorage.removeItem('accessToken');
   localStorage.removeItem('authToken');
   localStorage.removeItem('token');
@@ -191,7 +197,7 @@ export interface AtRiskLearner {
 }
 
 export interface AtRiskLearnersResponse {
-  period: 'week' | 'month' | 'quarter';
+  period: 'week' | 'month' | 'quarter' | 'year' | 'custom';
   range: {
     startDate: string;
     endDate: string;
@@ -204,6 +210,21 @@ export interface AtRiskLearnersResponse {
   mostAbsent: AtRiskLearner[];
   mostLate: AtRiskLearner[];
   mostRegular: AtRiskLearner[];
+}
+
+export interface LearnerRegularityResponse {
+  period: 'week' | 'month' | 'quarter' | 'year' | 'custom';
+  range: {
+    startDate: string;
+    endDate: string;
+  };
+  referential: {
+    id: string;
+    name: string;
+  } | null;
+  totalLearners: number;
+  learner: (AtRiskLearner & { rank: number }) | null;
+  topRegular: AtRiskLearner[];
 }
 
 interface ReplaceLearnerDto {
@@ -250,7 +271,6 @@ const api = axios.create({
   timeout: 30000,
 });
 
-// Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
     const token = getAuthToken();
@@ -279,20 +299,6 @@ api.interceptors.request.use(
   }
 );
 
-// Request interceptor to add auth token
-api.interceptors.request.use(
-  (config) => {
-    const token = getAuthToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
@@ -309,13 +315,12 @@ api.interceptors.response.use(
 export const authAPI = {
  login: async (email: string, password: string) => {
   try {
-    console.log('API call: Attempting login with:', { email });
-    
     const response = await axios.post('/api/auth/login', { email, password });
-      console.log('API response received:', response.status);
     if (response.data) {
-      // Supporter accessToken ET token selon ce que renvoie le backend
-      const token = response.data.accessToken || response.data.token;
+      const token =
+        response.data.access_token ||
+        response.data.accessToken ||
+        response.data.token;
       if (token) {
         setAuthToken(token);
       }
@@ -324,7 +329,6 @@ export const authAPI = {
       throw new Error('Invalid response format from server');
     }
   } catch (error) {
-    console.error('Login API error:', error);
     throw error;
   }
 },
@@ -342,8 +346,9 @@ export const authAPI = {
     }
 
     const data = await response.json();
-    if (data.token) {
-      setAuthToken(data.token);
+    const token = data.access_token || data.accessToken || data.token;
+    if (token) {
+      setAuthToken(token);
     }
     return data;
   },
@@ -375,12 +380,9 @@ export const authAPI = {
     confirmPassword: string;
   }) => {
     try {
-      console.log('🔐 Changing password...');
       const response = await api.put('/auth/change-password', data);
-      console.log('✅ Password changed successfully');
       return response.data;
     } catch (error: any) {
-      console.error('❌ Password change failed:', error.response?.data);
       throw error;
     }
   },
@@ -389,12 +391,9 @@ export const authAPI = {
    */
   forgotPassword: async (email: string) => {
     try {
-      console.log('📧 Requesting password reset for:', email);
       const response = await api.post('/auth/forgot-password', { email });
-      console.log('✅ Password reset email sent');
       return response.data;
     } catch (error: any) {
-      console.error('❌ Password reset request failed:', error.response?.data);
       throw error;
     }
   },
@@ -408,12 +407,9 @@ export const authAPI = {
     confirmPassword: string;
   }) => {
     try {
-      console.log('🔐 Resetting password...');
       const response = await api.post('/auth/reset-password', data);
-      console.log('✅ Password reset successfully');
       return response.data;
     } catch (error: any) {
-      console.error('❌ Password reset failed:', error.response?.data);
       throw error;
     }
   },
@@ -1999,12 +1995,25 @@ export const attendanceAPI = {
   },
 
   getAtRiskLearners: async (params?: {
-    period?: 'week' | 'month' | 'quarter';
+    period?: 'week' | 'month' | 'quarter' | 'year' | 'custom';
+    startDate?: string;
+    endDate?: string;
     promotionId?: string;
     referentialId?: string;
     limit?: number;
   }): Promise<AtRiskLearnersResponse> => {
     const response = await api.get('/attendance/stats/at-risk-learners', {
+      params,
+    });
+    return response.data;
+  },
+
+  getLearnerRegularity: async (params?: {
+    period?: 'week' | 'month' | 'quarter' | 'year' | 'custom';
+    startDate?: string;
+    endDate?: string;
+  }): Promise<LearnerRegularityResponse> => {
+    const response = await api.get('/attendance/stats/learner-regularity', {
       params,
     });
     return response.data;
@@ -2701,7 +2710,4 @@ export const projectsAPI = {
     }
   },
 };
-// Ajout des fonctions utilitaires exportées
-export { getAuthToken, setAuthToken, removeAuthToken };
-
 export default api;

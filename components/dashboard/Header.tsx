@@ -14,6 +14,7 @@ import { fr } from 'date-fns/locale';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { toast } from 'sonner';
 import { Lock } from 'lucide-react';
+import { removeAuthToken } from '@/lib/api';
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -129,7 +130,7 @@ export default function Header({ toggleSidebar, user: propUser }: HeaderProps) {
 
   const handleLogoutConfirm = () => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('accessToken');
+      removeAuthToken();
       localStorage.removeItem('user');
       window.location.href = '/';
     }

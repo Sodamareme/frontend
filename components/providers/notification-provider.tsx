@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { socketService } from '@/lib/socket';
 import { toast } from 'sonner';
+import { getAuthToken } from '@/lib/api';
 
 interface Notification {
   id: string;
@@ -32,7 +33,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
+    const token = getAuthToken();
     if (!token) return;
 
     let mounted = true;
@@ -47,7 +48,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         socketService.onNewNotification(async (notification) => {
           if (!mounted) return;
 
-          console.log('Processing notification:', notification);
           setNotifications(prev => [notification, ...prev]);
           
           await new Promise<void>(resolve => {
@@ -93,7 +93,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/${notificationId}/read`, {
         method: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Authorization': `Bearer ${getAuthToken()}`,
         }
       });
 

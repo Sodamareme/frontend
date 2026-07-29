@@ -3,7 +3,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { authAPI, promotionsAPI, referentialsAPI, learnersAPI, Promotion, Referential } from '@/lib/api';
+import { authAPI, pendingLearnersAPI, promotionsAPI, referentialsAPI, Promotion, Referential, setAuthToken } from '@/lib/api';
 import { Eye, EyeOff, Mail, Lock, AlertCircle, UserPlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AddLearnerModal from '../components/modals/AddLearnerModal';
@@ -112,21 +112,16 @@ const [photoFile, setPhotoFile] = useState<File | null>(null);
       const token = response?.access_token || response?.accessToken || response?.token;
       
       if (response && token) {
-        localStorage.setItem('accessToken', token);
+        setAuthToken(token);
         localStorage.setItem('user', JSON.stringify({
           email: response.user?.email,
           role: response.user?.role,
         }));
-        
-        console.log('Login successful, redirecting to dashboard');
         router.push('/dashboard');
       } else {
-        console.error('Login failed: Invalid response format', response);
         setError('Connexion échouée. Veuillez réessayer.');
       }
     } catch (err: any) {
-      console.error('Login error:', err);
-      
       if (err.response?.data?.fieldErrors) {
         setFieldErrors(err.response.data.fieldErrors);
       } else if (err.response?.data?.error === 'invalid_credentials') {
@@ -165,9 +160,6 @@ async function handleRegisterSubmit(data: LearnerFormSubmitData) {
     const formData = new FormData();
     if (photoFile instanceof File) {
     formData.append('photoFile', photoFile, photoFile.name);
-    console.log('=== PHOTO DANS FORMDATA ===', photoFile.name);
-  } else {
-    console.log('=== PAS DE PHOTO - photoFile state =', photoFile);
   }
 
 
@@ -195,27 +187,11 @@ async function handleRegisterSubmit(data: LearnerFormSubmitData) {
     formData.append('tutor[email]', data.tutor?.email?.trim() || '');
     formData.append('tutor[address]', data.tutor?.address?.trim() || '');
    
-
-    // ✅ Vérification des champs critiques
-    console.log('tutor[firstName]:', formData.get('tutor[firstName]'));
-    console.log('tutor[lastName]:', formData.get('tutor[lastName]'));
-    console.log('tutor[phone]:', formData.get('tutor[phone]'));
-    console.log('promotionId:', formData.get('promotionId'));
-    console.log('refId:', formData.get('refId'));
-       // ✅ LOG COMPLET DU FORMDATA
-    console.log('=== FORMDATA AVANT ENVOI ===');
-    const debugObj: any = {};
-for (const [key, value] of formData.entries()) {
-  debugObj[key] = value instanceof File 
-    ? `FILE: ${value.name} (${value.size}b)`  // ← ça devrait afficher ça
-    : value;
-}
-console.table(debugObj);
-    const response = await learnersAPI.createLearner(formData);
+    const response = await pendingLearnersAPI.register(formData);
     
     if (response) {
-      toast.success('Inscription réussie !', {
-        description: 'Vous recevrez vos identifiants par email.',
+      toast.success('Demande envoyee !', {
+        description: 'Votre inscription sera verifiee par l administration avant activation.',
         duration: 5000,
       });
       setIsRegisterModalOpen(false);
@@ -224,8 +200,6 @@ console.table(debugObj);
     const serverMessage = Array.isArray(error.response?.data?.message)
       ? error.response.data.message.join(' | ')
       : error.response?.data?.message || 'Erreur inconnue';
-    
-    console.error('=== ERREUR SERVEUR ===', serverMessage);
     
     toast.error('Erreur', { description: serverMessage, duration: 8000 });
   } finally {
