@@ -80,6 +80,16 @@ export default function LearnerDashboard() {
   const [showQRCode, setShowQRCode] = useState(false);
   const [modules, setModules] = useState<Module[]>([]);
 
+  const getFriendlyLearnerError = (err: any) => {
+    const status = err?.response?.status;
+
+    if (status === 401 || status === 403) {
+      return "Votre espace est temporairement indisponible. Veuillez vous reconnecter ou reessayer plus tard.";
+    }
+
+    return "Impossible de charger votre espace apprenant pour le moment.";
+  };
+
   const fetchData = async (silent = false) => {
     try {
       if (!silent) {
@@ -124,16 +134,22 @@ export default function LearnerDashboard() {
         });
 
         if (details.referential?.id) {
-          const referentialData = await referentialsAPI.getReferentialById(details.referential.id);
-          setModules(referentialData.modules || []);
+          try {
+            const referentialData = await referentialsAPI.getReferentialByIdSimple(details.referential.id);
+            setModules(Array.isArray(referentialData.modules) ? referentialData.modules : []);
+            setError((prev) => ({ ...prev, modules: "" }));
+          } catch {
+            setModules(Array.isArray(details.referential?.modules) ? details.referential.modules : []);
+            setError((prev) => ({ ...prev, modules: "" }));
+          }
         } else {
           setModules([]);
+          setError((prev) => ({ ...prev, modules: "" }));
         }
       }
     } catch (err: any) {
-      console.error("Error fetching learner dashboard:", err);
       setError({
-        learner: err.response?.data?.message || "Impossible de charger le profil apprenant",
+        learner: getFriendlyLearnerError(err),
         stats: "Impossible de charger les statistiques de presence",
         modules: "Impossible de charger les modules",
       });
@@ -385,7 +401,6 @@ export default function LearnerDashboard() {
                       <ModuleCard
                         key={module.id}
                         module={module}
-                        onClick={() => console.log(`Module clicked: ${module.name}`)}
                       />
                     ))}
                   </div>
