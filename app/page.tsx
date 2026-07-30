@@ -172,11 +172,6 @@ async function handleRegisterSubmit(data: LearnerFormSubmitData) {
     if (data.sessionId) {
   formData.append('sessionId', data.sessionId);  
 }
-    if (data.status?.trim()) {
-      formData.append('status', data.status);
-    }
-    
-
     formData.append('tutor[firstName]', data.tutor?.firstName?.trim() || '');
     formData.append('tutor[lastName]', data.tutor?.lastName?.trim() || '');
     formData.append('tutor[phone]', data.tutor?.phone?.trim() || '');
@@ -553,7 +548,7 @@ async function handleRegisterSubmit(data: LearnerFormSubmitData) {
         promotions={promotions}
         referentials={referentials}
         onSubmit={handleRegisterSubmit}
-  
+        showStatusField={false}
         onPhotoChange={setPhotoFile}
       />
     </div>
