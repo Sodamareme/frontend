@@ -1383,7 +1383,24 @@ export const pendingLearnersAPI = {
       const error = await response.json().catch(() => ({ message: 'Erreur réseau' }));
       throw new Error(error.message || `Erreur HTTP ${response.status}`);
     }
-    
+
+    return response.json();
+  },
+
+  delete: async (id: string) => {
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/pending-learners/${id}`, {
+      method: 'DELETE',
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Erreur réseau' }));
+      throw new Error(error.message || `Erreur HTTP ${response.status}`);
+    }
+
     return response.json();
   },
 };

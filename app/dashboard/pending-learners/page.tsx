@@ -12,7 +12,8 @@ import {
   Calendar, 
   User,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { pendingLearnersAPI } from '@/lib/api';
@@ -123,6 +124,34 @@ export default function PendingLearnersPage() {
       setRejectReason('');
     } catch (error: any) {
       toast.error('Erreur lors du rejet', {
+        description: error.message || 'Veuillez réessayer',
+      });
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleDelete = async (learner: PendingLearner) => {
+    if (!confirm(`Supprimer definitivement la demande de ${learner.firstName} ${learner.lastName} ? Cette action est irreversible.`)) {
+      return;
+    }
+
+    try {
+      setProcessingId(learner.id);
+      await pendingLearnersAPI.delete(learner.id);
+
+      toast.success('Demande supprimée', {
+        description: 'La demande a été retirée définitivement de la base.',
+      });
+
+      if (selectedLearner?.id === learner.id) {
+        setShowModal(false);
+        setSelectedLearner(null);
+      }
+
+      fetchPendingLearners();
+    } catch (error: any) {
+      toast.error('Erreur lors de la suppression', {
         description: error.message || 'Veuillez réessayer',
       });
     } finally {
@@ -320,6 +349,14 @@ export default function PendingLearnersPage() {
                         </button>
                       </>
                     )}
+                    <button
+                      onClick={() => handleDelete(learner)}
+                      disabled={processingId === learner.id}
+                      className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 transition-colors flex items-center gap-2 disabled:opacity-50 whitespace-nowrap"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Supprimer
+                    </button>
                   </div>
                 </div>
 
@@ -465,6 +502,14 @@ export default function PendingLearnersPage() {
                     </button>
                   </>
                 )}
+                <button
+                  onClick={() => handleDelete(selectedLearner)}
+                  disabled={processingId === selectedLearner.id}
+                  className={`${selectedLearner.status === 'PENDING' ? 'flex-1' : 'w-full'} px-4 py-3 bg-slate-800 text-white rounded-lg hover:bg-slate-900 transition-colors flex items-center justify-center gap-2 disabled:opacity-50`}
+                >
+                  <Trash2 className="w-5 h-5" />
+                  Supprimer définitivement
+                </button>
                 <button
                   onClick={() => setShowModal(false)}
                   className={`${selectedLearner.status === 'PENDING' ? 'flex-1' : 'w-full'} px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors`}
