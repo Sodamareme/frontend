@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { UserCircle, GraduationCap, PackageCheck, Files } from 'lucide-react'
 import EditablePersonalInfo from '@/components/EditablePersonalInfo'
-import { getStoredUser, learnersAPI } from "@/lib/api"
+import { attendanceAPI, getStoredUser, learnersAPI } from "@/lib/api"
 import type { LearnerDetailsExtended } from "@/lib/api"
 import { getAuthToken } from "@/lib/api"
 import { useAutoRefresh } from "@/hooks/useAutoRefresh"
