@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { UserCircle, GraduationCap, PackageCheck, Files } from 'lucide-react'
 import EditablePersonalInfo from '@/components/EditablePersonalInfo'
-import { learnersAPI } from "@/lib/api"
+import { attendanceAPI, getStoredUser, learnersAPI } from "@/lib/api"
 import type { LearnerDetailsExtended } from "@/lib/api"
 import { getAuthToken } from "@/lib/api"
 import { useAutoRefresh } from "@/hooks/useAutoRefresh"
@@ -16,6 +16,7 @@ import { useAutoRefresh } from "@/hooks/useAutoRefresh"
 type ProfileLearnerDetails = Omit<LearnerDetailsExtended, "documents"> & {
   documents?: unknown[];
   qrCode?: string;
+  attendances?: unknown[];
 }
 
 // ─── URL de base de l'API ─────────────────────────────────────────────────────
@@ -36,22 +37,20 @@ export default function ProfilePage() {
       if (!silent) {
         setLoading(true)
       }
-      const userStr = localStorage.getItem('user')
-      if (!userStr) throw new Error('Utilisateur non connecté')
-
-      const user = JSON.parse(userStr)
+      const user = getStoredUser<{ email?: string }>()
       if (!user?.email) throw new Error('Email utilisateur introuvable')
 
       const details = await learnersAPI.getLearnerByEmail(user.email)
+      const attendanceData = await attendanceAPI.getAttendanceByLearner(details.id)
       setLearnerDetails({
         ...details,
         documents: Array.isArray((details as unknown as { documents?: unknown }).documents)
           ? ((details as unknown as { documents?: unknown[] }).documents ?? [])
           : [],
         qrCode: (details as { qrCode?: string }).qrCode,
+        attendances: attendanceData.filter((attendance) => attendance.justification || attendance.documentUrl),
       })
     } catch (err: any) {
-      console.error('Error fetching learner data:', err)
       setError(err.message || 'Impossible de charger les données du profil')
     } finally {
       setLoading(false)
@@ -62,7 +61,7 @@ export default function ProfilePage() {
     void fetchLearnerData()
   }, [])
 
-  useAutoRefresh(() => fetchLearnerData(true), { intervalMs: 20_000 })
+  useAutoRefresh(() => fetchLearnerData(true), { intervalMs: 60_000 })
 
   // ── Sauvegarder les infos personnelles ──────────────────────────────────────
   const handleSaveLearnerData = async (formData: any) => {
@@ -72,8 +71,7 @@ export default function ProfilePage() {
     try {
       if (!learnerDetails?.id) throw new Error("ID de l'apprenant introuvable")
 
-      const userStr = localStorage.getItem('user')
-      const user = userStr ? JSON.parse(userStr) : null
+      const user = getStoredUser<{ token?: string }>()
       const token = user?.token || getAuthToken()
 
       if (!token) throw new Error("Token d'authentification manquant")
@@ -107,7 +105,6 @@ export default function ProfilePage() {
       setSaveMessage({ type: 'success', message: 'Informations mises à jour avec succès' })
       setTimeout(() => setSaveMessage(null), 3000)
     } catch (error: any) {
-      console.error('Erreur lors de la sauvegarde:', error)
       setSaveMessage({
         type: 'error',
         message: error.message || 'Erreur lors de la sauvegarde. Veuillez réessayer.',
@@ -255,10 +252,24 @@ function LearnerProfile({
 
   const getKitProgress = () => {
     if (!learner.kit) return 0
-    const items = Object.values(learner.kit)
+    const items = [
+      learner.kit.laptop,
+      learner.kit.charger,
+      learner.kit.bag,
+      learner.kit.polo,
+    ]
     const received = items.filter(Boolean).length
     return (received / items.length) * 100
   }
+
+  const kitItems = [
+    learner.kit?.laptop,
+    learner.kit?.charger,
+    learner.kit?.bag,
+    learner.kit?.polo,
+  ]
+  const receivedKitItemsCount = kitItems.filter(Boolean).length
+  const totalKitItemsCount = kitItems.length
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -586,8 +597,7 @@ function LearnerProfile({
                     </div>
                     <Progress value={getKitProgress()} className="h-4 bg-gray-200" />
                     <p className="text-sm text-gray-600 mt-2">
-                      {Object.values(learner.kit || {}).filter(Boolean).length} sur{' '}
-                      {Object.values(learner.kit || {}).length} éléments reçus
+                      {receivedKitItemsCount} sur {totalKitItemsCount} éléments reçus
                     </p>
                   </div>
 

@@ -14,6 +14,7 @@ import { fr } from 'date-fns/locale';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { toast } from 'sonner';
 import { Lock } from 'lucide-react';
+import { authAPI, getStoredUser, removeAuthToken, removeStoredUser } from '@/lib/api';
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -57,13 +58,12 @@ export default function Header({ toggleSidebar, user: propUser }: HeaderProps) {
     }
     
     if (typeof window !== 'undefined') {
-      const storedUser = localStorage.getItem('user');
+      const storedUser = getStoredUser<{ email: string; role: string }>();
       if (storedUser) {
         try {
-          const parsedUser = JSON.parse(storedUser);
-          setUser(parsedUser);
+          setUser(storedUser);
         } catch (error) {
-          console.error('Error parsing user from localStorage:', error);
+          setUser(null);
         }
       }
     }
@@ -129,9 +129,11 @@ export default function Header({ toggleSidebar, user: propUser }: HeaderProps) {
 
   const handleLogoutConfirm = () => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('user');
-      window.location.href = '/';
+      void authAPI.logout().finally(() => {
+        removeAuthToken();
+        removeStoredUser();
+        window.location.href = '/';
+      });
     }
   };
 

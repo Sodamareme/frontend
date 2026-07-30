@@ -97,7 +97,6 @@ export default function VigilDashboard() {
 
       setError({ stats: '', scans: '' });
     } catch (err) {
-      console.error('Error fetching dashboard data:', err);
       setError({
         stats: 'Failed to load attendance statistics',
         scans: 'Failed to load recent scans'
@@ -115,8 +114,6 @@ export default function VigilDashboard() {
 
   const handleCoachScan = async (qrData: string) => {
     try {
-      console.log('📱 QR Code coach scanné:', qrData);
-
       const result = await coachesAPI.scanAttendance(qrData);
 
       if (result.action === 'checkin') {
@@ -135,8 +132,6 @@ export default function VigilDashboard() {
       await fetchData();
       
     } catch (error: any) {
-      console.error('❌ Erreur scan QR Code:', error);
-      
       if (error.response?.status === 404) {
         toast.error('Coach non trouvé pour ce QR Code');
       } else if (error.response?.data?.message) {

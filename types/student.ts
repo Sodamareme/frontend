@@ -3,8 +3,8 @@ export interface StudentType {
   firstName: string;
   lastName: string;
   photoUrl?: string;
-   user:{
-  email: string;
+  user?: {
+    email?: string;
   }
  
   matricule:string

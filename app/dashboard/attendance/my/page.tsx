@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { learnersAPI } from "@/lib/api";
+import { getStoredUser, learnersAPI } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -168,9 +168,8 @@ export default function MyAttendancePage() {
       if (!silent) {
         setLoading(true);
       }
-      const userStr = localStorage.getItem("user");
-      if (!userStr) throw new Error("User not found");
-      const user = JSON.parse(userStr);
+      const user = getStoredUser<{ email?: string }>();
+      if (!user?.email) throw new Error("User not found");
       const learnerDetails = await learnersAPI.getLearnerByEmail(user.email);
       const attendanceData = await attendanceAPI.getAttendanceByLearner(learnerDetails.id);
       const attendanceStatsData = await learnersAPI.getLearnerAttendanceStats(learnerDetails.id);
@@ -193,7 +192,6 @@ export default function MyAttendancePage() {
         ),
       });
     } catch (err) {
-      console.error("Error fetching attendance:", err);
       setError("Failed to load attendance data");
     } finally {
       setLoading(false);
@@ -204,7 +202,7 @@ export default function MyAttendancePage() {
     void fetchAttendance();
   }, []);
 
-  useAutoRefresh(() => fetchAttendance(true), { intervalMs: 15_000 });
+  useAutoRefresh(() => fetchAttendance(true), { intervalMs: 60_000 });
 
   useEffect(() => {
     const count = attendances.filter((a) => a.status === "TO_JUSTIFY").length;

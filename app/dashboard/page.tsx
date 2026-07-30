@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { learnersAPI, promotionsAPI, referentialsAPI, attendanceAPI } from '@/lib/api';
+import { getStoredUser } from '@/lib/api';
 import { Users, Book, Award, BarChart2, QrCode, Clock } from 'lucide-react';
 import Link from 'next/link';
 import AdminDashboard from '@/components/dashboard/AdminDashboard';
@@ -15,17 +16,11 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    // Get user role from localStorage
     const getUserRole = () => {
       if (typeof window !== 'undefined') {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-          try {
-            const parsedUser = JSON.parse(userData);
-            setUserRole(parsedUser.role);
-          } catch (error) {
-            console.error('Failed to parse user data:', error);
-          }
+        const userData = getStoredUser<{ role?: string }>();
+        if (userData?.role) {
+          setUserRole(userData.role);
         }
       }
       setLoading(false);

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { authAPI } from '@/lib/api';
+import { authAPI, getAuthToken, getStoredUser, removeAuthToken, removeStoredUser, setAuthToken, setStoredUser } from '@/lib/api';
 import { jwtDecode } from 'jwt-decode';
 
 // Define the user type
@@ -37,8 +37,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const checkAuth = async () => {
       try {
         setIsLoading(true);
-        const token = localStorage.getItem('accessToken');
-        const storedUser = localStorage.getItem('user');
+        const token = getAuthToken();
+        const storedUser = getStoredUser<User>();
 
         if (token && storedUser) {
           // Decode the token to check if it's expired
@@ -46,18 +46,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const currentTime = Date.now() / 1000;
 
           if (decodedToken.exp > currentTime) {
-            setUser(JSON.parse(storedUser));
+            setUser(storedUser);
           } else {
-            // Token is expired, clear storage
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('user');
+            removeAuthToken();
+            removeStoredUser();
             setUser(null);
           }
         }
       } catch (error) {
-        // If there's any issue with the token, clear it
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('user');
+        removeAuthToken();
+        removeStoredUser();
         setUser(null);
       } finally {
         setIsLoading(false);
@@ -72,44 +70,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setError(null);
       setIsLoading(true);
       
-      try {
-        // Attempt to login with the API
-        const response = await authAPI.login(email, password);
-        
-        // Save the token and user in localStorage
-        localStorage.setItem('accessToken', response.access_token);
-        localStorage.setItem('user', JSON.stringify(response.user));
-        
-        // Set the user in state
-        setUser(response.user);
-        
-        // Redirect to dashboard
-        router.push('/dashboard');
-      } catch (apiError) {
-        console.error('API login failed, using test account:', apiError);
-        
-        // For testing purposes - fallback to a test user if API fails
-        // This allows testing the UI without a working backend
-        if (email === 'test@example.com' && password === 'password') {
-          const testUser = {
-            id: '1',
-            email: 'test@example.com',
-            role: 'ADMIN'
-          };
-          
-          localStorage.setItem('accessToken', 'test-token');
-          localStorage.setItem('user', JSON.stringify(testUser));
-          
-          setUser(testUser);
-          router.push('/dashboard');
-          return;
-        }
-        
-        // Re-throw the error if not using test credentials
-        throw apiError;
+      const response = await authAPI.login(email, password);
+      const token = response?.access_token || response?.accessToken || response?.token;
+      if (token) {
+        setAuthToken(token);
       }
+      setStoredUser(response.user);
+      setUser(response.user);
+      router.push('/dashboard');
     } catch (error: any) {
-      // Handle login errors
       setError(error.response?.data?.message || 'Échec de la connexion. Veuillez vérifier vos identifiants.');
     } finally {
       setIsLoading(false);
@@ -117,11 +86,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
-    // Clear the token and user from localStorage
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('user');
-    setUser(null);
-    router.push('/');
+    void authAPI.logout().finally(() => {
+      setUser(null);
+      router.push('/');
+    });
   };
 
   const value = {

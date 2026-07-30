@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { 
   CheckCircle, 
-  XCircle, 
   Clock, 
   Eye, 
   Mail, 
@@ -12,7 +11,8 @@ import {
   Calendar, 
   User,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { pendingLearnersAPI } from '@/lib/api';
@@ -54,8 +54,6 @@ export default function PendingLearnersPage() {
   const [filter, setFilter] = useState<'PENDING' | 'APPROVED' | 'REJECTED' | 'ALL'>('PENDING');
   const [selectedLearner, setSelectedLearner] = useState<PendingLearner | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [rejectReason, setRejectReason] = useState('');
-  const [showRejectModal, setShowRejectModal] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -102,27 +100,27 @@ export default function PendingLearnersPage() {
     }
   };
 
-  const handleReject = async () => {
-    if (!rejectReason.trim()) {
-      toast.error('Veuillez indiquer une raison pour le rejet');
+  const handleDelete = async (learner: PendingLearner) => {
+    if (!confirm(`Supprimer definitivement la demande de ${learner.firstName} ${learner.lastName} ? Cette action est irreversible.`)) {
       return;
     }
 
     try {
-      setProcessingId(selectedLearner!.id);
-      await pendingLearnersAPI.reject(selectedLearner!.id, rejectReason);
-      
-      toast.success('❌ Demande rejetée', {
-        description: 'L\'apprenant a été notifié par email.',
-        duration: 5000,
+      setProcessingId(learner.id);
+      await pendingLearnersAPI.delete(learner.id);
+
+      toast.success('Demande supprimée', {
+        description: 'La demande a été retirée définitivement de la base.',
       });
-      
+
+      if (selectedLearner?.id === learner.id) {
+        setShowModal(false);
+        setSelectedLearner(null);
+      }
+
       fetchPendingLearners();
-      setShowRejectModal(false);
-      setShowModal(false);
-      setRejectReason('');
     } catch (error: any) {
-      toast.error('Erreur lors du rejet', {
+      toast.error('Erreur lors de la suppression', {
         description: error.message || 'Veuillez réessayer',
       });
     } finally {
@@ -291,7 +289,7 @@ export default function PendingLearnersPage() {
                         setSelectedLearner(learner);
                         setShowModal(true);
                       }}
-                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2 whitespace-nowrap"
+                      className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2 whitespace-nowrap text-sm"
                     >
                       <Eye className="w-4 h-4" />
                       Détails
@@ -302,23 +300,30 @@ export default function PendingLearnersPage() {
                         <button
                           onClick={() => handleApprove(learner.id)}
                           disabled={processingId === learner.id}
-                          className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2 disabled:opacity-50 whitespace-nowrap"
+                          className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2 disabled:opacity-50 whitespace-nowrap text-sm"
                         >
                           <CheckCircle className="w-4 h-4" />
                           Approuver
                         </button>
                         <button
-                          onClick={() => {
-                            setSelectedLearner(learner);
-                            setShowRejectModal(true);
-                          }}
+                          onClick={() => handleDelete(learner)}
                           disabled={processingId === learner.id}
-                          className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2 disabled:opacity-50 whitespace-nowrap"
+                          className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2 disabled:opacity-50 whitespace-nowrap text-sm"
                         >
-                          <XCircle className="w-4 h-4" />
-                          Rejeter
+                          <Trash2 className="w-4 h-4" />
+                          Supprimer
                         </button>
                       </>
+                    )}
+                    {learner.status !== 'PENDING' && (
+                      <button
+                        onClick={() => handleDelete(learner)}
+                        disabled={processingId === learner.id}
+                        className="px-3 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 transition-colors flex items-center gap-2 disabled:opacity-50 whitespace-nowrap text-sm"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Supprimer
+                      </button>
                     )}
                   </div>
                 </div>
@@ -454,20 +459,28 @@ export default function PendingLearnersPage() {
                       Approuver cette demande
                     </button>
                     <button
-                      onClick={() => {
-                        setShowRejectModal(true);
-                      }}
+                      onClick={() => handleDelete(selectedLearner)}
                       disabled={processingId === selectedLearner.id}
                       className="flex-1 px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                     >
-                      <XCircle className="w-5 h-5" />
-                      Rejeter cette demande
+                      <Trash2 className="w-5 h-5" />
+                      Supprimer cette demande
                     </button>
                   </>
                 )}
+                {selectedLearner.status !== 'PENDING' && (
+                  <button
+                    onClick={() => handleDelete(selectedLearner)}
+                    disabled={processingId === selectedLearner.id}
+                    className="flex-1 px-4 py-3 bg-slate-800 text-white rounded-lg hover:bg-slate-900 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                    Supprimer définitivement
+                  </button>
+                )}
                 <button
                   onClick={() => setShowModal(false)}
-                  className={`${selectedLearner.status === 'PENDING' ? 'flex-1' : 'w-full'} px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors`}
+                  className={`${selectedLearner.status === 'PENDING' ? 'flex-1' : 'flex-1'} px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors`}
                 >
                   Fermer
                 </button>
@@ -477,55 +490,6 @@ export default function PendingLearnersPage() {
         </div>
       )}
 
-      {/* Modal de rejet */}
-      {showRejectModal && selectedLearner && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <XCircle className="w-5 h-5 text-red-500" />
-              Rejeter la demande
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Veuillez indiquer la raison du rejet. L'apprenant sera notifié par email.
-            </p>
-            <textarea
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Ex: Dossier incomplet, âge minimum non atteint, etc."
-              className="w-full border border-gray-300 rounded-lg p-3 mb-4 h-32 focus:ring-2 focus:ring-red-500 focus:border-red-500"
-              autoFocus
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  setShowRejectModal(false);
-                  setRejectReason('');
-                }}
-                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleReject}
-                disabled={processingId !== null || !rejectReason.trim()}
-                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {processingId ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    Traitement...
-                  </>
-                ) : (
-                  <>
-                    <XCircle className="w-4 h-4" />
-                    Confirmer le rejet
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

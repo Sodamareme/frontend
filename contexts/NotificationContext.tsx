@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { socketService } from '@/lib/socket';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { getAuthToken } from '@/lib/api';
 
 interface CustomNotification {
   id: string;
@@ -34,7 +35,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const markAsRead = async (notificationId: string) => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = getAuthToken();
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/${notificationId}/read`, {
         method: 'PATCH',
         headers: {
@@ -53,7 +54,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   };
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
+    const token = getAuthToken();
     if (!token) return;
 
     let mounted = true;
@@ -75,7 +76,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         socketService.onNewNotification((newNotification) => {
           if (!mounted) return;
           
-          console.log('Received new notification:', newNotification);
           setNotifications(prev => [newNotification, ...prev]);
           
           toast.info(newNotification.message, {

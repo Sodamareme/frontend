@@ -16,7 +16,6 @@ export function useUserPhoto(email?: string) {
         const url = await usersAPI.getUserPhoto(email);
         setPhotoUrl(url);
       } catch (error) {
-        console.error('Error fetching photo:', error);
         setPhotoUrl(null);
       } finally {
         setLoading(false);

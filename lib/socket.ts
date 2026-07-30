@@ -8,25 +8,27 @@ class SocketService {
   connect() {
     if (this.socket?.connected) return;
 
-    this.socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000', {
-      transports: ['websocket'],
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    const socketOrigin = (() => {
+      try {
+        return new URL(apiUrl).origin;
+      } catch {
+        return apiUrl;
+      }
+    })();
+
+    this.socket = io(socketOrigin, {
+      path: '/api/socket.io',
+      transports: ['websocket', 'polling'],
       autoConnect: true,
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionAttempts: 5,
     });
 
-    this.socket.on('connect', () => {
-      console.log('✅ Socket connected');
-    });
-
-    this.socket.on('disconnect', () => {
-      console.log('❌ Socket disconnected');
-    });
-
-    this.socket.on('connect_error', (error) => {
-      console.error('❌ Socket connection error:', error);
-    });
+    this.socket.on('connect', () => {});
+    this.socket.on('disconnect', () => {});
+    this.socket.on('connect_error', () => {});
   }
 
   disconnect() {
@@ -38,7 +40,6 @@ class SocketService {
 
   emit(event: string, data?: any) {
     if (!this.socket?.connected) {
-      console.warn('⚠️ Socket not connected, attempting to connect...');
       this.connect();
     }
     this.socket?.emit(event, data);

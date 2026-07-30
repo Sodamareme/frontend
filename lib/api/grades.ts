@@ -1,3 +1,5 @@
+import { getAuthToken } from '../api';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 export interface Grade {
@@ -34,7 +36,7 @@ export interface UpdateGradeData {
 }
 
 function getAuthHeaders() {
-  const token = localStorage.getItem('authToken');
+  const token = getAuthToken();
   return {
     'Content-Type': 'application/json',
     'Authorization': token ? `Bearer ${token}` : '',

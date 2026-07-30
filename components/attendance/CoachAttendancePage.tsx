@@ -38,12 +38,9 @@ export default function CoachAttendancePage() {
   const fetchTodayAttendances = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Fetching today\'s attendances...');
       const data = await coachesAPI.getTodayAttendance();
-      console.log('✅ Attendances received:', data);
       setAttendances(data);
     } catch (error: any) {
-      console.error('❌ Error fetching attendances:', error);
       toast.error('Erreur lors du chargement des pointages');
     } finally {
       setLoading(false);
