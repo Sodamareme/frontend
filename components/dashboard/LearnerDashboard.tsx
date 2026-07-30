@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { learnersAPI, referentialsAPI } from "@/lib/api";
+import { learnersAPI, modulesAPI, referentialsAPI } from "@/lib/api";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import type { AttendanceStats, LearnerDetailsExtended, Module } from "@/lib/api";
 import ModuleCard from "@/components/modules/ModuleCard";
@@ -136,10 +136,24 @@ export default function LearnerDashboard() {
         if (details.referential?.id) {
           try {
             const referentialData = await referentialsAPI.getReferentialByIdSimple(details.referential.id);
-            setModules(Array.isArray(referentialData.modules) ? referentialData.modules : []);
+            if (Array.isArray(referentialData.modules) && referentialData.modules.length > 0) {
+              setModules(referentialData.modules);
+            } else {
+              const learnerModules = await modulesAPI.getActiveModulesByLearner(details.id);
+              setModules(Array.isArray(learnerModules) ? learnerModules : []);
+            }
             setError((prev) => ({ ...prev, modules: "" }));
           } catch {
-            setModules(Array.isArray(details.referential?.modules) ? details.referential.modules : []);
+            if (Array.isArray(details.referential?.modules) && details.referential.modules.length > 0) {
+              setModules(details.referential.modules);
+            } else {
+              try {
+                const learnerModules = await modulesAPI.getActiveModulesByLearner(details.id);
+                setModules(Array.isArray(learnerModules) ? learnerModules : []);
+              } catch {
+                setModules([]);
+              }
+            }
             setError((prev) => ({ ...prev, modules: "" }));
           }
         } else {

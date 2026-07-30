@@ -1153,10 +1153,8 @@ export const referentialsAPI = {
   getReferentialById: async (id: string): Promise<ReferentialExtended> => {
     try {
       const response = await api.get(`/referentials/${id}?include=modules,learners,promotions`);
-      console.log('API Response:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error fetching referential:', error);
       throw error;
     }
   },
