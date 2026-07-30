@@ -150,9 +150,11 @@ export default function CoachesPage() {
         coachesAPI.getAllCoaches(),
         referentialsAPI.getAllReferentials(),
       ]);
+      console.log('🔍 Premier coach:', JSON.stringify(coachesData[0], null, 2));
       setCoaches(coachesData);
       setReferentials(referentialsData);
     } catch (error: any) {
+      console.error('❌ Error loading data:', error);
       toast.error('Erreur lors du chargement des données');
     } finally {
       setLoading(false);
@@ -216,6 +218,7 @@ export default function CoachesPage() {
       setIsAddModalOpen(false);
       toast.success('Coach créé avec succès');
     } catch (error: any) {
+      console.error('❌ Error creating coach:', error);
       if (error.response?.status === 409) {
         toast.error('Un utilisateur avec cet email existe déjà');
       } else if (error.response?.data?.message) {
@@ -266,6 +269,7 @@ export default function CoachesPage() {
       setSelectedCoach(null);
       toast.success('Coach modifié avec succès');
     } catch (error: any) {
+      console.error('❌ Error updating coach:', error);
       toast.error(error.message || 'Erreur lors de la modification du coach');
       throw error;
     }

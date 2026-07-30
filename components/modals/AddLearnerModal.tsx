@@ -36,7 +36,9 @@ const learnerSchema = z.object({
   promotionId: z.string().min(1, "La promotion est requise"),
   refId: z.string().min(1, "Le référentiel est requis"),
   sessionId: z.string().optional(),
-  status: z.enum(["ACTIVE", "WAITING"]).optional(),
+  status: z.enum(["ACTIVE", "WAITING"], {
+    required_error: "Le statut est requis"
+  }),
   tutor: z.object({
     firstName: z.string().min(2, "Le prénom du tuteur est requis"),
     lastName: z.string().min(2, "Le nom du tuteur est requis"),
@@ -74,7 +76,6 @@ interface AddLearnerModalProps {
   referentials: Referential[];
   onSubmit: (data: LearnerFormData) => Promise<void>;
   onPhotoChange?: (file: File | null) => void;
-  showStatusField?: boolean;
 }
 
 // Composants réutilisables
@@ -114,8 +115,7 @@ const LearnerForm = ({
   availableReferentials, 
   watch,
   setValue,
-  onPhotoChange,
-  showStatusField = true,
+  onPhotoChange 
 }) => {
   const selectedRefId = watch("refId");
   const selectedRef = availableReferentials.find(ref => ref.id === selectedRefId);
@@ -392,20 +392,18 @@ const LearnerForm = ({
             </div>
           )}
 
-          {showStatusField && (
-            <div className="mt-4">
-              <Field label="Statut" error={errors.status?.message} required>
-                <select
-                  {...register("status")}
-                  className={`w-full h-10 px-3 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.status ? "border-red-300" : "border-gray-300"}`}
-                >
-                  <option value="">Sélectionner un statut</option>
-                  <option value="ACTIVE">Actif</option>
-                  <option value="WAITING">En attente</option>
-                </select>
-              </Field>
-            </div>
-          )}
+          <div className="mt-4">
+            <Field label="Statut" error={errors.status?.message} required>
+              <select
+                {...register("status")}
+                className={`w-full h-10 px-3 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.status ? "border-red-300" : "border-gray-300"}`}
+              >
+                <option value="">Sélectionner un statut</option>
+                <option value="ACTIVE">Actif</option>
+                <option value="WAITING">En attente</option>
+              </select>
+            </Field>
+          </div>
         </div>
       </FormSection>
     </div>
@@ -471,7 +469,6 @@ export default function AddLearnerModal({
   referentials,
   onSubmit,
   onPhotoChange,
-  showStatusField = true,
 }: AddLearnerModalProps) {
   const [step, setStep] = useState(1);
   const [activePromotion, setActivePromotion] = useState<Promotion | null>(null);
@@ -663,7 +660,6 @@ useEffect(() => {
                     watch={watch}
                     setValue={setValue}
                     onPhotoChange={onPhotoChange}
-                    showStatusField={showStatusField}
                   />
                 </motion.div>
               ) : (

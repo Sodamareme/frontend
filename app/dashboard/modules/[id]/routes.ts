@@ -17,8 +17,12 @@ export async function DELETE(
     }
 
     const { id } = await context.params;
-
+    
+    console.log('DELETE request reçue pour module ID:', id);
+    console.log('Utilisateur authentifié:', user);
+    
     if (!id) {
+      console.error('ID manquant dans la requête');
       return NextResponse.json(
         { message: 'ID du module requis' },
         { status: 400 }
@@ -36,23 +40,32 @@ export async function DELETE(
     });
     
     if (!existingModule) {
+      console.error('Module non trouvé:', id);
       return NextResponse.json(
         { message: 'Module non trouvé' },
         { status: 404 }
       );
     }
 
+    console.log('Module trouvé:', existingModule.name);
+    console.log('Nombre de notes associées:', existingModule._count.grades);
+
     // Supprimer d'abord toutes les notes associées
     if (existingModule._count.grades > 0) {
+      console.log('Suppression des notes associées...');
       await prisma.grade.deleteMany({
         where: { moduleId: id }
       });
+      console.log('Notes supprimées avec succès');
     }
 
     // Supprimer le module
+    console.log('Suppression du module...');
     await prisma.module.delete({
       where: { id }
     });
+
+    console.log('Module supprimé avec succès');
 
     return NextResponse.json(
       { 
@@ -65,6 +78,8 @@ export async function DELETE(
       { status: 200 }
     );
   } catch (error: any) {
+    console.error('Erreur lors de la suppression du module:', error);
+    
     // Gestion spécifique des erreurs Prisma
     if (error.code === 'P2025') {
       return NextResponse.json(

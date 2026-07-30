@@ -16,44 +16,6 @@ interface ScanResult {
   isLate?: boolean;
 }
 
-const getScannerConfig = () => ({
-  fps: 10,
-  qrbox: { width: Math.min(250, window.innerWidth - 40), height: Math.min(250, window.innerWidth - 40) },
-});
-
-const getCameraErrorMessage = (error: unknown) => {
-  const errorName =
-    typeof error === 'object' && error !== null && 'name' in error
-      ? String((error as { name?: string }).name)
-      : '';
-  const errorMessage =
-    typeof error === 'object' && error !== null && 'message' in error
-      ? String((error as { message?: string }).message)
-      : '';
-
-  if (errorName === 'NotAllowedError' || /permission|denied|notallowed/i.test(errorMessage)) {
-    return 'Accès caméra refusé. Autorisez la caméra pour ce site dans le navigateur.';
-  }
-
-  if (errorName === 'NotFoundError' || /notfound|device not found|no camera/i.test(errorMessage)) {
-    return 'Aucune caméra détectée sur ce téléphone.';
-  }
-
-  if (errorName === 'NotReadableError' || /notreadable|track start|could not start video source/i.test(errorMessage)) {
-    return 'La caméra est déjà utilisée par une autre application. Fermez-la puis réessayez.';
-  }
-
-  if (errorName === 'OverconstrainedError') {
-    return 'La caméra demandée n’est pas disponible sur ce téléphone. Réessayez avec un autre navigateur.';
-  }
-
-  if (/insecure|https/i.test(errorMessage)) {
-    return 'La caméra exige une page sécurisée en HTTPS.';
-  }
-
-  return 'Impossible d’ouvrir la caméra sur ce téléphone. Essayez Chrome ou Safari puis réessayez.';
-};
-
 export default function QRScannerModal({ isOpen, onClose, onScan }: QRScannerModalProps) {
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState('');
@@ -72,61 +34,32 @@ export default function QRScannerModal({ isOpen, onClose, onScan }: QRScannerMod
     };
   }, [isOpen]);
 
-  const startScannerWithFallback = async (scanner: Html5Qrcode) => {
-    const config = getScannerConfig();
-
-    try {
-      await scanner.start(
-        { facingMode: 'environment' },
-        config,
-        (decodedText) => {
-          if (!processingRef.current) {
-            handleScan(decodedText);
-          }
-        },
-        () => {
-          // Ignorer les erreurs de scan normales
-        }
-      );
-      return;
-    } catch (primaryError) {
-      const devices = await Html5Qrcode.getCameras();
-      if (!devices.length) {
-        throw primaryError;
-      }
-
-      const preferredDevice =
-        devices.find((device) =>
-          /back|rear|environment|traseira|arriere/i.test(device.label)
-        ) ?? devices[0];
-
-      await scanner.start(
-        { deviceId: { exact: preferredDevice.id } },
-        config,
-        (decodedText) => {
-          if (!processingRef.current) {
-            handleScan(decodedText);
-          }
-        },
-        () => {
-          // Ignorer les erreurs de scan normales
-        }
-      );
-    }
-  };
-
   const startScanner = async () => {
     try {
       const html5QrCode = new Html5Qrcode('qr-reader');
       scannerRef.current = html5QrCode;
 
-      await startScannerWithFallback(html5QrCode);
+      await html5QrCode.start(
+        { facingMode: 'environment' },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+        },
+        (decodedText) => {
+          if (!processingRef.current) {
+            handleScan(decodedText);
+          }
+        },
+        (errorMessage) => {
+          // Ignorer les erreurs de scan normales
+        }
+      );
 
       setScanning(true);
       setError('');
     } catch (err: any) {
       console.error('Erreur démarrage scanner:', err);
-      setError(getCameraErrorMessage(err));
+      setError('Impossible d\'accéder à la caméra. Vérifiez les permissions.');
     }
   };
 

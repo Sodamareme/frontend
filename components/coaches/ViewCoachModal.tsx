@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { X, Mail, Phone, Calendar, QrCode, User, BookOpen } from 'lucide-react';
 import { getImageUrl } from '@/lib/utils/imageUrl';
 
@@ -39,8 +38,6 @@ interface ViewCoachModalProps {
 }
 
 export default function ViewCoachModal({ isOpen, onClose, coach }: ViewCoachModalProps) {
-  const [imageFailed, setImageFailed] = useState(false);
-
   if (!isOpen) return null;
 
   const formatDate = (dateString: string) => {
@@ -80,12 +77,24 @@ export default function ViewCoachModal({ isOpen, onClose, coach }: ViewCoachModa
               {/* Photo du coach */}
               <div className="relative">
                 <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg bg-white">
-                  {photoUrl && !imageFailed ? (
+                  {photoUrl ? (
                     <img
                       src={photoUrl}
                       alt={`${coach.firstName} ${coach.lastName}`}
                       className="w-full h-full object-cover"
-                      onError={() => setImageFailed(true)}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.onerror = null;
+                        target.style.display = 'none';
+                        const parent = target.parentElement;
+                        if (parent) {
+                          parent.innerHTML = `
+                            <div class="w-full h-full flex items-center justify-center bg-orange-500 text-white text-2xl font-bold">
+                              ${coach.firstName[0]}${coach.lastName[0]}
+                            </div>
+                          `;
+                        }
+                      }}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-orange-500 text-white text-2xl font-bold">

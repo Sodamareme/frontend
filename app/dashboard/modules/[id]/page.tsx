@@ -37,32 +37,40 @@ export default function ModuleDetailsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'graded' | 'ungraded' | 'passed' | 'failed'>('all');
   const [isExporting, setIsExporting] = useState(false);
-  const [imageFailed, setImageFailed] = useState(false);
 
   useEffect(() => {
     const fetchModuleDetails = async () => {
       try {
         setLoading(true);
         setError('');
+        
+        console.log('🔄 Fetching module details for ID:', params.id);
+        
         const moduleData = await modulesAPI.getModuleById(params.id as string);
+        console.log('✅ Module data:', moduleData);
         setModule(moduleData);
         setEditedModule(moduleData);
         
         try {
+          console.log('🔄 Fetching grades for module:', params.id);
           const gradesData = await gradesAPI.getGradesByModule(params.id as string);
+          console.log('✅ Grades data received:', gradesData);
           
           if (Array.isArray(gradesData)) {
             setGrades(gradesData);
           } else {
+            console.warn('⚠️ Grades data is not an array:', gradesData);
             setGrades([]);
           }
         } catch (gradeError) {
+          console.error('❌ Error fetching grades:', gradeError);
           setGrades([]);
           toast.error('Erreur lors du chargement des notes');
         }
         
         if (moduleData.refId) {
           try {
+            console.log('🔄 Fetching learners for referential:', moduleData.refId);
             const allLearners = await learnersAPI.getAllLearners();
             
             const relevantLearners = allLearners.filter(learner => 
@@ -70,14 +78,17 @@ export default function ModuleDetailsPage() {
               (learner.status === 'ACTIVE' || learner.status === 'REPLACEMENT')
             );
             
+            console.log('✅ Relevant learners:', relevantLearners.length);
             setLearners(relevantLearners);
           } catch (err) {
+            console.error('❌ Error fetching learners:', err);
             toast.error('Erreur lors du chargement des apprenants');
             setLearners([]);
           }
         }
         
       } catch (err) {
+        console.error('❌ Error fetching module details:', err);
         setError('Erreur lors du chargement des détails du module');
       } finally {
         setLoading(false);
@@ -148,6 +159,7 @@ export default function ModuleDetailsPage() {
       toast.success('Module mis à jour avec succès');
       
     } catch (err: any) {
+      console.error('Erreur lors de la mise à jour du module:', err);
       if (err.response?.data?.message) {
         toast.error(`Erreur: ${err.response.data.message}`);
       } else {
@@ -181,6 +193,7 @@ export default function ModuleDetailsPage() {
       toast.success('Module supprimé avec succès');
       router.push('/dashboard/modules');
     } catch (err: any) {
+      console.error('Erreur lors de la suppression:', err);
       if (err.response?.data?.message) {
         toast.error(`Erreur: ${err.response.data.message}`);
       } else {
@@ -199,6 +212,7 @@ export default function ModuleDetailsPage() {
   };
 
   const handleStartEditGrade = (learnerId: string, existingGrade?: Grade) => {
+    console.log('✏️ Starting edit for learner:', learnerId, 'Existing grade:', existingGrade);
     setEditingGrades(prev => ({
       ...prev,
       [learnerId]: {
@@ -253,22 +267,30 @@ export default function ModuleDetailsPage() {
         comment: editingGrade.comment.trim()
       };
 
+      console.log('💾 Saving grade:', gradeData);
+
       let savedGrade;
       if (editingGrade.id) {
         savedGrade = await gradesAPI.updateGrade(editingGrade.id, gradeData);
+        console.log('✅ Grade updated:', savedGrade);
       } else {
         savedGrade = await gradesAPI.createGrade(gradeData);
+        console.log('✅ Grade created:', savedGrade);
       }
 
       setGrades(prev => {
         const filtered = prev.filter(g => g.learnerId !== learnerId);
-        return [...filtered, savedGrade];
+        const updated = [...filtered, savedGrade];
+        console.log('📝 Updated grades list:', updated);
+        return updated;
       });
 
       handleCancelEditGrade(learnerId);
       
       toast.success('Note sauvegardée avec succès');
     } catch (err: any) {
+      console.error('❌ Erreur lors de la sauvegarde de la note:', err);
+      
       if (err.response?.status === 404) {
         toast.error('Apprenant ou module introuvable');
       } else if (err.response?.status === 409) {
@@ -627,12 +649,27 @@ export default function ModuleDetailsPage() {
           <div className="flex items-start gap-6">
             {/* Module Image */}
             <div className="w-32 h-32 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-              {module?.photoUrl && !imageFailed ? (
+              {module?.photoUrl ? (
                 <img
                   src={getImageUrl(module.photoUrl)}
                   alt={module.name}
                   className="w-full h-full object-cover"
-                  onError={() => setImageFailed(true)}
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.onerror = null;
+                    target.style.display = 'none';
+                    const parent = target.parentElement;
+                    if (parent) {
+                      const fallback = document.createElement('div');
+                      fallback.className = 'w-full h-full flex items-center justify-center bg-orange-50';
+                      fallback.innerHTML = `
+                        <svg class="w-12 h-12 text-orange-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                      `;
+                      parent.appendChild(fallback);
+                    }
+                  }}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-orange-50">
