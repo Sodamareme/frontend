@@ -16,6 +16,7 @@ import { useAutoRefresh } from "@/hooks/useAutoRefresh"
 type ProfileLearnerDetails = Omit<LearnerDetailsExtended, "documents"> & {
   documents?: unknown[];
   qrCode?: string;
+  attendances?: unknown[];
 }
 
 // ─── URL de base de l'API ─────────────────────────────────────────────────────
@@ -40,12 +41,14 @@ export default function ProfilePage() {
       if (!user?.email) throw new Error('Email utilisateur introuvable')
 
       const details = await learnersAPI.getLearnerByEmail(user.email)
+      const attendanceData = await attendanceAPI.getAttendanceByLearner(details.id)
       setLearnerDetails({
         ...details,
         documents: Array.isArray((details as unknown as { documents?: unknown }).documents)
           ? ((details as unknown as { documents?: unknown[] }).documents ?? [])
           : [],
         qrCode: (details as { qrCode?: string }).qrCode,
+        attendances: attendanceData.filter((attendance) => attendance.justification || attendance.documentUrl),
       })
     } catch (err: any) {
       setError(err.message || 'Impossible de charger les données du profil')
