@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { getAuthToken } from "@/lib/api";
 import {
   Clock,
   User,
@@ -83,6 +82,15 @@ const ScanHistory: React.FC = () => {
   const [availablePrograms, setAvailablePrograms] = useState<string[]>([]);
 
   useEffect(() => setIsClient(true), []);
+
+  const getAuthToken = () =>
+    typeof window !== "undefined"
+      ? localStorage.getItem("accessToken") ||
+        localStorage.getItem("authToken") ||
+        localStorage.getItem("token") ||
+        localStorage.getItem("auth_token") ||
+        ""
+      : "";
 
   const convertApiToScanResult = (apiData: ApiScanResponse[]): ScanResult[] => {
     return apiData.map((item) => ({

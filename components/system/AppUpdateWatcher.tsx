@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-const VERSION_CHECK_INTERVAL_MS = 300_000;
+const VERSION_CHECK_INTERVAL_MS = 60_000;
 
 export default function AppUpdateWatcher() {
   const hasTriggeredReload = useRef(false);
@@ -21,6 +21,9 @@ export default function AppUpdateWatcher() {
         window.location.reload();
         return;
       }
+      console.info(
+        `Reloading app to switch from build ${initialVersion.current ?? "unknown"} to ${nextVersion}`,
+      );
       window.location.reload();
     };
 
@@ -49,6 +52,7 @@ export default function AppUpdateWatcher() {
           triggerReload(latestVersion);
         }
       } catch (error) {
+        console.warn("Unable to check app version", error);
       }
     };
 

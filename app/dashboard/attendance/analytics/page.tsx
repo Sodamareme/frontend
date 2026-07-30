@@ -6,14 +6,12 @@ import { useSearchParams } from "next/navigation"
 import { attendanceAPI, promotionsAPI, referentialsAPI, type AtRiskLearnersResponse, type Promotion, type Referential } from "@/lib/api"
 import { AlertTriangle, Award, Clock3, TrendingDown, Users } from "lucide-react"
 
-type AnalyticsPeriod = "week" | "month" | "quarter" | "year" | "custom"
+type AnalyticsPeriod = "week" | "month" | "quarter"
 
 const PERIOD_OPTIONS: Array<{ value: AnalyticsPeriod; label: string }> = [
   { value: "week", label: "Cette semaine" },
   { value: "month", label: "Ce mois" },
   { value: "quarter", label: "Ce trimestre" },
-  { value: "year", label: "Cette année" },
-  { value: "custom", label: "Période personnalisée" },
 ]
 
 const defaultAnalytics: AtRiskLearnersResponse = {
@@ -113,10 +111,8 @@ export default function AttendanceAnalyticsPage() {
   const [referentials, setReferentials] = useState<Referential[]>([])
   const [period, setPeriod] = useState<AnalyticsPeriod>(() => {
     const value = searchParams.get("period")
-    return value === "week" || value === "quarter" || value === "year" || value === "custom" ? value : "month"
+    return value === "week" || value === "quarter" ? value : "month"
   })
-  const [customStartDate, setCustomStartDate] = useState(() => searchParams.get("startDate") || "")
-  const [customEndDate, setCustomEndDate] = useState(() => searchParams.get("endDate") || "")
   const [promotionId, setPromotionId] = useState(() => searchParams.get("promotionId") || "")
   const [referentialId, setReferentialId] = useState(() => searchParams.get("referentialId") || "")
   const [loading, setLoading] = useState(true)
@@ -148,8 +144,6 @@ export default function AttendanceAnalyticsPage() {
 
         const data = await attendanceAPI.getAtRiskLearners({
           period,
-          startDate: period === "custom" ? customStartDate || undefined : undefined,
-          endDate: period === "custom" ? customEndDate || undefined : undefined,
           promotionId: promotionId || undefined,
           referentialId: referentialId || undefined,
           limit: 10,
@@ -158,25 +152,14 @@ export default function AttendanceAnalyticsPage() {
         setAnalytics(data)
       } catch (err) {
         console.error("Error fetching attendance analytics:", err)
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Impossible de charger l'analyse d'assiduité pour le moment.",
-        )
+        setError("Impossible de charger l'analyse d'assiduité pour le moment.")
       } finally {
         setLoading(false)
       }
     }
 
-    if (period === "custom" && (!customStartDate || !customEndDate)) {
-      setAnalytics(defaultAnalytics)
-      setLoading(false)
-      setError("")
-      return
-    }
-
     fetchAnalytics()
-  }, [period, customStartDate, customEndDate, promotionId, referentialId])
+  }, [period, promotionId, referentialId])
 
   const summary = useMemo(() => {
     const totalFlaggedLearners = new Set([
@@ -196,15 +179,6 @@ export default function AttendanceAnalyticsPage() {
     const params = new URLSearchParams()
     params.set("period", period)
 
-    if (period === "custom") {
-      if (customStartDate) {
-        params.set("startDate", customStartDate)
-      }
-      if (customEndDate) {
-        params.set("endDate", customEndDate)
-      }
-    }
-
     if (promotionId) {
       params.set("promotionId", promotionId)
     }
@@ -217,7 +191,7 @@ export default function AttendanceAnalyticsPage() {
     return queryString
       ? `/dashboard/attendance/analytics?${queryString}`
       : "/dashboard/attendance/analytics"
-  }, [period, customStartDate, customEndDate, promotionId, referentialId])
+  }, [period, promotionId, referentialId])
 
   return (
     <div className="space-y-6 p-6 bg-gray-50 min-h-screen">
@@ -289,30 +263,6 @@ export default function AttendanceAnalyticsPage() {
             </select>
           </div>
 
-          {period === "custom" ? (
-            <>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">Date de début</label>
-                <input
-                  type="date"
-                  value={customStartDate}
-                  onChange={(event) => setCustomStartDate(event.target.value)}
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-800 focus:border-orange-400 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">Date de fin</label>
-                <input
-                  type="date"
-                  value={customEndDate}
-                  onChange={(event) => setCustomEndDate(event.target.value)}
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-800 focus:border-orange-400 focus:outline-none"
-                />
-              </div>
-            </>
-          ) : null}
-
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">Promotion</label>
             <select
@@ -345,11 +295,6 @@ export default function AttendanceAnalyticsPage() {
             </select>
           </div>
         </div>
-        {period === "custom" && (!customStartDate || !customEndDate) ? (
-          <p className="mt-4 text-sm text-amber-600">
-            Sélectionnez une date de début et une date de fin pour afficher l&apos;analyse.
-          </p>
-        ) : null}
       </section>
 
       {loading ? (

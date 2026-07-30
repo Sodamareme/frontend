@@ -54,6 +54,8 @@ const EditablePersonalInfo = ({ learner, onSave }) => {
         setIsEditing(false);
       } else {
         console.error('Fonction onSave non fournie');
+        // Simuler une sauvegarde pour test
+        console.log('Données à sauvegarder:', formData);
         setIsEditing(false);
         alert('Fonction de sauvegarde non configurée');
       }

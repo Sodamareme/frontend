@@ -39,7 +39,6 @@ export default function DashboardSidebar({ isOpen, setIsOpen, userRole = 'ADMIN'
       { href: '/dashboard/coaches', label: 'Coaches', icon: <UserCheck size={20} /> }, // Nouveau lien ajouté
       { href: '/dashboard/attendance', label: 'Gestion des présences', icon: <FileText size={20} /> },
       { href: '/dashboard/attendance/analytics', label: "Analyse d'assiduité", icon: <BarChart size={20} /> },
-      { href: '/dashboard/pending-learners', label: "Demandes d'inscription", icon: <Clipboard size={20} /> },
       { href: '/dashboard/kits', label: 'Kits & Laptops', icon: <Laptop size={20} /> },
       { href: '/dashboard/modules', label: 'Modules', icon: <Component size={20} /> },
       { href: '/dashboard/restaurateurs', label: 'Historiques Restaurations', icon: <ChefHat size={20} /> },

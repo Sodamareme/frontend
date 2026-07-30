@@ -24,6 +24,7 @@ export const CreateCoachForm = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setPhotoFile(e.target.files[0]);
+      console.log('📸 Fichier sélectionné:', e.target.files[0].name);
     }
   };
 
@@ -41,6 +42,10 @@ export const CreateCoachForm = () => {
     setError(null);
 
     try {
+      console.log('=== PRÉPARATION FORMDATA ===');
+      console.log('Données du formulaire:', formData);
+      console.log('Fichier photo:', photoFile);
+
       // Validation côté client
       if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone) {
         throw new Error('Tous les champs obligatoires doivent être remplis');
@@ -60,7 +65,25 @@ export const CreateCoachForm = () => {
       if (photoFile) {
         submitFormData.append('photoFile', photoFile);
       }
+
+      // Vérifier le contenu du FormData
+      console.log('FormData entries:');
+      for (let [key, value] of submitFormData.entries()) {
+        if (value instanceof File) {
+          console.log(`${key}:`, {
+            name: value.name,
+            size: value.size,
+            type: value.type
+          });
+        } else {
+          console.log(`${key}:`, value);
+        }
+      }
+
+      console.log('🚀 Envoi de la requête...');
       const result = await coachesAPI.createCoach(submitFormData);
+      
+      console.log('✅ Coach créé avec succès:', result);
       alert('Coach créé avec succès !');
       
       // Réinitialiser le formulaire
@@ -74,6 +97,13 @@ export const CreateCoachForm = () => {
       setPhotoFile(null);
       
     } catch (error: any) {
+      console.error('❌ Erreur lors de la création:', error);
+      console.error('Détails de l\'erreur:', {
+        message: error.message,
+        response: error.response,
+        stack: error.stack
+      });
+      
       setError(error.message || 'Une erreur est survenue');
     } finally {
       setLoading(false);

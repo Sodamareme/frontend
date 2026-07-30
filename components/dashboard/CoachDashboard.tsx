@@ -39,6 +39,7 @@ export default function CoachDashboard() {
         ));
         setLoading(prev => ({ ...prev, modules: false }));
       } catch (err) {
+        console.error('Error fetching modules:', err);
         setError(prev => ({ ...prev, modules: 'Failed to load modules' }));
         setLoading(prev => ({ ...prev, modules: false }));
       }
@@ -51,6 +52,7 @@ export default function CoachDashboard() {
         }
         setLoading(prev => ({ ...prev, referentials: false }));
       } catch (err) {
+        console.error('Error fetching referentials:', err);
         setError(prev => ({ ...prev, referentials: 'Failed to load referentials' }));
         setLoading(prev => ({ ...prev, referentials: false }));
       }
@@ -76,6 +78,8 @@ export default function CoachDashboard() {
         
         // Fetch les absents du référentiel sélectionné pour aujourd'hui
         const absentsData = await attendanceAPI.getAbsentsByReferential(today, selectedReferential);
+        
+        console.log('Absents data for referential:', selectedReferential, absentsData);
         
         // Calculer les statistiques uniquement pour ce référentiel
         const totalLearners = allLearnersData.length;
@@ -104,6 +108,17 @@ export default function CoachDashboard() {
           }
         });
         
+        // Vérification de cohérence
+        const calculatedAbsent = totalLearners - presentCount - lateCount;
+        
+        console.log('Stats calculation:', {
+          total: totalLearners,
+          present: presentCount,
+          late: lateCount,
+          absentFromAPI: absentCount,
+          calculatedAbsent: calculatedAbsent
+        });
+        
         setAttendanceStats({
           present: presentCount,
           late: lateCount,
@@ -113,6 +128,7 @@ export default function CoachDashboard() {
         
         setLoading(prev => ({ ...prev, learners: false, stats: false }));
       } catch (err) {
+        console.error('Error fetching learners and attendance:', err);
         setError(prev => ({ 
           ...prev, 
           learners: 'Failed to load learners',

@@ -1,5 +1,3 @@
-import { getAuthToken } from '../api';
-
 // Classe de base pour les clients API
 export abstract class ApiClient {
   protected baseURL: string;
@@ -11,7 +9,12 @@ export abstract class ApiClient {
   }
   
   protected getAuthToken(): string {
-    return getAuthToken() || '';
+    // ATTENTION: localStorage n'est pas disponible dans les artifacts Claude
+    // mais fonctionne dans votre application Next.js
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('token') || '';
+    }
+    return '';
   }
   
   protected async request<T = any>(
@@ -34,7 +37,7 @@ export abstract class ApiClient {
     
     const config: RequestInit = {
       ...options,
-      credentials: 'include',
+      credentials: 'include', // Important pour les cookies CORS
       headers: {
         ...defaultHeaders,
         ...options.headers,
@@ -42,6 +45,7 @@ export abstract class ApiClient {
     };
     
     try {
+      console.log(`📡 API Request: ${options.method || 'GET'} ${url}`);
       const response = await fetch(url, config);
       
       if (!response.ok) {
@@ -65,6 +69,7 @@ export abstract class ApiClient {
         return response.text() as any;
       }
     } catch (error) {
+      console.error(`❌ API request failed for ${url}:`, error);
       throw error;
     }
   }

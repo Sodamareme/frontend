@@ -3,7 +3,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { authAPI, pendingLearnersAPI, promotionsAPI, referentialsAPI, Promotion, Referential, setAuthToken, setStoredUser } from '@/lib/api';
+import { authAPI, promotionsAPI, referentialsAPI, learnersAPI, Promotion, Referential } from '@/lib/api';
 import { Eye, EyeOff, Mail, Lock, AlertCircle, UserPlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AddLearnerModal from '../components/modals/AddLearnerModal';
@@ -45,9 +45,11 @@ const [photoFile, setPhotoFile] = useState<File | null>(null);
         
         const [promotionsData, referentialsData] = await Promise.all([
           promotionsAPI.getAllPromotions().catch(err => {
+            console.error('Erreur lors du chargement des promotions:', err);
             return [];
           }),
           referentialsAPI.getAllReferentials().catch(err => {
+            console.error('Erreur lors du chargement des référentiels:', err);
             return [];
           })
         ]);
@@ -66,6 +68,7 @@ const [photoFile, setPhotoFile] = useState<File | null>(null);
           setDataError(prev => prev ? `${prev} Aucun référentiel disponible.` : 'Aucun référentiel disponible.');
         }
       } catch (error) {
+        console.error('Erreur lors du chargement des données:', error);
         setDataError('Impossible de charger les données. Veuillez réessayer plus tard.');
       } finally {
         setLoadingData(false);
@@ -103,21 +106,27 @@ const [photoFile, setPhotoFile] = useState<File | null>(null);
       setLoading(true);
       
       const response = await authAPI.login(email, password);
+      console.log('Login response:', response);
       
       // Le backend renvoie access_token (avec underscore)
       const token = response?.access_token || response?.accessToken || response?.token;
       
       if (response && token) {
-        setAuthToken(token);
-        setStoredUser({
+        localStorage.setItem('accessToken', token);
+        localStorage.setItem('user', JSON.stringify({
           email: response.user?.email,
           role: response.user?.role,
-        });
+        }));
+        
+        console.log('Login successful, redirecting to dashboard');
         router.push('/dashboard');
       } else {
+        console.error('Login failed: Invalid response format', response);
         setError('Connexion échouée. Veuillez réessayer.');
       }
     } catch (err: any) {
+      console.error('Login error:', err);
+      
       if (err.response?.data?.fieldErrors) {
         setFieldErrors(err.response.data.fieldErrors);
       } else if (err.response?.data?.error === 'invalid_credentials') {
@@ -156,6 +165,9 @@ async function handleRegisterSubmit(data: LearnerFormSubmitData) {
     const formData = new FormData();
     if (photoFile instanceof File) {
     formData.append('photoFile', photoFile, photoFile.name);
+    console.log('=== PHOTO DANS FORMDATA ===', photoFile.name);
+  } else {
+    console.log('=== PAS DE PHOTO - photoFile state =', photoFile);
   }
 
 
@@ -172,17 +184,38 @@ async function handleRegisterSubmit(data: LearnerFormSubmitData) {
     if (data.sessionId) {
   formData.append('sessionId', data.sessionId);  
 }
+    if (data.status?.trim()) {
+      formData.append('status', data.status);
+    }
+    
+
     formData.append('tutor[firstName]', data.tutor?.firstName?.trim() || '');
     formData.append('tutor[lastName]', data.tutor?.lastName?.trim() || '');
     formData.append('tutor[phone]', data.tutor?.phone?.trim() || '');
     formData.append('tutor[email]', data.tutor?.email?.trim() || '');
     formData.append('tutor[address]', data.tutor?.address?.trim() || '');
    
-    const response = await pendingLearnersAPI.register(formData);
+
+    // ✅ Vérification des champs critiques
+    console.log('tutor[firstName]:', formData.get('tutor[firstName]'));
+    console.log('tutor[lastName]:', formData.get('tutor[lastName]'));
+    console.log('tutor[phone]:', formData.get('tutor[phone]'));
+    console.log('promotionId:', formData.get('promotionId'));
+    console.log('refId:', formData.get('refId'));
+       // ✅ LOG COMPLET DU FORMDATA
+    console.log('=== FORMDATA AVANT ENVOI ===');
+    const debugObj: any = {};
+for (const [key, value] of formData.entries()) {
+  debugObj[key] = value instanceof File 
+    ? `FILE: ${value.name} (${value.size}b)`  // ← ça devrait afficher ça
+    : value;
+}
+console.table(debugObj);
+    const response = await learnersAPI.createLearner(formData);
     
     if (response) {
-      toast.success('Demande envoyee !', {
-        description: 'Votre inscription sera verifiee par l administration avant activation.',
+      toast.success('Inscription réussie !', {
+        description: 'Vous recevrez vos identifiants par email.',
         duration: 5000,
       });
       setIsRegisterModalOpen(false);
@@ -191,6 +224,8 @@ async function handleRegisterSubmit(data: LearnerFormSubmitData) {
     const serverMessage = Array.isArray(error.response?.data?.message)
       ? error.response.data.message.join(' | ')
       : error.response?.data?.message || 'Erreur inconnue';
+    
+    console.error('=== ERREUR SERVEUR ===', serverMessage);
     
     toast.error('Erreur', { description: serverMessage, duration: 8000 });
   } finally {
@@ -548,7 +583,7 @@ async function handleRegisterSubmit(data: LearnerFormSubmitData) {
         promotions={promotions}
         referentials={referentials}
         onSubmit={handleRegisterSubmit}
-        showStatusField={false}
+  
         onPhotoChange={setPhotoFile}
       />
     </div>

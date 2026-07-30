@@ -3,7 +3,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { socketService } from '@/lib/socket';
 import { toast } from 'sonner';
-import { getAuthToken } from '@/lib/api';
 
 interface Notification {
   id: string;
@@ -33,7 +32,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
-    const token = getAuthToken();
+    const token = localStorage.getItem('accessToken');
     if (!token) return;
 
     let mounted = true;
@@ -41,13 +40,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     const setup = async () => {
       try {
-        socketService.connect();
+        await socketService.connect(token);
 
         if (!mounted) return;
 
         socketService.onNewNotification(async (notification) => {
           if (!mounted) return;
 
+          console.log('Processing notification:', notification);
           setNotifications(prev => [notification, ...prev]);
           
           await new Promise<void>(resolve => {
@@ -56,6 +56,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
               action: {
                 label: "Voir",
                 onClick: () => {
+                                    handleJustificationClick({ id: notification.attendanceId });
+                  
+                  function handleJustificationClick({ id }: { id: string }) {
+                    console.log(`Justification clicked for attendance ID: ${id}`);
+                    // Add your logic here, e.g., navigation or API call
+                  }
                   resolve();
                 }
               },
@@ -65,9 +71,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         });
 
         cleanup = async () => {
-          socketService.disconnect();
+          await socketService.disconnect();
         };
       } catch (error) {
+        console.error('Setup error:', error);
       }
     };
 
@@ -76,7 +83,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     return () => {
       mounted = false;
       if (cleanup) {
-        cleanup().catch(() => undefined);
+        cleanup().catch(console.error);
       }
     };
   }, []);
@@ -86,7 +93,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/${notificationId}/read`, {
         method: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${getAuthToken()}`,
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
         }
       });
 
@@ -96,6 +103,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         )
       );
     } catch (error) {
+      console.error('Error marking notification as read:', error);
     }
   };
 
