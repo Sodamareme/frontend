@@ -71,6 +71,39 @@ const getScannerConfig = () => ({
   aspectRatio: 1.0,
 });
 
+const getCameraErrorMessage = (error: unknown) => {
+  const errorName =
+    typeof error === 'object' && error !== null && 'name' in error
+      ? String((error as { name?: string }).name)
+      : '';
+  const errorMessage =
+    typeof error === 'object' && error !== null && 'message' in error
+      ? String((error as { message?: string }).message)
+      : '';
+
+  if (errorName === 'NotAllowedError' || /permission|denied|notallowed/i.test(errorMessage)) {
+    return 'Accès caméra refusé. Autorisez la caméra pour ce site dans le navigateur.';
+  }
+
+  if (errorName === 'NotFoundError' || /notfound|device not found|no camera/i.test(errorMessage)) {
+    return 'Aucune caméra détectée sur ce téléphone.';
+  }
+
+  if (errorName === 'NotReadableError' || /notreadable|track start|could not start video source/i.test(errorMessage)) {
+    return 'La caméra est déjà utilisée par une autre application. Fermez-la puis réessayez.';
+  }
+
+  if (errorName === 'OverconstrainedError') {
+    return 'La caméra demandée n’est pas disponible sur ce téléphone. Réessayez avec un autre navigateur.';
+  }
+
+  if (/insecure|https/i.test(errorMessage)) {
+    return 'La caméra exige une page sécurisée en HTTPS.';
+  }
+
+  return 'Impossible d’ouvrir la caméra sur ce téléphone. Essayez Chrome ou Safari puis réessayez.';
+};
+
 export default function QRScanner() {
   const router = useRouter();
   const [isScanning, setIsScanning] = useState(false);
@@ -169,7 +202,7 @@ export default function QRScanner() {
       setError('');
     } catch (err) {
       console.error('Failed to start scanner:', err);
-      setError('Impossible d’ouvrir la caméra sur ce téléphone. Vérifiez l’autorisation caméra ou essayez un autre navigateur.');
+      setError(getCameraErrorMessage(err));
       setIsScanning(false);
     }
   };
