@@ -1367,26 +1367,6 @@ export const pendingLearnersAPI = {
     return response.json();
   },
 
-  // Rejeter une demande (admin uniquement)
-  reject: async (id: string, reason?: string) => {
-    const token = getAuthToken();
-    const response = await fetch(`${API_BASE_URL}/pending-learners/${id}/reject`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
-      body: JSON.stringify({ reason }),
-    });
-    
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Erreur réseau' }));
-      throw new Error(error.message || `Erreur HTTP ${response.status}`);
-    }
-
-    return response.json();
-  },
-
   delete: async (id: string) => {
     const token = getAuthToken();
     const response = await fetch(`${API_BASE_URL}/pending-learners/${id}`, {
