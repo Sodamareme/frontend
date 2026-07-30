@@ -62,6 +62,15 @@ const mapApiResponseToScanResult = (data: ScanResponse): ScanResult => {
   };
 };
 
+const getScannerConfig = () => ({
+  fps: 10,
+  qrbox: {
+    width: Math.min(250, window.innerWidth - 40),
+    height: Math.min(250, window.innerWidth - 40),
+  },
+  aspectRatio: 1.0,
+});
+
 export default function QRScanner() {
   const router = useRouter();
   const [isScanning, setIsScanning] = useState(false);
@@ -104,6 +113,37 @@ export default function QRScanner() {
     };
   }, []);
 
+  const startScannerWithFallback = async (scanner: Html5Qrcode) => {
+    const config = getScannerConfig();
+
+    try {
+      await scanner.start(
+        { facingMode: 'environment' },
+        config,
+        handleScanSuccess,
+        undefined
+      );
+      return;
+    } catch (primaryError) {
+      const devices = await Html5Qrcode.getCameras();
+      if (!devices.length) {
+        throw primaryError;
+      }
+
+      const preferredDevice =
+        devices.find((device) =>
+          /back|rear|environment|traseira|arriere/i.test(device.label)
+        ) ?? devices[0];
+
+      await scanner.start(
+        { deviceId: { exact: preferredDevice.id } },
+        config,
+        handleScanSuccess,
+        undefined
+      );
+    }
+  };
+
   const startScanning = async () => {
     try {
       await cleanupScanner();
@@ -121,27 +161,15 @@ export default function QRScanner() {
       }
       readerElement.innerHTML = '';
 
-      scannerRef.current = new Html5Qrcode("reader");
-      
-      await scannerRef.current.start(
-        { facingMode: "environment" },
-        {
-          fps: 10,
-          qrbox: { 
-            width: Math.min(250, window.innerWidth - 40),
-            height: Math.min(250, window.innerWidth - 40)
-          },
-          aspectRatio: 1.0,
-        },
-        handleScanSuccess,
-        undefined
-      );
+      scannerRef.current = new Html5Qrcode('reader');
+
+      await startScannerWithFallback(scannerRef.current);
       
       setIsScanning(true);
       setError('');
     } catch (err) {
       console.error('Failed to start scanner:', err);
-      setError('Erreur d\'accès à la caméra. Veuillez vérifier vos permissions.');
+      setError('Impossible d’ouvrir la caméra sur ce téléphone. Vérifiez l’autorisation caméra ou essayez un autre navigateur.');
       setIsScanning(false);
     }
   };
