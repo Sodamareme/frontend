@@ -196,26 +196,11 @@ async function handleRegisterSubmit(data: LearnerFormSubmitData) {
     formData.append('tutor[address]', data.tutor?.address?.trim() || '');
    
 
-    // ✅ Vérification des champs critiques
-    console.log('tutor[firstName]:', formData.get('tutor[firstName]'));
-    console.log('tutor[lastName]:', formData.get('tutor[lastName]'));
-    console.log('tutor[phone]:', formData.get('tutor[phone]'));
-    console.log('promotionId:', formData.get('promotionId'));
-    console.log('refId:', formData.get('refId'));
-       // ✅ LOG COMPLET DU FORMDATA
-    console.log('=== FORMDATA AVANT ENVOI ===');
-    const debugObj: any = {};
-for (const [key, value] of formData.entries()) {
-  debugObj[key] = value instanceof File 
-    ? `FILE: ${value.name} (${value.size}b)`  // ← ça devrait afficher ça
-    : value;
-}
-console.table(debugObj);
     const response = await pendingLearnersAPI.register(formData);
     
     if (response) {
       toast.success('Inscription réussie !', {
-        description: 'Votre demande a été envoyée. L’équipe administrative la vérifiera.',
+        description: response?.message || 'Votre compte a été créé. Vos identifiants ont été envoyés par email.',
         duration: 5000,
       });
       setIsRegisterModalOpen(false);

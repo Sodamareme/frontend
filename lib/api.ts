@@ -1298,7 +1298,7 @@ export const referentialsAPI = {
   },
 };
 export const pendingLearnersAPI = {
-  // Soumettre une demande d'inscription (public)
+  // Inscription publique directe
   register: async (formData: FormData) => {
     const response = await fetch(`${API_BASE_URL}/pending-learners`, {
       method: 'POST',
