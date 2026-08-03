@@ -124,6 +124,8 @@ const LearnerForm = ({
   // États pour la gestion des sessions
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
+  const openSessions = sessions.filter((session) => !session.attendanceClosedAt);
+  const hasClosedSessions = sessions.some((session) => session.attendanceClosedAt);
 
   // Fetch les sessions quand le référentiel change
   useEffect(() => {
@@ -142,9 +144,11 @@ const LearnerForm = ({
         const refSessions: Session[] = ref.sessions || [];
         setSessions(refSessions);
 
-        // Auto-sélection si une seule session
-        if (refSessions.length === 1) {
-          setValue('sessionId', refSessions[0].id);
+        const openRefSessions = refSessions.filter((session) => !session.attendanceClosedAt);
+
+        // Auto-sélection si une seule session reste ouverte
+        if (openRefSessions.length === 1) {
+          setValue('sessionId', openRefSessions[0].id);
         }
       } catch (err) {
         console.error('Erreur chargement sessions:', err);
@@ -363,16 +367,35 @@ const LearnerForm = ({
               <Field label="Session" error={errors.sessionId?.message} required>
                 <select
                   {...register("sessionId")}
-                  className={`w-full h-10 px-3 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.sessionId ? "border-red-300" : "border-gray-300"}`}
+                  disabled={openSessions.length === 0}
+                  className={`w-full h-10 px-3 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.sessionId ? "border-red-300" : "border-gray-300"} ${openSessions.length === 0 ? "opacity-60 cursor-not-allowed" : ""}`}
                 >
-                  <option value="">Sélectionner une session</option>
+                  <option value="">
+                    {openSessions.length === 0 ? "Aucune session ouverte" : "Sélectionner une session"}
+                  </option>
                   {sessions.map(session => (
-                    <option key={session.id} value={session.id}>
+                    <option
+                      key={session.id}
+                      value={session.id}
+                      disabled={Boolean(session.attendanceClosedAt)}
+                    >
                       {session.name}
+                      {session.attendanceClosedAt
+                        ? ` (clôturée le ${format(new Date(session.attendanceClosedAt), 'dd MMM yyyy', { locale: fr })})`
+                        : ''}
                     </option>
                   ))}
                 </select>
               </Field>
+              {sessions.length > 0 && (
+                <p className="mt-2 text-xs text-gray-500">
+                  {openSessions.length === 0
+                    ? 'Toutes les sessions de ce référentiel sont clôturées.'
+                    : hasClosedSessions
+                      ? 'Les sessions clôturées restent visibles mais ne peuvent plus être choisies.'
+                      : 'Toutes les sessions sont ouvertes.'}
+                </p>
+              )}
             </div>
           )}
 

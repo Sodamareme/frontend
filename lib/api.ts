@@ -515,6 +515,7 @@ export interface ReferentialExtended {
 export type Session = {
   id: string;
   name: string;
+  attendanceClosedAt?: string | null;
 };
 export interface Module {
   id: string;
