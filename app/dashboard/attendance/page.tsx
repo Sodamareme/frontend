@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react"
 import Image from "next/image"
-import { attendanceAPI, learnersAPI, type Learner, type LearnerAttendance, type AttendanceRangeRecord } from "@/lib/api"
+import { attendanceAPI, type Learner, type LearnerAttendance, type AttendanceRangeRecord } from "@/lib/api"
 import { Search, Download, Users, CheckCircle, Clock, AlertTriangle, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -776,14 +776,14 @@ const handleStatusChange = async (id: string, date: string, newStatus: EditableS
       <div className="flex items-center mb-6">
         <h1 className="text-3xl font-bold text-[#0D9488]">Présences</h1>
         <span className="ml-4 px-2 py-1 bg-[#F59E0B] text-white text-sm rounded-full">
-          {displayedStats.total} apprenant(s)
+          {displayedStats.total} pointage(s)
         </span>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         {[
-          { label: 'Apprenants', value: displayedStats.total,   Icon: Users,         bg: 'bg-orange-500', text: 'text-white',     iconBg: 'bg-white/20' },
+          { label: 'Pointages', value: displayedStats.total,   Icon: Users,         bg: 'bg-orange-500', text: 'text-white',     iconBg: 'bg-white/20' },
           { label: 'Présence(s)', value: displayedStats.present, Icon: CheckCircle,  bg: 'bg-white',      text: 'text-emerald-500', iconBg: 'bg-emerald-500/20' },
           { label: 'Retard(s)',   value: displayedStats.late,    Icon: Clock,        bg: 'bg-white',      text: 'text-amber-500',   iconBg: 'bg-amber-500/20'   },
           { label: 'Absence(s)', value: displayedStats.absent,  Icon: AlertTriangle, bg: 'bg-white',      text: 'text-red-500',     iconBg: 'bg-red-500/20'     },
@@ -898,11 +898,11 @@ const handleStatusChange = async (id: string, date: string, newStatus: EditableS
         <div className="bg-red-50 text-red-600 p-4 rounded-lg">{error}</div>
       ) : filteredRecords.length === 0 ? (
         <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-          <h3 className="text-lg font-medium text-gray-800 mb-2">Aucun apprenant trouvé</h3>
+          <h3 className="text-lg font-medium text-gray-800 mb-2">Aucun pointage trouvé</h3>
           <p className="text-gray-600">
             {searchQuery || statusFilter || justificationFilter !== 'all'
-              ? 'Aucun apprenant ne correspond à vos critères de recherche'
-              : "Il n'y a actuellement aucun apprenant dans la base de données"}
+              ? 'Aucun pointage ne correspond à vos critères de recherche'
+              : "Aucun pointage n'est enregistré pour la période choisie"}
           </p>
         </div>
       ) : (

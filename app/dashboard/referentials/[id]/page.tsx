@@ -70,6 +70,50 @@ export default function ReferentialDetailsPage() {
     }
   }
 
+  const handleSessionAttendanceClosureToggle = async (sessionId: string, attendanceClosedAt?: string | null) => {
+    if (!referential || typeof id !== 'string') {
+      return
+    }
+
+    try {
+      setIsUpdatingAttendanceClosure(true)
+
+      const nextAttendanceClosedAt = attendanceClosedAt
+        ? null
+        : new Date().toISOString()
+
+      const updatedReferential = await referentialsAPI.updateSessionAttendanceClosure(
+        id,
+        sessionId,
+        nextAttendanceClosedAt,
+      )
+
+      setReferential(updatedReferential)
+      toast.success(
+        nextAttendanceClosedAt
+          ? 'Présence clôturée pour cette session'
+          : 'Présence réouverte pour cette session'
+      )
+    } catch (err) {
+      console.error('Error updating session attendance closure:', err)
+      toast.error("Impossible de mettre à jour l'état de présence de la session")
+    } finally {
+      setIsUpdatingAttendanceClosure(false)
+    }
+  }
+
+  const formatDate = (value?: string | null) => {
+    if (!value) {
+      return 'Non définie'
+    }
+
+    return new Date(value).toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
+  }
+
   if (loading) {
     return <ReferentialDetailsSkeleton />;
   }
@@ -134,42 +178,104 @@ export default function ReferentialDetailsPage() {
               )}
               {referential && <p className="text-gray-600 max-w-2xl">{referential.description}</p>}
               {referential && (
-                <div className="mt-4 flex flex-wrap items-center gap-3">
-                  <span
-                    className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${
-                      referential.attendanceClosedAt
-                        ? 'bg-red-50 text-red-700 border border-red-200'
-                        : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                    }`}
-                  >
-                    {referential.attendanceClosedAt ? (
-                      <>
-                        <Lock className="mr-2 h-4 w-4" />
-                        Présence clôturée
-                      </>
-                    ) : (
-                      <>
-                        <Unlock className="mr-2 h-4 w-4" />
-                        Présence ouverte
-                      </>
-                    )}
-                  </span>
+                <div className="mt-4 space-y-4">
+                  {referential.sessions?.length ? (
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {referential.sessions.map((session) => (
+                        <div
+                          key={session.id}
+                          className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <h3 className="text-base font-semibold text-gray-800">{session.name}</h3>
+                              <p className="mt-1 text-sm text-gray-500">
+                                {formatDate(session.startDate)} - {formatDate(session.endDate)}
+                              </p>
+                            </div>
+                            <span
+                              className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
+                                session.attendanceClosedAt
+                                  ? 'bg-red-50 text-red-700 border border-red-200'
+                                  : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              }`}
+                            >
+                              {session.attendanceClosedAt ? (
+                                <>
+                                  <Lock className="mr-1.5 h-3.5 w-3.5" />
+                                  Clôturée
+                                </>
+                              ) : (
+                                <>
+                                  <Unlock className="mr-1.5 h-3.5 w-3.5" />
+                                  Ouverte
+                                </>
+                              )}
+                            </span>
+                          </div>
 
-                  <button
-                    onClick={handleAttendanceClosureToggle}
-                    disabled={isUpdatingAttendanceClosure}
-                    className={`rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors ${
-                      referential.attendanceClosedAt
-                        ? 'bg-emerald-600 hover:bg-emerald-700'
-                        : 'bg-orange-500 hover:bg-orange-600'
-                    } disabled:cursor-not-allowed disabled:opacity-60`}
-                  >
-                    {isUpdatingAttendanceClosure
-                      ? 'Mise à jour...'
-                      : referential.attendanceClosedAt
-                        ? 'Réouvrir la présence'
-                        : 'Clôturer la présence'}
-                  </button>
+                          <button
+                            onClick={() =>
+                              handleSessionAttendanceClosureToggle(
+                                session.id,
+                                session.attendanceClosedAt,
+                              )
+                            }
+                            disabled={isUpdatingAttendanceClosure}
+                            className={`mt-4 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors ${
+                              session.attendanceClosedAt
+                                ? 'bg-emerald-600 hover:bg-emerald-700'
+                                : 'bg-orange-500 hover:bg-orange-600'
+                            } disabled:cursor-not-allowed disabled:opacity-60`}
+                          >
+                            {isUpdatingAttendanceClosure
+                              ? 'Mise à jour...'
+                              : session.attendanceClosedAt
+                                ? 'Réouvrir cette session'
+                                : 'Clôturer cette session'}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span
+                        className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${
+                          referential.attendanceClosedAt
+                            ? 'bg-red-50 text-red-700 border border-red-200'
+                            : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        }`}
+                      >
+                        {referential.attendanceClosedAt ? (
+                          <>
+                            <Lock className="mr-2 h-4 w-4" />
+                            Présence clôturée
+                          </>
+                        ) : (
+                          <>
+                            <Unlock className="mr-2 h-4 w-4" />
+                            Présence ouverte
+                          </>
+                        )}
+                      </span>
+
+                      <button
+                        onClick={handleAttendanceClosureToggle}
+                        disabled={isUpdatingAttendanceClosure}
+                        className={`rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors ${
+                          referential.attendanceClosedAt
+                            ? 'bg-emerald-600 hover:bg-emerald-700'
+                            : 'bg-orange-500 hover:bg-orange-600'
+                        } disabled:cursor-not-allowed disabled:opacity-60`}
+                      >
+                        {isUpdatingAttendanceClosure
+                          ? 'Mise à jour...'
+                          : referential.attendanceClosedAt
+                            ? 'Réouvrir la présence'
+                            : 'Clôturer la présence'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

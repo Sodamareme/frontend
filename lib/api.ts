@@ -736,6 +736,35 @@ export const learnersAPI = {
       throw error;
     }
   },
+
+  getLearnersByPromotionId: async (promotionId: string): Promise<Array<{
+    id: string;
+    name: string;
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    photoUrl?: string;
+    status?: string;
+  }>> => {
+    try {
+      const response = await fetchWithAuth(`/learners/reference-list?promotionId=${encodeURIComponent(promotionId)}`);
+      const learners = Array.isArray((response as any)?.items) ? (response as any).items : [];
+
+      return learners.map((learner: any) => ({
+        id: learner.id,
+        name: [learner.firstName, learner.lastName].filter(Boolean).join(' ').trim() || learner.name || 'Apprenant',
+        email: learner.user?.email || learner.email || '—',
+        firstName: learner.firstName,
+        lastName: learner.lastName,
+        photoUrl: learner.photoUrl || undefined,
+        status: learner.status,
+      }));
+    } catch (error) {
+      console.error('Error fetching learners by promotion:', error);
+      throw error;
+    }
+  },
+
   // Dans promotionsAPI
 removeReferentialFromPromotion: async (promotionId: string, referentialId: string) => {
   const response = await api.delete(`/promotions/${promotionId}/referentials/${referentialId}`);
@@ -1208,6 +1237,22 @@ export const referentialsAPI = {
   updateReferential: async (id: string, referentialData: Partial<ReferentialExtended>) => {
     try {
       const response = await api.put(`/referentials/${id}`, referentialData);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  updateSessionAttendanceClosure: async (
+    referentialId: string,
+    sessionId: string,
+    attendanceClosedAt: string | null,
+  ) => {
+    try {
+      const response = await api.put(
+        `/referentials/${referentialId}/sessions/${sessionId}/attendance-closure`,
+        { attendanceClosedAt },
+      );
       return response.data;
     } catch (error) {
       throw error;
