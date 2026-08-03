@@ -3,7 +3,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { authAPI, promotionsAPI, referentialsAPI, learnersAPI, Promotion, Referential } from '@/lib/api';
+import { authAPI, promotionsAPI, referentialsAPI, pendingLearnersAPI, Promotion, Referential } from '@/lib/api';
 import { Eye, EyeOff, Mail, Lock, AlertCircle, UserPlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AddLearnerModal from '../components/modals/AddLearnerModal';
@@ -211,11 +211,11 @@ for (const [key, value] of formData.entries()) {
     : value;
 }
 console.table(debugObj);
-    const response = await learnersAPI.createLearner(formData);
+    const response = await pendingLearnersAPI.register(formData);
     
     if (response) {
       toast.success('Inscription réussie !', {
-        description: 'Vous recevrez vos identifiants par email.',
+        description: 'Votre demande a été envoyée. L’équipe administrative la vérifiera.',
         duration: 5000,
       });
       setIsRegisterModalOpen(false);
