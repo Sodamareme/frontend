@@ -140,7 +140,7 @@ const LearnerForm = ({
         setLoadingSessions(true);
         setValue('sessionId', undefined);
 
-        const ref = await referentialsAPI.getReferentialById(selectedRefId);
+        const ref = await referentialsAPI.getPublicReferentialById(selectedRefId);
         const refSessions: Session[] = ref.sessions || [];
         setSessions(refSessions);
 
@@ -362,7 +362,7 @@ const LearnerForm = ({
           )}
 
           {/* Select session — affiché uniquement si plusieurs sessions disponibles */}
-          {!loadingSessions && sessions.length > 1 && (
+          {!loadingSessions && sessions.length > 0 && (
             <div className="mt-4">
               <Field label="Session" error={errors.sessionId?.message} required>
                 <select
@@ -625,15 +625,15 @@ useEffect(() => {
       open={isOpen} 
       onOpenChange={onClose}
     >
-      <DialogContent className="p-0 overflow-hidden max-w-6xl w-11/12 max-h-[90vh] overflow-y-hidden bg-gray-50">
-        <DialogHeader className="px-8 pt-6 pb-2">
+      <DialogContent className="p-0 overflow-hidden max-w-6xl w-[96vw] sm:w-11/12 max-h-[95vh] sm:max-h-[90vh] overflow-y-auto bg-gray-50">
+      <DialogHeader className="px-4 sm:px-8 pt-6 pb-2">
           <DialogTitle className="text-2xl font-bold text-teal-700 text-center">
             Inscription d'un nouvel apprenant
           </DialogTitle>
         </DialogHeader>
 
         {/* Indicateur d'étapes */}
-        <div className="flex items-center justify-center py-4 px-8 mb-2">
+        <div className="flex items-center justify-center py-4 px-4 sm:px-8 mb-2">
           <div className="flex items-center max-w-md w-full">
             <div 
               className={`flex items-center justify-center w-10 h-10 rounded-full border-2 
@@ -662,7 +662,7 @@ useEffect(() => {
         )}
 
         {/* Contenu du formulaire */}
-        <div className="px-8 pb-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+        <div className="px-4 sm:px-8 pb-6 overflow-y-auto max-h-[calc(95vh-200px)] sm:max-h-[calc(90vh-200px)]">
           <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
             <AnimatePresence initial={false} custom={step > 1 ? 1 : -1}>
               {step === 1 ? (

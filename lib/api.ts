@@ -1188,6 +1188,19 @@ export const referentialsAPI = {
       throw error;
     }
   },
+
+  getPublicReferentialById: async (id: string): Promise<ReferentialExtended> => {
+    const response = await fetch(`${API_BASE_URL}/referentials/${id}/public`, {
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Erreur réseau' }));
+      throw new Error(error.message || `Erreur HTTP ${response.status}`);
+    }
+
+    return response.json();
+  },
   
   createReferential: async (referentialData: {
     name: string;
