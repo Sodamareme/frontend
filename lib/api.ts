@@ -2336,7 +2336,7 @@ export const promotionsAPI = {
       
       const promotions = response.data.map(promotion => ({
         ...promotion,
-        learnerCount: promotion.learners?.length || 0
+        learnerCount: promotion._count?.learners ?? promotion.learners?.length ?? 0
       }));
       
       return promotions;
@@ -2352,7 +2352,7 @@ export const promotionsAPI = {
       
       return {
         ...response.data,
-        learnerCount: response.data.learners?.length || 0
+        learnerCount: response.data._count?.learners ?? response.data.learners?.length ?? 0
       };
     } catch (error) {
       console.error('Error fetching promotion:', error);

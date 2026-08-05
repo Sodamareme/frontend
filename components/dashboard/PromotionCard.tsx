@@ -65,7 +65,7 @@ export default function PromotionCard({ promotion }: PromotionCardProps) {
         </div>
         <div className="flex items-center text-gray-600">
           <Users className="h-4 w-4 text-gray-400 mr-1.5" />
-          <span>{promotion.learners?.length || 0} apprenants</span>
+          <span>{promotion.learnerCount ?? promotion.learners?.length ?? 0} apprenants</span>
         </div>
       </div>
       
@@ -80,4 +80,4 @@ export default function PromotionCard({ promotion }: PromotionCardProps) {
       )}
     </Link>
   );
-} 
+}
