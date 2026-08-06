@@ -753,23 +753,40 @@ export const learnersAPI = {
     sessionName?: string;
   }>> => {
     try {
-      const response = await fetchWithAuth(`/learners/reference-list?promotionId=${encodeURIComponent(promotionId)}`);
-      const learners = Array.isArray((response as any)?.items) ? (response as any).items : [];
+      const pageSize = 100;
+      let page = 1;
+      const learners: any[] = [];
+
+      while (true) {
+        const response = await fetchWithAuth(
+          `/learners/reference-list?promotionId=${encodeURIComponent(promotionId)}&page=${page}&limit=${pageSize}`,
+        );
+
+        const items = Array.isArray((response as any)?.items) ? (response as any).items : [];
+        learners.push(...items);
+
+        const totalPages = Number((response as any)?.pagination?.totalPages ?? 1);
+        if (page >= totalPages || items.length === 0) {
+          break;
+        }
+
+        page += 1;
+      }
 
       return learners.map((learner: any) => ({
         id: learner.id,
-          name: [learner.firstName, learner.lastName].filter(Boolean).join(' ').trim() || learner.name || 'Apprenant',
-          email: learner.user?.email || learner.email || '—',
-          firstName: learner.firstName,
-          lastName: learner.lastName,
-          photoUrl: learner.photoUrl || undefined,
-          status: learner.status,
-          matricule: learner.matricule,
-          phone: learner.phone,
-          referentialName: learner.referential?.name,
-          promotionName: learner.promotion?.name,
-          sessionName: learner.session?.name,
-        }));
+        name: [learner.firstName, learner.lastName].filter(Boolean).join(' ').trim() || learner.name || 'Apprenant',
+        email: learner.user?.email || learner.email || '—',
+        firstName: learner.firstName,
+        lastName: learner.lastName,
+        photoUrl: learner.photoUrl || undefined,
+        status: learner.status,
+        matricule: learner.matricule,
+        phone: learner.phone,
+        referentialName: learner.referential?.name,
+        promotionName: learner.promotion?.name,
+        sessionName: learner.session?.name,
+      }));
     } catch (error) {
       console.error('Error fetching learners by promotion:', error);
       throw error;
