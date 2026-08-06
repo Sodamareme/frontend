@@ -746,6 +746,11 @@ export const learnersAPI = {
     lastName?: string;
     photoUrl?: string;
     status?: string;
+    matricule?: string;
+    phone?: string;
+    referentialName?: string;
+    promotionName?: string;
+    sessionName?: string;
   }>> => {
     try {
       const response = await fetchWithAuth(`/learners/reference-list?promotionId=${encodeURIComponent(promotionId)}`);
@@ -753,13 +758,18 @@ export const learnersAPI = {
 
       return learners.map((learner: any) => ({
         id: learner.id,
-        name: [learner.firstName, learner.lastName].filter(Boolean).join(' ').trim() || learner.name || 'Apprenant',
-        email: learner.user?.email || learner.email || '—',
-        firstName: learner.firstName,
-        lastName: learner.lastName,
-        photoUrl: learner.photoUrl || undefined,
-        status: learner.status,
-      }));
+          name: [learner.firstName, learner.lastName].filter(Boolean).join(' ').trim() || learner.name || 'Apprenant',
+          email: learner.user?.email || learner.email || '—',
+          firstName: learner.firstName,
+          lastName: learner.lastName,
+          photoUrl: learner.photoUrl || undefined,
+          status: learner.status,
+          matricule: learner.matricule,
+          phone: learner.phone,
+          referentialName: learner.referential?.name,
+          promotionName: learner.promotion?.name,
+          sessionName: learner.session?.name,
+        }));
     } catch (error) {
       console.error('Error fetching learners by promotion:', error);
       throw error;
