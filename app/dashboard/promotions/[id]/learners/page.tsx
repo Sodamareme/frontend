@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { AlertCircle, ArrowLeft, Mail, Hash, BookOpen, Phone } from 'lucide-react';
+import { AlertCircle, ArrowLeft, BookOpen, Hash, Mail, Phone, Search } from 'lucide-react';
 import Link from 'next/link';
 import { learnersAPI, promotionsAPI } from '@/lib/api';
+import Pagination from '@/components/common/Pagination';
 
 type PromotionLearner = {
   id: string;
@@ -37,6 +38,10 @@ export default function LearnersPage() {
   const promotionId = Array.isArray(params.id) ? params.id[0] : params.id;
   const [learners, setLearners] = useState<PromotionLearner[]>([]);
   const [promotionName, setPromotionName] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -67,6 +72,49 @@ export default function LearnersPage() {
   useEffect(() => {
     fetchLearners();
   }, [promotionId]);
+
+  const filteredLearners = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+
+    return learners.filter((learner) => {
+      const matchesSearch =
+        !normalizedSearch ||
+        [
+          learner.name,
+          learner.email,
+          learner.matricule,
+          learner.phone,
+          learner.referentialName,
+          learner.promotionName,
+          learner.sessionName,
+        ]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(normalizedSearch));
+
+      const matchesStatus = statusFilter === 'all' || learner.status === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [learners, searchQuery, statusFilter]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, itemsPerPage]);
+
+  const totalItems = filteredLearners.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+
+  useEffect(() => {
+    if (safeCurrentPage !== currentPage) {
+      setCurrentPage(safeCurrentPage);
+    }
+  }, [safeCurrentPage, currentPage]);
+
+  const currentLearners = filteredLearners.slice(
+    (safeCurrentPage - 1) * itemsPerPage,
+    safeCurrentPage * itemsPerPage,
+  );
 
   if (loading) {
     return <div className="p-6 text-center text-gray-500">Chargement des apprenants...</div>;
@@ -107,19 +155,59 @@ export default function LearnersPage() {
                 {promotionName ? `Apprenants de ${promotionName}` : 'Liste des apprenants'}
               </h1>
               <p className="text-gray-600 mt-1">
-                {learners.length} apprenant{learners.length > 1 ? 's' : ''} trouvé{learners.length > 1 ? 's' : ''}
+                {totalItems} apprenant{totalItems > 1 ? 's' : ''} trouvé{totalItems > 1 ? 's' : ''}
               </p>
             </div>
           </div>
         </div>
 
-        {learners.length === 0 ? (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <label className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+              <Search className="h-4 w-4 text-orange-500 shrink-0" />
+              <input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Rechercher un apprenant"
+                className="w-full bg-transparent text-sm outline-none placeholder:text-gray-400"
+              />
+            </label>
+
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+              className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none"
+            >
+              <option value="all">Tous les statuts</option>
+              <option value="ACTIVE">Actif</option>
+              <option value="REPLACEMENT">Remplaçant</option>
+              <option value="WAITING">En attente</option>
+              <option value="INACTIVE">Inactif</option>
+              <option value="GRADUATED">Gradué</option>
+              <option value="DROPPED_OUT">Abandonné</option>
+              <option value="REPLACED">Remplacé</option>
+            </select>
+
+            <select
+              value={itemsPerPage}
+              onChange={(event) => setItemsPerPage(Number(event.target.value))}
+              className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none"
+            >
+              <option value={6}>6 par page</option>
+              <option value={12}>12 par page</option>
+              <option value={24}>24 par page</option>
+            </select>
+          </div>
+        </div>
+
+        {totalItems === 0 ? (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center text-gray-500">
-            Aucun apprenant trouvé pour cette promotion.
+            Aucun apprenant ne correspond à votre recherche.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {learners.map((learner) => {
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {currentLearners.map((learner) => {
               const initials = learner.name
                 .split(' ')
                 .filter(Boolean)
@@ -184,8 +272,19 @@ export default function LearnersPage() {
                   </div>
                 </div>
               );
-            })}
-          </div>
+              })}
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-4 py-3">
+              <Pagination
+                totalItems={totalItems}
+                currentPage={safeCurrentPage}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+                onItemsPerPageChange={setItemsPerPage}
+              />
+            </div>
+          </>
         )}
       </div>
     </div>
