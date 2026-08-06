@@ -15,18 +15,27 @@ import type {
   Module,
 } from "@/lib/api";
 import ModuleCard from "@/components/modules/ModuleCard";
+import { motion } from "framer-motion";
 import {
   ArrowRight,
   Award,
+  BarChart2,
   BookOpen,
   CheckCircle2,
+  Crown,
   Clock3,
+  Flame,
   GraduationCap,
   Layers3,
+  Medal,
   QrCode,
   ShieldAlert,
+  Sparkles,
+  Star,
   User2,
+  Trophy,
   XCircle,
+  type LucideIcon,
 } from "lucide-react";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 
@@ -58,11 +67,49 @@ const REGULARITY_PERIOD_LABELS: Record<
   custom: "Personnalisée",
 };
 
-function getRegularityMessage(rank?: number, attendanceRate = 0) {
+type RegularityMessage = {
+  title: string;
+  description: string;
+  icon: LucideIcon;
+  accentClass: string;
+  iconClass: string;
+};
+
+type RegularityRowStyle = {
+  icon: LucideIcon;
+  badgeClass: string;
+  shellClass: string;
+  titleClass: string;
+};
+
+const leaderboardVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+    },
+  },
+};
+
+const leaderboardItemVariants = {
+  hidden: { opacity: 0, y: 14, scale: 0.98 },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.35, ease: "easeOut" },
+  },
+};
+
+function getRegularityMessage(rank?: number, attendanceRate = 0): RegularityMessage {
   if (!rank) {
     return {
       title: "✨ En route",
       description: "Le classement se prépare. Continuez à pointer régulièrement.",
+      icon: Sparkles,
+      accentClass: "bg-indigo-50 text-indigo-600",
+      iconClass: "bg-indigo-50 text-indigo-600",
     };
   }
 
@@ -70,6 +117,9 @@ function getRegularityMessage(rank?: number, attendanceRate = 0) {
     return {
       title: "🏆 Boss du pointage",
       description: "Vous êtes en tête dans votre référentiel. Impressionnant.",
+      icon: Trophy,
+      accentClass: "bg-amber-50 text-amber-600",
+      iconClass: "bg-amber-50 text-amber-600",
     };
   }
 
@@ -77,6 +127,9 @@ function getRegularityMessage(rank?: number, attendanceRate = 0) {
     return {
       title: "🔥 Podium en vue",
       description: "Vous êtes tout près du podium. Un dernier effort et c’est gagné.",
+      icon: Flame,
+      accentClass: "bg-orange-50 text-orange-600",
+      iconClass: "bg-orange-50 text-orange-600",
     };
   }
 
@@ -84,12 +137,54 @@ function getRegularityMessage(rank?: number, attendanceRate = 0) {
     return {
       title: "✨ En route",
       description: "La régularité est là. Continuez sur ce bon rythme.",
+      icon: Medal,
+      accentClass: "bg-emerald-50 text-emerald-600",
+      iconClass: "bg-emerald-50 text-emerald-600",
     };
   }
 
   return {
     title: "✨ En route",
     description: "Chaque pointage compte. Gardez le cap, la progression continue.",
+    icon: Star,
+    accentClass: "bg-slate-50 text-slate-600",
+    iconClass: "bg-slate-50 text-slate-600",
+  };
+}
+
+function getLeaderboardRowStyle(index: number): RegularityRowStyle {
+  if (index === 0) {
+    return {
+      icon: Crown,
+      badgeClass: "bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 text-white shadow-[0_8px_20px_rgba(249,115,22,0.22)]",
+      shellClass: "border-amber-100 bg-gradient-to-r from-amber-50 via-white to-orange-50",
+      titleClass: "text-amber-700",
+    };
+  }
+
+  if (index === 1) {
+    return {
+      icon: Medal,
+      badgeClass: "bg-gradient-to-br from-slate-300 to-slate-500 text-white shadow-sm",
+      shellClass: "border-slate-100 bg-gradient-to-r from-slate-50 via-white to-slate-50",
+      titleClass: "text-slate-600",
+    };
+  }
+
+  if (index === 2) {
+    return {
+      icon: Flame,
+      badgeClass: "bg-gradient-to-br from-orange-400 to-amber-600 text-white shadow-[0_8px_20px_rgba(249,115,22,0.18)]",
+      shellClass: "border-orange-100 bg-gradient-to-r from-orange-50 via-white to-amber-50",
+      titleClass: "text-orange-700",
+    };
+  }
+
+  return {
+    icon: Sparkles,
+    badgeClass: "bg-slate-100 text-slate-700",
+    shellClass: "border-slate-100 bg-white",
+    titleClass: "text-slate-700",
   };
 }
 
@@ -277,6 +372,7 @@ export default function LearnerDashboard() {
   const learnerRank = regularity?.learner?.rank ?? null;
   const learnerRegularityRate = regularity?.learner?.attendanceRate ?? 0;
   const regularityMessage = getRegularityMessage(learnerRank ?? undefined, learnerRegularityRate);
+  const RegularityIcon = regularityMessage.icon;
 
   if (loading.learner) {
     return (
@@ -418,8 +514,26 @@ export default function LearnerDashboard() {
           </section>
 
           <section className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
-            <div className="rounded-[2rem] border border-orange-100 bg-white p-6 shadow-sm">
-              <div className="flex items-start justify-between gap-4">
+            <motion.div
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, ease: "easeOut" }}
+              className="relative overflow-hidden rounded-[2rem] border border-orange-100 bg-white p-6 shadow-sm"
+            >
+              <motion.div
+                aria-hidden="true"
+                animate={{ y: [0, -8, 0], opacity: [0.35, 0.55, 0.35] }}
+                transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+                className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-orange-100/60 blur-3xl"
+              />
+              <motion.div
+                aria-hidden="true"
+                animate={{ y: [0, 10, 0], opacity: [0.25, 0.45, 0.25] }}
+                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                className="pointer-events-none absolute -bottom-12 -left-8 h-32 w-32 rounded-full bg-amber-100/60 blur-3xl"
+              />
+
+              <div className="relative flex items-start justify-between gap-4">
                 <div>
                   <p className="text-sm font-medium text-[#F16E00]">Classement</p>
                   <h2 className="mt-2 text-2xl font-semibold text-slate-900">Assiduité</h2>
@@ -427,9 +541,13 @@ export default function LearnerDashboard() {
                     Votre position évolue avec vos pointages. Restez régulier, le podium n’est pas loin.
                   </p>
                 </div>
-                <div className="rounded-2xl bg-orange-50 p-3 text-[#F16E00]">
-                  <Award className="h-6 w-6" />
-                </div>
+                <motion.div
+                  animate={{ rotate: [0, -8, 8, 0], scale: [1, 1.06, 1] }}
+                  transition={{ duration: 4.5, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }}
+                  className={`rounded-2xl p-3 ${regularityMessage.iconClass}`}
+                >
+                  <RegularityIcon className="h-6 w-6" />
+                </motion.div>
               </div>
 
               <div className="mt-5 flex flex-wrap gap-2">
@@ -448,51 +566,98 @@ export default function LearnerDashboard() {
                 ))}
               </div>
 
-              <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-orange-100 bg-orange-50/40 p-4">
+              <div className="relative mt-6 grid gap-3 sm:grid-cols-2">
+                <motion.div
+                  whileHover={{ y: -3, scale: 1.01 }}
+                  className="rounded-2xl border border-orange-100 bg-gradient-to-br from-orange-50 to-white p-4 shadow-sm"
+                >
                   <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Votre rang</p>
-                  <p className="mt-2 text-3xl font-semibold text-slate-900">
-                    {regularityLoading ? "..." : learnerRank ?? "—"}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-orange-100 bg-orange-50/40 p-4">
+                  <div className="mt-2 flex items-end gap-3">
+                    <p className="text-3xl font-semibold text-slate-900">
+                      {regularityLoading ? "..." : learnerRank ?? "—"}
+                    </p>
+                    <div className="mb-1 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-[#F16E00] shadow-sm">
+                      {regularity?.totalLearners ? `sur ${regularity.totalLearners}` : "—"}
+                    </div>
+                  </div>
+                </motion.div>
+                <motion.div
+                  whileHover={{ y: -3, scale: 1.01 }}
+                  className="rounded-2xl border border-orange-100 bg-gradient-to-br from-orange-50 to-white p-4 shadow-sm"
+                >
                   <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Taux</p>
                   <p className="mt-2 text-3xl font-semibold text-slate-900">
                     {regularityLoading ? "..." : `${learnerRegularityRate}%`}
                   </p>
-                </div>
-                <div className="rounded-2xl border border-orange-100 bg-orange-50/40 p-4">
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-orange-100">
+                    <div
+                      className="h-full rounded-full bg-[#F16E00] transition-all duration-700"
+                      style={{ width: `${Math.min(learnerRegularityRate, 100)}%` }}
+                    />
+                  </div>
+                </motion.div>
+                <motion.div
+                  whileHover={{ y: -3, scale: 1.01 }}
+                  className="rounded-2xl border border-orange-100 bg-gradient-to-br from-orange-50 to-white p-4 shadow-sm"
+                >
                   <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Référentiel</p>
                   <p className="mt-2 text-base font-semibold text-slate-900">
                     {regularity?.referential?.name || learnerDetails?.referential?.name || "—"}
                   </p>
-                </div>
-                <div className="rounded-2xl border border-orange-100 bg-orange-50/40 p-4">
+                </motion.div>
+                <motion.div
+                  whileHover={{ y: -3, scale: 1.01 }}
+                  className="rounded-2xl border border-orange-100 bg-gradient-to-br from-orange-50 to-white p-4 shadow-sm"
+                >
                   <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Période analysée</p>
-                  <p className="mt-2 text-base font-semibold text-slate-900">
+                  <p className="mt-2 text-sm font-semibold text-slate-900">
                     {regularity?.range?.startDate && regularity?.range?.endDate
                       ? `${new Date(regularity.range.startDate).toLocaleDateString("fr-FR")} au ${new Date(regularity.range.endDate).toLocaleDateString("fr-FR")}`
                       : "—"}
                   </p>
-                </div>
+                </motion.div>
               </div>
 
-              <div className="mt-5 rounded-[1.5rem] border border-orange-100 bg-white p-5">
-                <p className="text-sm font-medium text-[#F16E00]">{regularityMessage.title}</p>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  {regularityMessage.description}
-                </p>
-              </div>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15, duration: 0.35 }}
+                className="mt-5 rounded-[1.5rem] border border-orange-100 bg-white p-5 shadow-sm"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`rounded-2xl p-2.5 ${regularityMessage.accentClass}`}>
+                    <RegularityIcon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-[#F16E00]">{regularityMessage.title}</p>
+                    <p className="mt-1 text-sm leading-6 text-slate-600">
+                      {regularityMessage.description}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
 
               {regularityError && (
                 <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
                   {regularityError}
                 </div>
               )}
-            </div>
+            </motion.div>
 
-            <div className="rounded-[2rem] border border-orange-100 bg-white p-6 shadow-sm">
-              <div className="flex items-start justify-between gap-4">
+            <motion.div
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.05, ease: "easeOut" }}
+              className="relative overflow-hidden rounded-[2rem] border border-orange-100 bg-white p-6 shadow-sm"
+            >
+              <motion.div
+                aria-hidden="true"
+                animate={{ scale: [1, 1.08, 1], opacity: [0.22, 0.38, 0.22] }}
+                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                className="pointer-events-none absolute right-0 top-0 h-40 w-40 rounded-full bg-orange-100/50 blur-3xl"
+              />
+
+              <div className="relative flex items-start justify-between gap-4">
                 <div>
                   <p className="text-sm font-medium text-[#F16E00]">Top 5</p>
                   <h2 className="mt-2 text-2xl font-semibold text-slate-900">Les plus réguliers</h2>
@@ -500,46 +665,76 @@ export default function LearnerDashboard() {
                     Le classement du moment dans votre référentiel.
                   </p>
                 </div>
-                <div className="rounded-2xl bg-slate-100 p-3 text-slate-700">
+                <motion.div
+                  animate={{ y: [0, -4, 0] }}
+                  transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+                  className="rounded-2xl bg-slate-100 p-3 text-slate-700"
+                >
                   <BarChart2 className="h-6 w-6" />
-                </div>
+                </motion.div>
               </div>
 
-              <div className="mt-6 space-y-3">
+              <motion.ul
+                variants={leaderboardVariants}
+                initial="hidden"
+                animate="show"
+                className="relative mt-6 space-y-3"
+              >
                 {regularityLoading ? (
                   [...Array(5)].map((_, index) => (
-                    <div
+                    <li
                       key={index}
                       className="h-20 animate-pulse rounded-[1.4rem] bg-slate-100"
                     />
                   ))
                 ) : regularity?.topRegular?.length ? (
-                  regularity.topRegular.map((learner, index) => (
-                    <div
-                      key={learner.learnerId}
-                      className="flex items-center gap-4 rounded-[1.4rem] border border-slate-100 bg-slate-50 px-4 py-3"
-                    >
-                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#F16E00] text-sm font-semibold text-white">
-                        {index + 1}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-semibold text-slate-900">
-                          {learner.firstName} {learner.lastName}
-                        </p>
-                        <p className="truncate text-sm text-slate-500">
-                          {learner.referential?.name || "Référentiel non renseigné"}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-[#F16E00]">
-                          {learner.attendanceRate}%
-                        </p>
-                        <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
-                          Présence
-                        </p>
-                      </div>
-                    </div>
-                  ))
+                  regularity.topRegular.map((learner, index) => {
+                    const rowStyle = getLeaderboardRowStyle(index);
+                    const RowIcon = rowStyle.icon;
+
+                    return (
+                      <motion.li
+                        key={learner.learnerId}
+                        variants={leaderboardItemVariants}
+                        whileHover={{ y: -3, scale: 1.01 }}
+                        className={`flex items-center gap-4 rounded-[1.4rem] border px-4 py-3 shadow-sm ${rowStyle.shellClass}`}
+                      >
+                        <div className={`flex h-11 w-11 items-center justify-center rounded-full ${rowStyle.badgeClass}`}>
+                          <RowIcon className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-semibold text-slate-900">
+                            {learner.firstName} {learner.lastName}
+                          </p>
+                          <p className={`truncate text-sm ${rowStyle.titleClass}`}>
+                            {learner.referential?.name || "Référentiel non renseigné"}
+                          </p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs text-slate-600 shadow-sm">
+                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                              {learner.presentCount} présents
+                            </span>
+                            <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs text-slate-600 shadow-sm">
+                              <Clock3 className="h-3.5 w-3.5 text-orange-500" />
+                              {learner.lateCount} retards
+                            </span>
+                            <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs text-slate-600 shadow-sm">
+                              <XCircle className="h-3.5 w-3.5 text-red-500" />
+                              {learner.absenceCount} absences
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-[#F16E00]">
+                            {learner.attendanceRate}%
+                          </p>
+                          <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
+                            Présence
+                          </p>
+                        </div>
+                      </motion.li>
+                    );
+                  })
                 ) : (
                   <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center">
                     <p className="text-sm font-medium text-slate-700">
@@ -550,8 +745,8 @@ export default function LearnerDashboard() {
                     </p>
                   </div>
                 )}
-              </div>
-            </div>
+              </motion.ul>
+            </motion.div>
           </section>
 
           <section className="grid gap-6 xl:grid-cols-[0.92fr_1.28fr]">
