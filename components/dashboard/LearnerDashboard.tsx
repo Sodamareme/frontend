@@ -74,7 +74,6 @@ type RegularityMessage = {
 };
 
 type RegularityRowStyle = {
-  icon: LucideIcon;
   badgeClass: string;
   shellClass: string;
   titleClass: string;
@@ -153,7 +152,6 @@ function getRegularityMessage(rank?: number, attendanceRate = 0): RegularityMess
 function getLeaderboardRowStyle(index: number): RegularityRowStyle {
   if (index === 0) {
     return {
-      icon: Crown,
       badgeClass: "bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 text-white shadow-[0_8px_20px_rgba(249,115,22,0.22)]",
       shellClass: "border-amber-100 bg-gradient-to-r from-amber-50 via-white to-orange-50",
       titleClass: "text-amber-700",
@@ -162,7 +160,6 @@ function getLeaderboardRowStyle(index: number): RegularityRowStyle {
 
   if (index === 1) {
     return {
-      icon: Medal,
       badgeClass: "bg-gradient-to-br from-slate-300 to-slate-500 text-white shadow-sm",
       shellClass: "border-slate-100 bg-gradient-to-r from-slate-50 via-white to-slate-50",
       titleClass: "text-slate-600",
@@ -171,7 +168,6 @@ function getLeaderboardRowStyle(index: number): RegularityRowStyle {
 
   if (index === 2) {
     return {
-      icon: Flame,
       badgeClass: "bg-gradient-to-br from-orange-400 to-amber-600 text-white shadow-[0_8px_20px_rgba(249,115,22,0.18)]",
       shellClass: "border-orange-100 bg-gradient-to-r from-orange-50 via-white to-amber-50",
       titleClass: "text-orange-700",
@@ -179,7 +175,6 @@ function getLeaderboardRowStyle(index: number): RegularityRowStyle {
   }
 
   return {
-    icon: Sparkles,
     badgeClass: "bg-slate-100 text-slate-700",
     shellClass: "border-slate-100 bg-white",
     titleClass: "text-slate-700",
@@ -645,7 +640,6 @@ export default function LearnerDashboard() {
                 ) : regularity?.topRegular?.length ? (
                   regularity.topRegular.map((learner, index) => {
                     const rowStyle = getLeaderboardRowStyle(index);
-                    const RowIcon = rowStyle.icon;
 
                     return (
                       <motion.li
@@ -656,8 +650,8 @@ export default function LearnerDashboard() {
                       >
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                           <div className="flex items-start gap-4 min-w-0 flex-1">
-                            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${rowStyle.badgeClass}`}>
-                              <RowIcon className="h-5 w-5" />
+                            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold ${rowStyle.badgeClass}`}>
+                              {index + 1}
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="truncate font-semibold text-slate-900">
