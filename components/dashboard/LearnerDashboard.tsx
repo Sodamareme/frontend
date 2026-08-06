@@ -18,7 +18,6 @@ import ModuleCard from "@/components/modules/ModuleCard";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
-  Award,
   BarChart2,
   BookOpen,
   CheckCircle2,
@@ -26,7 +25,6 @@ import {
   Clock3,
   Flame,
   GraduationCap,
-  Layers3,
   Medal,
   QrCode,
   ShieldAlert,
@@ -200,12 +198,14 @@ function DashboardStatCard({
   icon: typeof CheckCircle2;
 }) {
   return (
-    <div className="group relative overflow-hidden rounded-[1.8rem] border border-orange-100 bg-white p-5 shadow-sm">
+    <div className="group relative overflow-hidden rounded-[1.8rem] border border-orange-100 bg-white p-4 shadow-sm sm:p-5">
       <div className="absolute inset-x-0 top-0 h-1.5 bg-[#F16E00]" />
       <div className="relative flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-slate-500">{label}</p>
-          <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">{value}</p>
+          <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+            {value}
+          </p>
           <p className="mt-2 text-xs uppercase tracking-[0.16em] text-slate-400">{note}</p>
         </div>
         <div className="rounded-2xl bg-orange-50 p-3 text-[#F16E00] shadow-sm">
@@ -399,7 +399,7 @@ export default function LearnerDashboard() {
         <div className="space-y-6">
           <section className="overflow-hidden rounded-[2rem] border border-orange-100 bg-white shadow-sm">
             <div className="h-2 w-full bg-[#F16E00]" />
-            <div className="grid gap-8 px-6 py-7 lg:grid-cols-[1.4fr_0.95fr] lg:px-8 lg:py-8">
+            <div className="grid gap-8 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.95fr)] lg:px-8 lg:py-8">
               <div className="space-y-6">
                 <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.2em] text-[#F16E00]">
                   Dashboard apprenant
@@ -411,36 +411,28 @@ export default function LearnerDashboard() {
                   </h1>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  <div className="rounded-[1.4rem] border border-orange-100 bg-white p-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-[#F16E00]">Référentiel</p>
-                    <p className="mt-2 text-base font-semibold text-slate-900">
-                      {learnerDetails?.referential?.name || "Non renseigne"}
-                    </p>
+                <div className="flex flex-wrap gap-3">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-orange-100 bg-white px-4 py-2 text-sm text-slate-700">
+                    <BookOpen className="h-4 w-4 text-[#F16E00]" />
+                    {learnerDetails?.referential?.name || "Référentiel non renseigné"}
                   </div>
-                  <div className="rounded-[1.4rem] border border-orange-100 bg-white p-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-[#F16E00]">Matricule</p>
-                    <p className="mt-2 text-base font-semibold text-slate-900">
-                      {learnerDetails?.matricule || "Non renseigne"}
-                    </p>
-                  </div>
-                  <div className="rounded-[1.4rem] border border-orange-100 bg-white p-4 sm:col-span-2 xl:col-span-1">
-                    <p className="text-xs uppercase tracking-[0.18em] text-[#F16E00]">Modules</p>
-                    <p className="mt-2 text-base font-semibold text-slate-900">{modules.length}</p>
+                  <div className="inline-flex items-center gap-2 rounded-full border border-orange-100 bg-white px-4 py-2 text-sm text-slate-700">
+                    <User2 className="h-4 w-4 text-[#F16E00]" />
+                    {learnerDetails?.matricule || "Matricule non renseigné"}
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                   <button
                     onClick={() => setShowQRCode(true)}
-                    className="inline-flex items-center justify-center rounded-2xl bg-[#F16E00] px-5 py-3 text-sm font-medium text-white transition-all duration-200 hover:bg-[#d95f00]"
+                    className="inline-flex w-full items-center justify-center rounded-2xl bg-[#F16E00] px-5 py-3 text-sm font-medium text-white transition-all duration-200 hover:bg-[#d95f00] sm:w-auto"
                   >
                     <QrCode className="mr-2 h-4 w-4" />
                     Afficher mon QR code
                   </button>
                   <a
                     href="/dashboard/attendance/my"
-                    className="inline-flex items-center justify-center rounded-2xl border border-orange-100 bg-white px-5 py-3 text-sm font-medium text-slate-700 transition-all duration-200 hover:bg-orange-50"
+                    className="inline-flex w-full items-center justify-center rounded-2xl border border-orange-100 bg-white px-5 py-3 text-sm font-medium text-slate-700 transition-all duration-200 hover:bg-orange-50 sm:w-auto"
                   >
                     Voir ma présence
                     <ArrowRight className="ml-2 h-4 w-4" />
@@ -448,7 +440,7 @@ export default function LearnerDashboard() {
                 </div>
               </div>
 
-              <div className="rounded-[1.9rem] border border-orange-100 bg-white p-5">
+              <div className="rounded-[1.9rem] border border-orange-100 bg-gradient-to-br from-white to-orange-50/40 p-5">
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-sm font-medium text-slate-500">Taux de présence</p>
@@ -456,61 +448,24 @@ export default function LearnerDashboard() {
                       {attendanceRate}%
                     </p>
                   </div>
-                  <div className="rounded-2xl bg-orange-50 p-3 text-[#F16E00]">
+                  <div className="rounded-2xl bg-white p-3 text-[#F16E00] shadow-sm">
                     <GraduationCap className="h-7 w-7" />
                   </div>
                 </div>
 
-                <div className="mt-6 h-3 overflow-hidden rounded-full bg-slate-100">
+                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white">
                   <div
                     className="h-full rounded-full bg-[#F16E00] transition-all duration-500"
                     style={{ width: `${Math.min(attendanceRate, 100)}%` }}
                   />
                 </div>
 
-                <div className="mt-6 grid grid-cols-2 gap-3">
-                  <div className="rounded-2xl bg-white p-4">
-                    <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Jours comptabilisés</p>
-                    <p className="mt-2 text-2xl font-semibold text-slate-900">
-                      {attendanceStats?.totalDays || 0}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl bg-white p-4">
-                    <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Absences justifiées</p>
-                    <p className="mt-2 text-2xl font-semibold text-slate-900">
-                      {attendanceStats?.justifiedAbsentDays || 0}
-                    </p>
-                  </div>
+                <div className="mt-5 flex items-center justify-between rounded-2xl bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
+                  <span>{attendanceStats?.totalDays || 0} jours suivis</span>
+                  <span>{attendanceStats?.justifiedAbsentDays || 0} absences justifiées</span>
                 </div>
               </div>
             </div>
-          </section>
-
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <DashboardStatCard
-              label="Présences"
-              value={attendanceStats?.present || 0}
-              note="Validées"
-              icon={CheckCircle2}
-            />
-            <DashboardStatCard
-              label="Retards"
-              value={attendanceStats?.late || 0}
-              note="À surveiller"
-              icon={Clock3}
-            />
-            <DashboardStatCard
-              label="Absences"
-              value={attendanceStats?.absent || 0}
-              note={`${attendanceStats?.unjustifiedAbsentDays || 0} non justifiées`}
-              icon={XCircle}
-            />
-            <DashboardStatCard
-              label="Modules"
-              value={modules.length}
-              note="Parcours actif"
-              icon={Layers3}
-            />
           </section>
 
           <section className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
@@ -533,11 +488,11 @@ export default function LearnerDashboard() {
                 className="pointer-events-none absolute -bottom-12 -left-8 h-32 w-32 rounded-full bg-amber-100/60 blur-3xl"
               />
 
-              <div className="relative flex items-start justify-between gap-4">
+              <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-sm font-medium text-[#F16E00]">Classement</p>
-                  <h2 className="mt-2 text-2xl font-semibold text-slate-900">Assiduité</h2>
-                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                  <h2 className="mt-2 text-xl font-semibold text-slate-900 sm:text-2xl">Assiduité</h2>
+                  <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
                     Votre position évolue avec vos pointages. Restez régulier, le podium n’est pas loin.
                   </p>
                 </div>
@@ -684,7 +639,7 @@ export default function LearnerDashboard() {
                   [...Array(5)].map((_, index) => (
                     <li
                       key={index}
-                      className="h-20 animate-pulse rounded-[1.4rem] bg-slate-100"
+                      className="h-24 animate-pulse rounded-[1.4rem] bg-slate-100"
                     />
                   ))
                 ) : regularity?.topRegular?.length ? (
@@ -697,40 +652,44 @@ export default function LearnerDashboard() {
                         key={learner.learnerId}
                         variants={leaderboardItemVariants}
                         whileHover={{ y: -3, scale: 1.01 }}
-                        className={`flex items-center gap-4 rounded-[1.4rem] border px-4 py-3 shadow-sm ${rowStyle.shellClass}`}
+                        className={`rounded-[1.4rem] border px-4 py-4 shadow-sm ${rowStyle.shellClass}`}
                       >
-                        <div className={`flex h-11 w-11 items-center justify-center rounded-full ${rowStyle.badgeClass}`}>
-                          <RowIcon className="h-5 w-5" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-semibold text-slate-900">
-                            {learner.firstName} {learner.lastName}
-                          </p>
-                          <p className={`truncate text-sm ${rowStyle.titleClass}`}>
-                            {learner.referential?.name || "Référentiel non renseigné"}
-                          </p>
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs text-slate-600 shadow-sm">
-                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                              {learner.presentCount} présents
-                            </span>
-                            <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs text-slate-600 shadow-sm">
-                              <Clock3 className="h-3.5 w-3.5 text-orange-500" />
-                              {learner.lateCount} retards
-                            </span>
-                            <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs text-slate-600 shadow-sm">
-                              <XCircle className="h-3.5 w-3.5 text-red-500" />
-                              {learner.absenceCount} absences
-                            </span>
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                          <div className="flex items-start gap-4 min-w-0 flex-1">
+                            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${rowStyle.badgeClass}`}>
+                              <RowIcon className="h-5 w-5" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate font-semibold text-slate-900">
+                                {learner.firstName} {learner.lastName}
+                              </p>
+                              <p className={`truncate text-sm ${rowStyle.titleClass}`}>
+                                {learner.referential?.name || "Référentiel non renseigné"}
+                              </p>
+                              <div className="mt-2 grid gap-2 sm:flex sm:flex-wrap">
+                                <span className="inline-flex w-full items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] text-slate-600 shadow-sm sm:w-auto sm:text-xs">
+                                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                                  {learner.presentCount} présents
+                                </span>
+                                <span className="inline-flex w-full items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] text-slate-600 shadow-sm sm:w-auto sm:text-xs">
+                                  <Clock3 className="h-3.5 w-3.5 text-orange-500" />
+                                  {learner.lateCount} retards
+                                </span>
+                                <span className="inline-flex w-full items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] text-slate-600 shadow-sm sm:w-auto sm:text-xs">
+                                  <XCircle className="h-3.5 w-3.5 text-red-500" />
+                                  {learner.absenceCount} absences
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold text-[#F16E00]">
-                            {learner.attendanceRate}%
-                          </p>
-                          <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
-                            Présence
-                          </p>
+                          <div className="flex items-center justify-between sm:ml-auto sm:flex-col sm:items-end sm:justify-center">
+                            <p className="text-sm font-semibold text-[#F16E00] sm:text-base">
+                              {learner.attendanceRate}%
+                            </p>
+                            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
+                              Présence
+                            </p>
+                          </div>
                         </div>
                       </motion.li>
                     );
@@ -747,6 +706,27 @@ export default function LearnerDashboard() {
                 )}
               </motion.ul>
             </motion.div>
+          </section>
+
+          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <DashboardStatCard
+              label="Présences"
+              value={attendanceStats?.present || 0}
+              note="Validées"
+              icon={CheckCircle2}
+            />
+            <DashboardStatCard
+              label="Retards"
+              value={attendanceStats?.late || 0}
+              note="À surveiller"
+              icon={Clock3}
+            />
+            <DashboardStatCard
+              label="Absences"
+              value={attendanceStats?.absent || 0}
+              note={`${attendanceStats?.unjustifiedAbsentDays || 0} non justifiées`}
+              icon={XCircle}
+            />
           </section>
 
           <section className="grid gap-6 xl:grid-cols-[0.92fr_1.28fr]">
