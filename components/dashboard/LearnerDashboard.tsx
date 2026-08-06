@@ -1,12 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { learnersAPI, modulesAPI, referentialsAPI } from "@/lib/api";
+import {
+  attendanceAPI,
+  learnersAPI,
+  modulesAPI,
+  referentialsAPI,
+} from "@/lib/api";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import type { AttendanceStats, LearnerDetailsExtended, Module } from "@/lib/api";
+import type {
+  AttendanceStats,
+  LearnerDetailsExtended,
+  LearnerRegularityLeaderboardResponse,
+  Module,
+} from "@/lib/api";
 import ModuleCard from "@/components/modules/ModuleCard";
 import {
   ArrowRight,
+  Award,
   BookOpen,
   CheckCircle2,
   Clock3,
@@ -35,6 +46,52 @@ type ErrorState = {
   stats: string;
   modules: string;
 };
+
+const REGULARITY_PERIOD_LABELS: Record<
+  LearnerRegularityLeaderboardResponse["period"],
+  string
+> = {
+  week: "Semaine",
+  month: "Mois",
+  quarter: "Trimestre",
+  year: "Année",
+  custom: "Personnalisée",
+};
+
+function getRegularityMessage(rank?: number, attendanceRate = 0) {
+  if (!rank) {
+    return {
+      title: "✨ En route",
+      description: "Le classement se prépare. Continuez à pointer régulièrement.",
+    };
+  }
+
+  if (rank === 1) {
+    return {
+      title: "🏆 Boss du pointage",
+      description: "Vous êtes en tête dans votre référentiel. Impressionnant.",
+    };
+  }
+
+  if (rank <= 3) {
+    return {
+      title: "🔥 Podium en vue",
+      description: "Vous êtes tout près du podium. Un dernier effort et c’est gagné.",
+    };
+  }
+
+  if (attendanceRate >= 85) {
+    return {
+      title: "✨ En route",
+      description: "La régularité est là. Continuez sur ce bon rythme.",
+    };
+  }
+
+  return {
+    title: "✨ En route",
+    description: "Chaque pointage compte. Gardez le cap, la progression continue.",
+  };
+}
 
 function DashboardStatCard({
   label,
@@ -67,6 +124,7 @@ function DashboardStatCard({
 export default function LearnerDashboard() {
   const [learnerDetails, setLearnerDetails] = useState<LearnerDashboardDetails | null>(null);
   const [attendanceStats, setAttendanceStats] = useState<AttendanceStats | null>(null);
+  const [regularity, setRegularity] = useState<LearnerRegularityLeaderboardResponse | null>(null);
   const [loading, setLoading] = useState<LoadingState>({
     learner: true,
     stats: true,
@@ -77,6 +135,10 @@ export default function LearnerDashboard() {
     stats: "",
     modules: "",
   });
+  const [regularityLoading, setRegularityLoading] = useState(true);
+  const [regularityError, setRegularityError] = useState("");
+  const [regularityPeriod, setRegularityPeriod] =
+    useState<LearnerRegularityLeaderboardResponse["period"]>("month");
   const [showQRCode, setShowQRCode] = useState(false);
   const [modules, setModules] = useState<Module[]>([]);
 
@@ -176,17 +238,45 @@ export default function LearnerDashboard() {
     }
   };
 
+  const fetchRegularity = async (silent = false) => {
+    try {
+      if (!silent) {
+        setRegularityLoading(true);
+      }
+
+      const data = await attendanceAPI.getLearnerRegularityRanking({
+        period: regularityPeriod,
+      });
+      setRegularity(data);
+      setRegularityError("");
+    } catch (err) {
+      console.error("Error fetching learner regularity:", err);
+      setRegularity(null);
+      setRegularityError("Impossible de charger votre classement pour le moment.");
+    } finally {
+      setRegularityLoading(false);
+    }
+  };
+
   useEffect(() => {
     void fetchData();
   }, []);
 
   useAutoRefresh(() => fetchData(true), { intervalMs: 20_000 });
+  useEffect(() => {
+    void fetchRegularity();
+  }, [regularityPeriod]);
+  useAutoRefresh(() => fetchRegularity(true), { intervalMs: 30_000 });
 
   const attendanceRate = (() => {
     if (!attendanceStats) return 0;
     const total = attendanceStats.present + attendanceStats.late + attendanceStats.absent;
     return total > 0 ? Math.round((attendanceStats.present / total) * 100) : 0;
   })();
+
+  const learnerRank = regularity?.learner?.rank ?? null;
+  const learnerRegularityRate = regularity?.learner?.attendanceRate ?? 0;
+  const regularityMessage = getRegularityMessage(learnerRank ?? undefined, learnerRegularityRate);
 
   if (loading.learner) {
     return (
@@ -325,6 +415,143 @@ export default function LearnerDashboard() {
               note="Parcours actif"
               icon={Layers3}
             />
+          </section>
+
+          <section className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
+            <div className="rounded-[2rem] border border-orange-100 bg-white p-6 shadow-sm">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-[#F16E00]">Classement</p>
+                  <h2 className="mt-2 text-2xl font-semibold text-slate-900">Assiduité</h2>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    Votre position évolue avec vos pointages. Restez régulier, le podium n’est pas loin.
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-orange-50 p-3 text-[#F16E00]">
+                  <Award className="h-6 w-6" />
+                </div>
+              </div>
+
+              <div className="mt-5 flex flex-wrap gap-2">
+                {(["week", "month", "quarter"] as const).map((period) => (
+                  <button
+                    key={period}
+                    onClick={() => setRegularityPeriod(period)}
+                    className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                      regularityPeriod === period
+                        ? "bg-[#F16E00] text-white"
+                        : "bg-orange-50 text-[#F16E00] hover:bg-orange-100"
+                    }`}
+                  >
+                    {REGULARITY_PERIOD_LABELS[period]}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-orange-100 bg-orange-50/40 p-4">
+                  <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Votre rang</p>
+                  <p className="mt-2 text-3xl font-semibold text-slate-900">
+                    {regularityLoading ? "..." : learnerRank ?? "—"}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-orange-100 bg-orange-50/40 p-4">
+                  <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Taux</p>
+                  <p className="mt-2 text-3xl font-semibold text-slate-900">
+                    {regularityLoading ? "..." : `${learnerRegularityRate}%`}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-orange-100 bg-orange-50/40 p-4">
+                  <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Référentiel</p>
+                  <p className="mt-2 text-base font-semibold text-slate-900">
+                    {regularity?.referential?.name || learnerDetails?.referential?.name || "—"}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-orange-100 bg-orange-50/40 p-4">
+                  <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Période analysée</p>
+                  <p className="mt-2 text-base font-semibold text-slate-900">
+                    {regularity?.range?.startDate && regularity?.range?.endDate
+                      ? `${new Date(regularity.range.startDate).toLocaleDateString("fr-FR")} au ${new Date(regularity.range.endDate).toLocaleDateString("fr-FR")}`
+                      : "—"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 rounded-[1.5rem] border border-orange-100 bg-white p-5">
+                <p className="text-sm font-medium text-[#F16E00]">{regularityMessage.title}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  {regularityMessage.description}
+                </p>
+              </div>
+
+              {regularityError && (
+                <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                  {regularityError}
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-[2rem] border border-orange-100 bg-white p-6 shadow-sm">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-[#F16E00]">Top 5</p>
+                  <h2 className="mt-2 text-2xl font-semibold text-slate-900">Les plus réguliers</h2>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    Le classement du moment dans votre référentiel.
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-slate-100 p-3 text-slate-700">
+                  <BarChart2 className="h-6 w-6" />
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-3">
+                {regularityLoading ? (
+                  [...Array(5)].map((_, index) => (
+                    <div
+                      key={index}
+                      className="h-20 animate-pulse rounded-[1.4rem] bg-slate-100"
+                    />
+                  ))
+                ) : regularity?.topRegular?.length ? (
+                  regularity.topRegular.map((learner, index) => (
+                    <div
+                      key={learner.learnerId}
+                      className="flex items-center gap-4 rounded-[1.4rem] border border-slate-100 bg-slate-50 px-4 py-3"
+                    >
+                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#F16E00] text-sm font-semibold text-white">
+                        {index + 1}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-semibold text-slate-900">
+                          {learner.firstName} {learner.lastName}
+                        </p>
+                        <p className="truncate text-sm text-slate-500">
+                          {learner.referential?.name || "Référentiel non renseigné"}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-[#F16E00]">
+                          {learner.attendanceRate}%
+                        </p>
+                        <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
+                          Présence
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center">
+                    <p className="text-sm font-medium text-slate-700">
+                      Le classement se prépare.
+                    </p>
+                    <p className="mt-2 text-sm text-slate-500">
+                      Dès qu’il y aura assez de pointages, votre rang apparaîtra ici.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
           </section>
 
           <section className="grid gap-6 xl:grid-cols-[0.92fr_1.28fr]">

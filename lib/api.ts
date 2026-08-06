@@ -175,6 +175,34 @@ export interface AttendanceStats {
   total:number;
 }
 
+export interface LearnerRegularityRankedLearner {
+  learnerId: string;
+  firstName: string;
+  lastName: string;
+  matricule: string;
+  photoUrl: string | null;
+  promotion: { id: string; name: string } | null;
+  referential: { id: string; name: string } | null;
+  absenceCount: number;
+  lateCount: number;
+  presentCount: number;
+  totalRecords: number;
+  attendanceRate: number;
+  rank?: number;
+}
+
+export interface LearnerRegularityLeaderboardResponse {
+  period: 'week' | 'month' | 'quarter' | 'year' | 'custom';
+  range: {
+    startDate: string;
+    endDate: string;
+  };
+  referential: { id: string; name: string } | null;
+  totalLearners: number;
+  learner: LearnerRegularityRankedLearner | null;
+  topRegular: LearnerRegularityRankedLearner[];
+}
+
 export interface AtRiskLearner {
   learnerId: string;
   firstName: string;
@@ -2060,6 +2088,17 @@ export const attendanceAPI = {
   getMonthlyStats: async (year: number, month: number): Promise<AttendanceStats> => {
     const response = await api.get('/attendance/stats/monthly', {
       params: { year, month }
+    });
+    return response.data;
+  },
+
+  getLearnerRegularityRanking: async (params?: {
+    period?: 'week' | 'month' | 'quarter' | 'year' | 'custom';
+    startDate?: string;
+    endDate?: string;
+  }): Promise<LearnerRegularityLeaderboardResponse> => {
+    const response = await api.get('/attendance/stats/learner-regularity', {
+      params,
     });
     return response.data;
   },
