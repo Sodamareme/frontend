@@ -3,6 +3,7 @@ import { StudentType } from '@/types/student';
 import axios from 'axios';
 import { ReactNode } from 'react';
 import { AxiosError } from 'axios';
+import { authUtils } from './auth';
 
 // Types pour les données
 export interface User {
@@ -87,27 +88,32 @@ export interface LearnerDetails {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
 // Fonction utilitaire pour récupérer le token (standardisée)
 const getAuthToken = () => {
-  return localStorage.getItem('accessToken') || localStorage.getItem('authToken') || localStorage.getItem('token');
+  return authUtils.getValidToken();
 }
 
 // Fonction utilitaire pour définir le token (standardisée)
 const setAuthToken = (token: string) => {
-  localStorage.setItem('accessToken', token);
-  // Nettoyer les autres clés pour éviter la confusion
-  localStorage.removeItem('authToken');
-  localStorage.removeItem('token');
+  authUtils.setToken(token);
 }
 
 // Fonction utilitaire pour supprimer le token (standardisée)
 const removeAuthToken = () => {
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('authToken');
-  localStorage.removeItem('token');
+  authUtils.clearSession();
+}
+
+const createSessionExpiredError = () => {
+  const error = new Error('SESSION_EXPIRED');
+  (error as Error & { code?: string }).code = 'SESSION_EXPIRED';
+  return error;
 }
 
 // Fonction utilitaire pour les requêtes HTTP
 async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const token = getAuthToken();
+
+  if (!token) {
+    throw createSessionExpiredError();
+  }
   
   const headers = {
     'Content-Type': 'application/json',
@@ -125,8 +131,11 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
   })
 
     if (!response.ok) {
-      if (response.status === 401) {
+      if (response.status === 401 || response.status === 403) {
         console.warn(`Unauthorized fetch request ignored for session continuity: ${url}`);
+        if (authUtils.isTokenExpired(token)) {
+          authUtils.expireSession();
+        }
       }
     
     let errorMessage = `Erreur HTTP ${response.status}`;
@@ -282,6 +291,10 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = getAuthToken();
+    if (!token) {
+      return Promise.reject(createSessionExpiredError());
+    }
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -311,6 +324,10 @@ api.interceptors.request.use(
 api.interceptors.request.use(
   (config) => {
     const token = getAuthToken();
+    if (!token) {
+      return Promise.reject(createSessionExpiredError());
+    }
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -325,9 +342,14 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 || error.response?.status === 403) {
       const failingUrl = error.config?.url || 'unknown-url';
       console.warn(`Unauthorized axios request ignored for session continuity: ${failingUrl}`);
+
+      const token = authUtils.getToken();
+      if (!token || authUtils.isTokenExpired(token)) {
+        authUtils.expireSession();
+      }
     }
     return Promise.reject(error);
   }

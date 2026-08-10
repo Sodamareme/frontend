@@ -18,13 +18,11 @@ import ModuleCard from "@/components/modules/ModuleCard";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
-  BarChart2,
   BookOpen,
   CheckCircle2,
-  Crown,
   Clock3,
-  Flame,
   GraduationCap,
+  Flame,
   Medal,
   QrCode,
   ShieldAlert,
@@ -152,30 +150,14 @@ function getRegularityMessage(rank?: number, attendanceRate = 0): RegularityMess
 function getLeaderboardRowStyle(index: number): RegularityRowStyle {
   if (index === 0) {
     return {
-      badgeClass: "bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 text-white shadow-[0_8px_20px_rgba(249,115,22,0.22)]",
-      shellClass: "border-amber-100 bg-gradient-to-r from-amber-50 via-white to-orange-50",
-      titleClass: "text-amber-700",
-    };
-  }
-
-  if (index === 1) {
-    return {
-      badgeClass: "bg-gradient-to-br from-slate-300 to-slate-500 text-white shadow-sm",
-      shellClass: "border-slate-100 bg-gradient-to-r from-slate-50 via-white to-slate-50",
-      titleClass: "text-slate-600",
-    };
-  }
-
-  if (index === 2) {
-    return {
-      badgeClass: "bg-gradient-to-br from-orange-400 to-amber-600 text-white shadow-[0_8px_20px_rgba(249,115,22,0.18)]",
-      shellClass: "border-orange-100 bg-gradient-to-r from-orange-50 via-white to-amber-50",
-      titleClass: "text-orange-700",
+      badgeClass: "bg-[#F16E00] text-white shadow-[0_10px_26px_rgba(241,110,0,0.24)] ring-4 ring-orange-100",
+      shellClass: "border-orange-200 bg-gradient-to-r from-orange-50 via-white to-white shadow-[0_10px_34px_rgba(241,110,0,0.08)]",
+      titleClass: "text-[#F16E00]",
     };
   }
 
   return {
-    badgeClass: "bg-slate-100 text-slate-700",
+    badgeClass: "bg-[#F16E00] text-white shadow-[0_10px_26px_rgba(241,110,0,0.18)] ring-4 ring-orange-100",
     shellClass: "border-slate-100 bg-white",
     titleClass: "text-slate-700",
   };
@@ -392,7 +374,12 @@ export default function LearnerDashboard() {
     <div className="min-h-screen bg-white">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <div className="space-y-6">
-          <section className="overflow-hidden rounded-[2rem] border border-orange-100 bg-white shadow-sm">
+          <motion.section
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, ease: "easeOut" }}
+            className="overflow-hidden rounded-[2rem] border border-orange-100 bg-white shadow-sm"
+          >
             <div className="h-2 w-full bg-[#F16E00]" />
             <div className="grid gap-8 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.95fr)] lg:px-8 lg:py-8">
               <div className="space-y-6">
@@ -461,7 +448,7 @@ export default function LearnerDashboard() {
                 </div>
               </div>
             </div>
-          </section>
+          </motion.section>
 
           <section className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
             <motion.div
@@ -615,13 +602,9 @@ export default function LearnerDashboard() {
                     Le classement du moment dans votre référentiel.
                   </p>
                 </div>
-                <motion.div
-                  animate={{ y: [0, -4, 0] }}
-                  transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
-                  className="rounded-2xl bg-slate-100 p-3 text-slate-700"
-                >
-                  <BarChart2 className="h-6 w-6" />
-                </motion.div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F16E00] text-sm font-bold text-white shadow-[0_12px_30px_rgba(241,110,0,0.25)]">
+                  05
+                </div>
               </div>
 
               <motion.ul

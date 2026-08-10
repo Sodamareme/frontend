@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { socketService } from '@/lib/socket';
 import { toast } from 'sonner';
+import { authUtils, SESSION_EXPIRED_EVENT } from '@/lib/auth';
 
 interface Notification {
   id: string;
@@ -32,7 +33,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
+    const token = authUtils.getValidToken();
     if (!token) return;
 
     let mounted = true;
@@ -80,8 +81,19 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     setup();
 
+    const handleSessionExpired = () => {
+      mounted = false;
+      setNotifications([]);
+      if (cleanup) {
+        cleanup().catch(console.error);
+      }
+    };
+
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+
     return () => {
       mounted = false;
+      window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
       if (cleanup) {
         cleanup().catch(console.error);
       }
@@ -93,7 +105,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/${notificationId}/read`, {
         method: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Authorization': `Bearer ${authUtils.getValidToken() || ''}`,
         }
       });
 

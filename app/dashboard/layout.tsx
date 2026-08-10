@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import DashboardSidebar from '@/components/dashboard/Sidebar';
 import Header from '@/components/dashboard/Header';
+import { authUtils, SESSION_EXPIRED_EVENT } from '@/lib/auth';
 export default function DashboardLayout({
   children,
 }: {
@@ -16,33 +17,100 @@ export default function DashboardLayout({
   const pathname = usePathname();
 
   useEffect(() => {
-    // Check if user is authenticated
-    const checkAuth = () => {
-      if (typeof window === 'undefined') return;
-      
-      const token = localStorage.getItem('accessToken');
-      const userData = localStorage.getItem('user');
-      
-      if (!token || !userData) {
-        router.push('/');
-        return;
+    if (typeof window === 'undefined') return;
+
+    let timeoutId: ReturnType<typeof window.setTimeout> | null = null;
+
+    const clearTimeoutId = () => {
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+        timeoutId = null;
       }
-      
+    };
+
+    const redirectToLogin = () => {
+      clearTimeoutId();
+      authUtils.expireSession();
+      setUser(null);
+      setLoading(false);
+      router.replace('/');
+    };
+
+    const syncAuth = () => {
       try {
+        const token = authUtils.getToken();
+        const userData = localStorage.getItem('user');
+
+        if (!token || !userData) {
+          clearTimeoutId();
+          setUser(null);
+          setLoading(false);
+          router.replace('/');
+          return;
+        }
+
+        if (authUtils.isTokenExpired(token)) {
+          redirectToLogin();
+          return;
+        }
+
         const parsedUser = JSON.parse(userData);
         setUser(parsedUser);
+
+        const decoded = authUtils.getToken();
+        if (decoded) {
+          const tokenPayload = authUtils.isTokenExpired(decoded);
+          if (tokenPayload) {
+            redirectToLogin();
+            return;
+          }
+        }
+
+        setLoading(false);
       } catch (error) {
         console.error('Failed to parse user data:', error);
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('user');
-        router.push('/');
-        return;
+        authUtils.clearSession();
+        router.replace('/');
       }
-      
-      setLoading(false);
     };
-    
-    checkAuth();
+
+    const handleSessionExpired = () => {
+      clearTimeoutId();
+      setUser(null);
+      setLoading(false);
+      router.replace('/');
+    };
+
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'accessToken' || event.key === 'user' || event.key === null) {
+        syncAuth();
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        syncAuth();
+      }
+    };
+
+    const handleFocus = () => {
+      syncAuth();
+    };
+
+    syncAuth();
+
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired as EventListener);
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearTimeoutId();
+      window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired as EventListener);
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [router]);
 
   // Close sidebar on route change

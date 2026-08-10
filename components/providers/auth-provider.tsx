@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { authAPI } from '@/lib/api';
 import { jwtDecode } from 'jwt-decode';
+import { authUtils, SESSION_EXPIRED_EVENT } from '@/lib/auth';
 
 // Define the user type
 type User = {
@@ -33,39 +34,122 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    // Check if the user is already logged in
-    const checkAuth = async () => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    let expiryTimer: ReturnType<typeof window.setTimeout> | null = null;
+
+    const sessionExpiredMessage = 'Votre session a expiré. Veuillez vous reconnecter.';
+
+    const clearExpiryTimer = () => {
+      if (expiryTimer) {
+        window.clearTimeout(expiryTimer);
+        expiryTimer = null;
+      }
+    };
+
+    const expireAndRedirect = () => {
+      authUtils.expireSession();
+      clearExpiryTimer();
+      setUser(null);
+      setError(sessionExpiredMessage);
+      setIsLoading(false);
+      router.replace('/');
+    };
+
+    const scheduleExpiry = (token: string) => {
+      clearExpiryTimer();
+
+      try {
+        const decodedToken = jwtDecode<{ exp?: number }>(token);
+        if (!decodedToken.exp) {
+          return;
+        }
+
+        const remainingMs = decodedToken.exp * 1000 - Date.now();
+        if (remainingMs <= 0) {
+          expireAndRedirect();
+          return;
+        }
+
+        expiryTimer = window.setTimeout(expireAndRedirect, remainingMs + 250);
+      } catch {
+        expireAndRedirect();
+      }
+    };
+
+    const syncAuthState = () => {
       try {
         setIsLoading(true);
-        const token = localStorage.getItem('accessToken');
+        const token = authUtils.getToken();
         const storedUser = localStorage.getItem('user');
 
-        if (token && storedUser) {
-          // Decode the token to check if it's expired
-          const decodedToken = jwtDecode<{ exp: number }>(token);
-          const currentTime = Date.now() / 1000;
-
-          if (decodedToken.exp > currentTime) {
-            setUser(JSON.parse(storedUser));
-          } else {
-            // Token is expired, clear storage
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('user');
-            setUser(null);
-          }
+        if (!token || !storedUser) {
+          clearExpiryTimer();
+          setUser(null);
+          setError(null);
+          setIsLoading(false);
+          return;
         }
-      } catch (error) {
-        // If there's any issue with the token, clear it
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('user');
+
+        if (authUtils.isTokenExpired(token)) {
+          expireAndRedirect();
+          return;
+        }
+
+        setUser(JSON.parse(storedUser));
+        setError(null);
+        scheduleExpiry(token);
+      } catch {
+        authUtils.clearSession();
+        clearExpiryTimer();
         setUser(null);
+        setError(null);
       } finally {
         setIsLoading(false);
       }
     };
 
-    checkAuth();
-  }, []);
+    const handleSessionExpired = () => {
+      clearExpiryTimer();
+      setUser(null);
+      setError(sessionExpiredMessage);
+      setIsLoading(false);
+      router.replace('/');
+    };
+
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'accessToken' || event.key === 'user' || event.key === null) {
+        syncAuthState();
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        syncAuthState();
+      }
+    };
+
+    const handleFocus = () => {
+      syncAuthState();
+    };
+
+    syncAuthState();
+
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired as EventListener);
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearExpiryTimer();
+      window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired as EventListener);
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [router]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -77,7 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const response = await authAPI.login(email, password);
         
         // Save the token and user in localStorage
-        localStorage.setItem('accessToken', response.access_token);
+        authUtils.setToken(response.access_token);
         localStorage.setItem('user', JSON.stringify(response.user));
         
         // Set the user in state
@@ -97,7 +181,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             role: 'ADMIN'
           };
           
-          localStorage.setItem('accessToken', 'test-token');
+          authUtils.setToken('test-token');
           localStorage.setItem('user', JSON.stringify(testUser));
           
           setUser(testUser);
@@ -118,10 +202,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = () => {
     // Clear the token and user from localStorage
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('user');
+    authUtils.logout();
     setUser(null);
-    router.push('/');
+    setError(null);
   };
 
   const value = {
