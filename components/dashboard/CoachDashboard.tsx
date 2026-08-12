@@ -40,7 +40,7 @@ export default function CoachDashboard() {
         setLoading(prev => ({ ...prev, modules: false }));
       } catch (err) {
         console.error('Error fetching modules:', err);
-        setError(prev => ({ ...prev, modules: 'Failed to load modules' }));
+        setError(prev => ({ ...prev, modules: 'Impossible de charger les modules' }));
         setLoading(prev => ({ ...prev, modules: false }));
       }
 
@@ -53,7 +53,7 @@ export default function CoachDashboard() {
         setLoading(prev => ({ ...prev, referentials: false }));
       } catch (err) {
         console.error('Error fetching referentials:', err);
-        setError(prev => ({ ...prev, referentials: 'Failed to load referentials' }));
+        setError(prev => ({ ...prev, referentials: 'Impossible de charger les référentiels' }));
         setLoading(prev => ({ ...prev, referentials: false }));
       }
     };
@@ -131,8 +131,8 @@ export default function CoachDashboard() {
         console.error('Error fetching learners and attendance:', err);
         setError(prev => ({ 
           ...prev, 
-          learners: 'Failed to load learners',
-          stats: 'Failed to load stats'
+          learners: 'Impossible de charger les apprenants',
+          stats: 'Impossible de charger les statistiques'
         }));
         setLoading(prev => ({ ...prev, learners: false, stats: false }));
       }

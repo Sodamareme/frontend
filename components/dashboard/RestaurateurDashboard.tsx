@@ -579,7 +579,7 @@ const QRScannerModal = ({
 
       if (!window.isSecureContext) {
         setHasCamera(false);
-        setError('La camera automatique exige une page ouverte sur localhost ou en HTTPS.');
+        setError('La caméra automatique n’est pas disponible dans ce contexte. Vérifiez les permissions ou réessayez depuis un appareil compatible.');
         return;
       }
 
@@ -616,10 +616,9 @@ const QRScannerModal = ({
       } catch (err: any) {
         setHasCamera(false);
         setError(
-          err.name === 'NotAllowedError' ? 'Accès caméra refusé' :
-          err.name === 'NotFoundError' ? 'Aucune caméra trouvée' :
-          String(err?.message || err).includes('https') ? 'La caméra fonctionne ici seulement sur http://localhost:3001 ou en HTTPS.' :
-          'Impossible d\'accéder à la caméra'
+          err.name === 'NotAllowedError' ? 'Accès à la caméra refusé. Activez l’autorisation puis réessayez.' :
+          err.name === 'NotFoundError' ? 'Aucune caméra trouvée sur cet appareil.' :
+          'Impossible d’accéder à la caméra pour le moment. Vérifiez les permissions puis réessayez.'
         );
       }
     };

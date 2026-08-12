@@ -8,6 +8,7 @@ import { authAPI } from '@/lib/api';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -44,7 +45,7 @@ export default function ForgotPasswordPage() {
       
     } catch (error: any) {
       console.error('Error requesting password reset:', error);
-      const message = error.response?.data?.message || 'Une erreur est survenue';
+      const message = getUserFriendlyErrorMessage(error, 'Une erreur est survenue');
       toast.error(message);
     } finally {
       setLoading(false);

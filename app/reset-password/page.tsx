@@ -9,6 +9,7 @@ import { authAPI } from '@/lib/api';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -93,7 +94,7 @@ function ResetPasswordForm() {
       
     } catch (error: any) {
       console.error('Error resetting password:', error);
-      const message = error.response?.data?.message || 'Erreur lors de la réinitialisation';
+      const message = getUserFriendlyErrorMessage(error, 'Erreur lors de la réinitialisation');
       toast.error(message);
     } finally {
       setLoading(false);

@@ -13,6 +13,7 @@ import {
 import Link from 'next/link';
 import { scheduleAPI, type ScheduleEvent } from '@/lib/api';
 import { toast } from 'sonner';
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 
 type EventTypeOption = 'EVENT' | 'HOLIDAY' | 'NO_CLASS';
 
@@ -158,7 +159,7 @@ export default function SchedulePage() {
     } catch (err: any) {
       console.error(err);
       toast.error(
-        err?.response?.data?.message || "Impossible d'enregistrer cet élément",
+        getUserFriendlyErrorMessage(err, "Impossible d'enregistrer cet élément"),
       );
     } finally {
       setSubmitting(false);
@@ -178,7 +179,7 @@ export default function SchedulePage() {
     } catch (err: any) {
       console.error(err);
       toast.error(
-        err?.response?.data?.message || "Impossible de supprimer cet élément",
+        getUserFriendlyErrorMessage(err, "Impossible de supprimer cet élément"),
       );
     } finally {
       setDeletingId(null);

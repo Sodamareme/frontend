@@ -222,11 +222,11 @@ export default function ScanPage() {
       console.error('Error accessing camera:', err);
       setHasCamera(false);
       if (err.name === 'NotAllowedError') {
-        setError('Accès à la caméra refusé. Veuillez autoriser l\'accès à la caméra.');
+        setError('Accès à la caméra refusé. Activez l’autorisation puis réessayez.');
       } else if (err.name === 'NotFoundError') {
         setError('Aucune caméra trouvée sur cet appareil.');
       } else {
-        setError('Impossible d\'accéder à la caméra');
+        setError('Impossible d’accéder à la caméra pour le moment. Vérifiez les permissions puis réessayez.');
       }
     }
   };

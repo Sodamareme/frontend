@@ -1,3 +1,5 @@
+import { getUserFriendlyErrorMessage } from './error';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 export interface Grade {
@@ -51,7 +53,12 @@ export const gradesAPI = {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Erreur inconnue' }));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      throw new Error(
+        getUserFriendlyErrorMessage(
+          errorData,
+          'Impossible de créer la note pour le moment.',
+        ),
+      );
     }
 
     return response.json();
@@ -66,7 +73,12 @@ export const gradesAPI = {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Erreur inconnue' }));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      throw new Error(
+        getUserFriendlyErrorMessage(
+          errorData,
+          'Impossible de mettre à jour la note pour le moment.',
+        ),
+      );
     }
 
     return response.json();
@@ -79,7 +91,12 @@ export const gradesAPI = {
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Erreur inconnue' }));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      throw new Error(
+        getUserFriendlyErrorMessage(
+          errorData,
+          'Impossible de charger les notes pour le moment.',
+        ),
+      );
     }
 
     return response.json();
@@ -93,7 +110,12 @@ export const gradesAPI = {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Erreur inconnue' }));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      throw new Error(
+        getUserFriendlyErrorMessage(
+          errorData,
+          'Impossible de supprimer la note pour le moment.',
+        ),
+      );
     }
 
     return response.json();

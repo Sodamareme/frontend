@@ -10,6 +10,7 @@ import { ModuleDetailsSkeleton, GradesTableSkeleton } from '@/components/skeleto
 import { useRouter } from 'next/navigation';
 import { getImageUrl } from '@/lib/utils/imageUrl';
 import { toast } from "sonner";
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 
 interface EditingGrade {
   id?: string;
@@ -160,11 +161,7 @@ export default function ModuleDetailsPage() {
       
     } catch (err: any) {
       console.error('Erreur lors de la mise à jour du module:', err);
-      if (err.response?.data?.message) {
-        toast.error(`Erreur: ${err.response.data.message}`);
-      } else {
-        toast.error('Erreur inattendue lors de la mise à jour du module');
-      }
+      toast.error(getUserFriendlyErrorMessage(err, 'Erreur inattendue lors de la mise à jour du module'));
     } finally {
       setIsSaving(false);
     }
@@ -194,11 +191,7 @@ export default function ModuleDetailsPage() {
       router.push('/dashboard/modules');
     } catch (err: any) {
       console.error('Erreur lors de la suppression:', err);
-      if (err.response?.data?.message) {
-        toast.error(`Erreur: ${err.response.data.message}`);
-      } else {
-        toast.error('Erreur lors de la suppression du module');
-      }
+      toast.error(getUserFriendlyErrorMessage(err, 'Erreur lors de la suppression du module'));
     } finally {
       setIsDeleting(false);
     }
@@ -290,15 +283,12 @@ export default function ModuleDetailsPage() {
       toast.success('Note sauvegardée avec succès');
     } catch (err: any) {
       console.error('❌ Erreur lors de la sauvegarde de la note:', err);
-      
       if (err.response?.status === 404) {
         toast.error('Apprenant ou module introuvable');
       } else if (err.response?.status === 409) {
         toast.error('Une note existe déjà pour cet apprenant');
-      } else if (err.response?.data?.message) {
-        toast.error(`Erreur: ${err.response.data.message}`);
       } else {
-        toast.error('Erreur lors de la sauvegarde de la note');
+        toast.error(getUserFriendlyErrorMessage(err, 'Erreur lors de la sauvegarde de la note'));
       }
     } finally {
       setSavingGrades(prev => {

@@ -13,6 +13,7 @@ import { coachesAPI, referentialsAPI, ReferentialBasic } from '@/lib/api';
 import { toast } from 'sonner';
 import { getImageUrl } from '@/lib/utils/imageUrl';
 import CoachScanHistory from '@/components/coaches/CoachScanHistory';
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -221,10 +222,8 @@ export default function CoachesPage() {
       console.error('❌ Error creating coach:', error);
       if (error.response?.status === 409) {
         toast.error('Un utilisateur avec cet email existe déjà');
-      } else if (error.response?.data?.message) {
-        toast.error(error.response.data.message);
       } else {
-        toast.error(error.message || 'Erreur lors de la création du coach');
+        toast.error(getUserFriendlyErrorMessage(error, 'Erreur lors de la création du coach'));
       }
     } finally {
       setIsSubmitting(false);
@@ -270,7 +269,7 @@ export default function CoachesPage() {
       toast.success('Coach modifié avec succès');
     } catch (error: any) {
       console.error('❌ Error updating coach:', error);
-      toast.error(error.message || 'Erreur lors de la modification du coach');
+      toast.error(getUserFriendlyErrorMessage(error, 'Erreur lors de la modification du coach'));
       throw error;
     }
   };
@@ -293,10 +292,8 @@ export default function CoachesPage() {
     } catch (error: any) {
       if (error.response?.status === 404) {
         toast.error('Coach non trouvé pour ce QR Code');
-      } else if (error.response?.data?.message) {
-        toast.error(error.response.data.message);
       } else {
-        toast.error('Erreur lors du traitement du QR Code');
+        toast.error(getUserFriendlyErrorMessage(error, 'Erreur lors du traitement du QR Code'));
       }
     }
   };

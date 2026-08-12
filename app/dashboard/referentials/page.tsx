@@ -7,6 +7,7 @@ import { Plus, Search, Book, Users, GraduationCap, Briefcase, Filter, Edit3, Sav
 import ReferentialCard from '@/components/dashboard/ReferentialCard';
 import AddReferentialToPromotionModal from '@/components/modals/AddReferentialToPromotionModal';
 import { toast } from "sonner";
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 
 interface EditingReferential {
   id: string;
@@ -138,11 +139,7 @@ export default function ReferentialsPage() {
 
     } catch (err: any) {
       console.error('Erreur lors de la mise à jour du référentiel:', err);
-      if (err.response?.data?.message) {
-        toast.error(`Erreur: ${err.response.data.message}`);
-      } else {
-        toast.error('Erreur lors de la mise à jour du référentiel');
-      }
+      toast.error(getUserFriendlyErrorMessage(err, 'Erreur lors de la mise à jour du référentiel'));
     } finally {
       setIsSaving(false);
     }
@@ -167,11 +164,7 @@ export default function ReferentialsPage() {
 
     } catch (err: any) {
       console.error('Erreur lors de la suppression du référentiel:', err);
-      if (err.response?.data?.message) {
-        toast.error(`Erreur: ${err.response.data.message}`);
-      } else {
-        toast.error('Erreur lors de la suppression du référentiel');
-      }
+      toast.error(getUserFriendlyErrorMessage(err, 'Erreur lors de la suppression du référentiel'));
     } finally {
       setRemovingReferential(null);
     }

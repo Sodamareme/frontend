@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { toast } from "sonner";
 import Image from "next/image";
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 
 interface Promotion {
   id: string;
@@ -97,7 +98,7 @@ export default function PromotionDetailsPage() {
       setPromotion(prev => prev ? { ...prev, status: newStatus } : null);
     } catch (error: any) {
       toast.error("Erreur lors de la mise à jour", {
-        description: error.response?.data?.message || "Impossible de modifier le statut de la promotion",
+        description: getUserFriendlyErrorMessage(error, "Impossible de modifier le statut de la promotion"),
       });
     } finally {
       setIsUpdating(false);
@@ -122,7 +123,7 @@ export default function PromotionDetailsPage() {
       router.push('/dashboard/promotions');
     } catch (error: any) {
       toast.error("Erreur lors de la suppression", {
-        description: error.response?.data?.message || "Impossible de supprimer la promotion",
+        description: getUserFriendlyErrorMessage(error, "Impossible de supprimer la promotion"),
       });
     } finally {
       setShowDeleteModal(false);

@@ -1,3 +1,5 @@
+import { getUserFriendlyErrorMessage } from './error';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 export interface Grade {
@@ -85,7 +87,12 @@ export const modulesAPI = {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Erreur inconnue' }));
       console.error('API Error:', response.status, errorData);
-      throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
+      throw new Error(
+        getUserFriendlyErrorMessage(
+          errorData,
+          `Impossible de créer le module pour le moment.`,
+        ),
+      );
     }
 
     const result = await response.json();
@@ -106,7 +113,12 @@ export const modulesAPI = {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Erreur inconnue' }));
       console.error('API Error:', response.status, errorData);
-      throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
+      throw new Error(
+        getUserFriendlyErrorMessage(
+          errorData,
+          `Impossible de mettre à jour le module pour le moment.`,
+        ),
+      );
     }
 
     const result = await response.json();
@@ -122,7 +134,12 @@ export const modulesAPI = {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Erreur inconnue' }));
-      throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
+      throw new Error(
+        getUserFriendlyErrorMessage(
+          errorData,
+          `Impossible de charger les modules pour le moment.`,
+        ),
+      );
     }
 
     return response.json();
@@ -139,7 +156,12 @@ export const modulesAPI = {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Erreur inconnue' }));
       console.error('API Error:', response.status, errorData);
-      throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
+      throw new Error(
+        getUserFriendlyErrorMessage(
+          errorData,
+          `Impossible de charger ce module pour le moment.`,
+        ),
+      );
     }
 
     const result = await response.json();
@@ -155,7 +177,12 @@ export const modulesAPI = {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Erreur inconnue' }));
-      throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
+      throw new Error(
+        getUserFriendlyErrorMessage(
+          errorData,
+          `Impossible de charger les modules du référentiel pour le moment.`,
+        ),
+      );
     }
 
     return response.json();
@@ -173,7 +200,12 @@ export const modulesAPI = {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Erreur inconnue' }));
       console.error('API Error:', response.status, errorData);
-      throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
+      throw new Error(
+        getUserFriendlyErrorMessage(
+          errorData,
+          `Impossible de supprimer le module pour le moment.`,
+        ),
+      );
     }
 
     console.log('API: Module deleted successfully');
@@ -192,7 +224,12 @@ export const modulesAPI = {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Erreur inconnue' }));
       console.error('API Error:', response.status, errorData);
-      throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
+      throw new Error(
+        getUserFriendlyErrorMessage(
+          errorData,
+          `Impossible d'ajouter la note pour le moment.`,
+        ),
+      );
     }
 
     const result = await response.json();
@@ -213,7 +250,12 @@ export const modulesAPI = {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Erreur inconnue' }));
       console.error('API Error:', response.status, errorData);
-      throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
+      throw new Error(
+        getUserFriendlyErrorMessage(
+          errorData,
+          `Impossible de mettre à jour la note pour le moment.`,
+        ),
+      );
     }
 
     const result = await response.json();
@@ -232,7 +274,12 @@ export const modulesAPI = {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Erreur inconnue' }));
       console.error('API Error:', response.status, errorData);
-      throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
+      throw new Error(
+        getUserFriendlyErrorMessage(
+          errorData,
+          `Impossible de charger les notes pour le moment.`,
+        ),
+      );
     }
 
     const result = await response.json();

@@ -59,7 +59,7 @@ export default function QRScannerModal({ isOpen, onClose, onScan }: QRScannerMod
       setError('');
     } catch (err: any) {
       console.error('Erreur démarrage scanner:', err);
-      setError('Impossible d\'accéder à la caméra. Vérifiez les permissions.');
+      setError('Impossible d’accéder à la caméra. Vérifiez les permissions puis réessayez.');
     }
   };
 

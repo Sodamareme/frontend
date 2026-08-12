@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import StatCard from '@/components/dashboard/StatCard';
 import QRScannerModal from '@/components/coaches/QRScannerModal';
 import CoachAttendanceHistory from '@/components/dashboard/CoachAttendanceHistory';
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 
 interface Scan {
   id: string;
@@ -99,8 +100,8 @@ export default function VigilDashboard() {
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
       setError({
-        stats: 'Failed to load attendance statistics',
-        scans: 'Failed to load recent scans'
+        stats: 'Impossible de charger les statistiques de présence',
+        scans: 'Impossible de charger les derniers scans'
       });
     } finally {
       setLoading({ stats: false, scans: false });
@@ -139,10 +140,8 @@ export default function VigilDashboard() {
       
       if (error.response?.status === 404) {
         toast.error('Coach non trouvé pour ce QR Code');
-      } else if (error.response?.data?.message) {
-        toast.error(error.response.data.message);
       } else {
-        toast.error('Erreur lors du traitement du QR Code');
+        toast.error(getUserFriendlyErrorMessage(error, 'Erreur lors du traitement du QR Code'));
       }
     }
   };

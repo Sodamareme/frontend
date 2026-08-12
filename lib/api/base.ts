@@ -1,3 +1,5 @@
+import { getUserFriendlyErrorMessage } from '../error';
+
 // Classe de base pour les clients API
 export abstract class ApiClient {
   protected baseURL: string;
@@ -49,11 +51,17 @@ export abstract class ApiClient {
       const response = await fetch(url, config);
       
       if (!response.ok) {
-        let errorMessage = `HTTP error! status: ${response.status}`;
+        let errorMessage = getUserFriendlyErrorMessage(
+          { message: `HTTP error! status: ${response.status}` },
+          'Une erreur est survenue. Veuillez réessayer.',
+        );
         
         try {
           const errorData = await response.json();
-          errorMessage = errorData.message || errorData.error || errorMessage;
+          errorMessage = getUserFriendlyErrorMessage(
+            errorData,
+            errorMessage,
+          );
         } catch {
           // Si on ne peut pas parser la réponse d'erreur, on garde le message par défaut
         }

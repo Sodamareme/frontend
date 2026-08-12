@@ -5,6 +5,7 @@ import { Dialog } from '@headlessui/react';
 import { Loader2, X, Upload, Image as ImageIcon } from 'lucide-react';
 import { referentialsAPI } from '@/lib/api';
 import Image from 'next/image';
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 
 interface CreateReferentialModalProps {
   isOpen: boolean;
@@ -127,7 +128,7 @@ export default function CreateReferentialModal({
       onClose();
     } catch (err: any) {
       console.error('Error creating referential:', err);
-      setError(err.response?.data?.message || 'Erreur lors de la création du référentiel');
+      setError(getUserFriendlyErrorMessage(err, 'Erreur lors de la création du référentiel'));
     } finally {
       setLoading(false);
     }

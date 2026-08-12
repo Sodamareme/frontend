@@ -13,6 +13,7 @@ import { fr } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Toast } from '@/components/ui/toast';
 import { toast } from "sonner";
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 
 // Schéma de validation amélioré
 const learnerSchema = z.object({
@@ -597,7 +598,7 @@ useEffect(() => {
 
       await onSubmit(data);
     } catch (error) {
-      setError(error.message || "Une erreur est survenue lors de l'enregistrement");
+      setError(getUserFriendlyErrorMessage(error, "Une erreur est survenue lors de l'enregistrement"));
       console.error('Form submission error:', error);
     } finally {
       setIsSubmitting(false);

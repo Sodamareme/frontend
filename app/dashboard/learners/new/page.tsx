@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { learnersAPI, promotionsAPI, referentialsAPI, Promotion, Referential } from '@/lib/api';
 import { ChevronLeft } from 'lucide-react';
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 
 export default function NewLearnerPage() {
   const router = useRouter();
@@ -88,7 +89,7 @@ export default function NewLearnerPage() {
       router.push('/dashboard/learners');
     } catch (err: any) {
       console.error('Error creating learner:', err);
-      setError(err.response?.data?.message || 'Une erreur est survenue lors de la création de l\'apprenant');
+      setError(getUserFriendlyErrorMessage(err, 'Une erreur est survenue lors de la création de l\'apprenant'));
     } finally {
       setSubmitting(false);
     }
@@ -334,4 +335,4 @@ export default function NewLearnerPage() {
       </div>
     </div>
   );
-} 
+}

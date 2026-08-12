@@ -12,6 +12,7 @@ import { learnersAPI } from "@/lib/api"
 import type { LearnerDetailsExtended } from "@/lib/api"
 import { getAuthToken } from "@/lib/api"
 import { useAutoRefresh } from "@/hooks/useAutoRefresh"
+import { getUserFriendlyErrorMessage } from '@/lib/error'
 
 type ProfileLearnerDetails = Omit<LearnerDetailsExtended, "documents"> & {
   documents?: unknown[];
@@ -52,7 +53,7 @@ export default function ProfilePage() {
       })
     } catch (err: any) {
       console.error('Error fetching learner data:', err)
-      setError(err.message || 'Impossible de charger les données du profil')
+      setError(getUserFriendlyErrorMessage(err, 'Impossible de charger les données du profil'))
     } finally {
       setLoading(false)
     }
@@ -110,7 +111,7 @@ export default function ProfilePage() {
       console.error('Erreur lors de la sauvegarde:', error)
       setSaveMessage({
         type: 'error',
-        message: error.message || 'Erreur lors de la sauvegarde. Veuillez réessayer.',
+        message: getUserFriendlyErrorMessage(error, 'Erreur lors de la sauvegarde. Veuillez réessayer.'),
       })
     } finally {
       setSaveLoading(false)

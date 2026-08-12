@@ -36,6 +36,7 @@ import Pagination from "@/components/common/Pagination";
 import { toast } from "sonner";
 import { attendanceAPI } from "@/lib/api";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { getUserFriendlyErrorMessage } from "@/lib/error";
 
 type AttendanceStatus = "TO_JUSTIFY" | "PENDING" | "REJECTED" | "APPROVED";
 
@@ -194,7 +195,7 @@ export default function MyAttendancePage() {
       });
     } catch (err) {
       console.error("Error fetching attendance:", err);
-      setError("Failed to load attendance data");
+      setError(getUserFriendlyErrorMessage(err, "Impossible de charger vos données d'assiduité"));
     } finally {
       setLoading(false);
     }
@@ -285,7 +286,7 @@ export default function MyAttendancePage() {
       toast.success(hasExistingJustification ? "Justification mise à jour avec succès" : "Justification soumise avec succès");
     } catch (err) {
       console.error("Error submitting justification:", err);
-      toast.error("Erreur lors de l'enregistrement de la justification");
+      toast.error(getUserFriendlyErrorMessage(err, "Erreur lors de l'enregistrement de la justification"));
     } finally {
       setSubmitting(false);
     }
@@ -307,7 +308,7 @@ export default function MyAttendancePage() {
       toast.success("Justification supprimée avec succès");
     } catch (err) {
       console.error("Error deleting justification:", err);
-      toast.error("Erreur lors de la suppression de la justification");
+      toast.error(getUserFriendlyErrorMessage(err, "Erreur lors de la suppression de la justification"));
     } finally {
       setSubmitting(false);
     }

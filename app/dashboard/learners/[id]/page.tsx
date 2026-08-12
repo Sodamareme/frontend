@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { learnersAPI, type Learner, type AttendanceStats, attendanceAPI, LearnerAttendance } from "@/lib/api"
 import { Calendar, CheckCircle, Clock, Edit, AlertTriangle, ArrowLeft, Save, X } from "lucide-react"
 import { toast } from "sonner"
+import { getUserFriendlyErrorMessage } from "@/lib/error"
 
 // Add these helper functions at the top of your component
 const getReferentialBadgeClass = (referentialName: string) => {
@@ -134,7 +135,7 @@ export default function LearnerDetailsPage() {
 
       } catch (err) {
         console.error("Error fetching learner data:", err);
-        setError("Une erreur est survenue lors du chargement des données");
+        setError(getUserFriendlyErrorMessage(err, "Une erreur est survenue lors du chargement des données"));
       } finally {
         setLoading(false);
       }
@@ -248,7 +249,7 @@ export default function LearnerDetailsPage() {
       toast.success("Informations de l'apprenant mises à jour")
     } catch (error: any) {
       console.error("Error updating learner:", error)
-      toast.error(error?.message || "Erreur lors de la mise à jour de l'apprenant")
+      toast.error(getUserFriendlyErrorMessage(error, "Erreur lors de la mise à jour de l'apprenant"))
     } finally {
       setIsSavingLearner(false)
     }

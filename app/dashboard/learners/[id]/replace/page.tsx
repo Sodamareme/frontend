@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { getUserFriendlyErrorMessage } from "@/lib/error"
 
 export default function ReplaceLearnerPage() {
   const { id } = useParams() as { id: string }
@@ -67,8 +68,10 @@ export default function ReplaceLearnerPage() {
         setWaitingLearners(filteredWaitingLearners)
       } catch (err: any) {
         console.error("Error fetching data:", err)
-        const errorMessage =
-          err.response?.data?.message || err.message || "Une erreur est survenue lors du chargement des données"
+        const errorMessage = getUserFriendlyErrorMessage(
+          err,
+          "Une erreur est survenue lors du chargement des données",
+        )
 
         setError(errorMessage)
         toast({
@@ -130,7 +133,7 @@ export default function ReplaceLearnerPage() {
       console.error("Error replacing learner:", err)
       toast({
         title: "Erreur",
-        description: err.response?.data?.message || "Une erreur est survenue",
+        description: getUserFriendlyErrorMessage(err, "Une erreur est survenue"),
         variant: "destructive",
       })
     } finally {

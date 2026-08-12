@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Dialog } from '@headlessui/react';
 import { X, Loader2 } from 'lucide-react';
 import { learnersAPI } from '@/lib/api';
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 
 interface UpdateKitModalProps {
   isOpen: boolean;
@@ -62,7 +63,7 @@ export default function UpdateKitModal({
       await learnersAPI.updateLearnerKit(learnerId, kitData);
       onSuccess();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Erreur lors de la mise à jour du kit');
+      setError(getUserFriendlyErrorMessage(err, 'Erreur lors de la mise à jour du kit'));
     } finally {
       setLoading(false);
     }

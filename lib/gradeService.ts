@@ -1,3 +1,5 @@
+import { getUserFriendlyErrorMessage } from './error';
+
 // lib/gradeService.ts
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -52,7 +54,12 @@ class GradeService {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      throw new Error(
+        getUserFriendlyErrorMessage(
+          errorData,
+          'Impossible de charger les notes pour le moment.',
+        ),
+      );
     }
 
     // Pour les réponses 204 No Content

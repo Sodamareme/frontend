@@ -27,6 +27,7 @@ import JustificationReviewModal from "@/components/modals/JustificationReviewMod
 import { useRouter, useSearchParams } from 'next/navigation'
 import { exportToCSV } from "@/lib/utils/export"
 import { useAutoRefresh } from "@/hooks/useAutoRefresh"
+import { getUserFriendlyErrorMessage } from "@/lib/error"
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -547,7 +548,7 @@ const handleStatusChange = async (id: string, date: string, newStatus: EditableS
     toast.success(`Statut mis à jour : ${labels[newStatus]}`);
     
   } catch (err: any) {
-    toast.error(err?.response?.data?.message || 'Erreur lors de la mise à jour du statut');
+    toast.error(getUserFriendlyErrorMessage(err, 'Erreur lors de la mise à jour du statut'));
   } finally {
     setUpdatingStatus(prev => ({ ...prev, [id]: false }));
   }
@@ -563,7 +564,7 @@ const handleStatusChange = async (id: string, date: string, newStatus: EditableS
       )
       toast.success('Absence autorisée ✓')
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Erreur lors de l'autorisation")
+      toast.error(getUserFriendlyErrorMessage(err, "Erreur lors de l'autorisation"))
     } finally {
       setAuthorizingId(null)
     }
@@ -578,7 +579,7 @@ const handleStatusChange = async (id: string, date: string, newStatus: EditableS
       toast.success(status === 'APPROVED' ? 'Justification approuvée' : 'Justification rejetée')
       handleCloseModal()
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Erreur lors de la mise à jour')
+      toast.error(getUserFriendlyErrorMessage(error, 'Erreur lors de la mise à jour'))
     } finally {
       setIsLoadingRecords(false)
     }

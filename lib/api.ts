@@ -4,6 +4,7 @@ import axios from 'axios';
 import { ReactNode } from 'react';
 import { AxiosError } from 'axios';
 import { authUtils } from './auth';
+import { getUserFriendlyErrorMessage, sanitizeAxiosError } from './error';
 
 // Types pour les données
 export interface User {
@@ -141,7 +142,10 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
     let errorMessage = `Erreur HTTP ${response.status}`;
     try {
       const error = await response.json();
-      errorMessage = error.message || errorMessage;
+      errorMessage = getUserFriendlyErrorMessage(
+        error,
+        errorMessage,
+      );
     } catch {
       errorMessage = 'Erreur réseau';
     }
@@ -334,6 +338,8 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    sanitizeAxiosError(error);
+
     if (error.response?.status === 401 || error.response?.status === 403) {
       const failingUrl = error.config?.url || 'unknown-url';
       console.warn(`Unauthorized axios request ignored for session continuity: ${failingUrl}`);
@@ -356,7 +362,7 @@ export const authAPI = {
   try {
     console.log('API call: Attempting login with:', { email });
     
-    const response = await axios.post('/api/auth/login', { email, password });
+    const response = await api.post('/auth/login', { email, password });
       console.log('API response received:', response.status);
     if (response.data) {
       // Supporter accessToken ET token selon ce que renvoie le backend
@@ -370,7 +376,9 @@ export const authAPI = {
     }
   } catch (error) {
     console.error('Login API error:', error);
-    throw error;
+    throw new Error(
+      getUserFriendlyErrorMessage(error, 'Échec de la connexion. Veuillez vérifier vos identifiants.'),
+    );
   }
 },
 
@@ -383,7 +391,7 @@ export const authAPI = {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Erreur réseau' }))
-      throw new Error(error.message || 'Erreur de connexion')
+      throw new Error(getUserFriendlyErrorMessage(error, 'Erreur de connexion'))
     }
 
     const data = await response.json();
@@ -402,7 +410,7 @@ export const authAPI = {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Erreur réseau' }))
-      throw new Error(error.message || 'Erreur lors de l\'inscription')
+      throw new Error(getUserFriendlyErrorMessage(error, 'Erreur lors de l\'inscription'))
     }
 
     const data = await response.json();
@@ -918,7 +926,12 @@ removeReferentialFromPromotion: async (promotionId: string, referentialId: strin
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Erreur réseau' }))
-      throw new Error(error.message || `Erreur HTTP ${response.status}`)
+      throw new Error(
+        getUserFriendlyErrorMessage(
+          error,
+          "Impossible d'ajouter le document pour le moment.",
+        ),
+      )
     }
 
     return response.json()
@@ -994,7 +1007,7 @@ createLearner: async (formData: FormData) => {
     throw error;
   }
 },
-   async validateBulkImport(formData: FormData) {
+  async validateBulkImport(formData: FormData) {
     try {
       const response = await fetch('/api/learners/validate-bulk-import', {
         method: 'POST',
@@ -1004,7 +1017,12 @@ createLearner: async (formData: FormData) => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Network error' }));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        throw new Error(
+          getUserFriendlyErrorMessage(
+            errorData,
+            'Impossible de valider le fichier pour le moment.',
+          ),
+        );
       }
 
       const result = await response.json();
@@ -1025,7 +1043,12 @@ createLearner: async (formData: FormData) => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Network error' }));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        throw new Error(
+          getUserFriendlyErrorMessage(
+            errorData,
+            "Impossible d'importer les apprenants pour le moment.",
+          ),
+        );
       }
 
       const result = await response.json();
@@ -1045,7 +1068,12 @@ createLearner: async (formData: FormData) => {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(
+          getUserFriendlyErrorMessage(
+            { message: `HTTP error! status: ${response.status}` },
+            'Impossible de télécharger le template pour le moment.',
+          ),
+        );
       }
 
       // Retourner la réponse pour traitement par le composant
@@ -1064,7 +1092,12 @@ createLearner: async (formData: FormData) => {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(
+          getUserFriendlyErrorMessage(
+            { message: `HTTP error! status: ${response.status}` },
+            'Impossible de charger les QR codes pour le moment.',
+          ),
+        );
       }
 
       const result = await response.json();
@@ -1083,7 +1116,12 @@ createLearner: async (formData: FormData) => {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(
+          getUserFriendlyErrorMessage(
+            { message: `HTTP error! status: ${response.status}` },
+            'Impossible de corriger les QR codes pour le moment.',
+          ),
+        );
       }
 
       const result = await response.json();
@@ -1102,7 +1140,12 @@ createLearner: async (formData: FormData) => {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(
+          getUserFriendlyErrorMessage(
+            { message: `HTTP error! status: ${response.status}` },
+            'Impossible de régénérer le QR code pour le moment.',
+          ),
+        );
       }
 
       const result = await response.json();
@@ -1268,7 +1311,12 @@ export const referentialsAPI = {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Erreur réseau' }));
-      throw new Error(error.message || `Erreur HTTP ${response.status}`);
+      throw new Error(
+        getUserFriendlyErrorMessage(
+          error,
+          'Impossible de charger le référentiel pour le moment.',
+        ),
+      );
     }
 
     return response.json();
@@ -1392,7 +1440,12 @@ export const pendingLearnersAPI = {
     
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Erreur réseau' }));
-      throw new Error(error.message || `Erreur HTTP ${response.status}`);
+      throw new Error(
+        getUserFriendlyErrorMessage(
+          error,
+          "Impossible d'enregistrer l'inscription pour le moment.",
+        ),
+      );
     }
     
     return response.json();
@@ -1413,7 +1466,12 @@ export const pendingLearnersAPI = {
     
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Erreur réseau' }));
-      throw new Error(error.message || `Erreur HTTP ${response.status}`);
+      throw new Error(
+        getUserFriendlyErrorMessage(
+          error,
+          'Impossible de charger les demandes pour le moment.',
+        ),
+      );
     }
     
     return response.json();
@@ -1430,7 +1488,12 @@ export const pendingLearnersAPI = {
     
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Erreur réseau' }));
-      throw new Error(error.message || `Erreur HTTP ${response.status}`);
+      throw new Error(
+        getUserFriendlyErrorMessage(
+          error,
+          'Impossible de charger la demande pour le moment.',
+        ),
+      );
     }
     
     return response.json();
@@ -1449,7 +1512,12 @@ export const pendingLearnersAPI = {
     
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Erreur réseau' }));
-      throw new Error(error.message || `Erreur HTTP ${response.status}`);
+      throw new Error(
+        getUserFriendlyErrorMessage(
+          error,
+          "Impossible d'approuver la demande pour le moment.",
+        ),
+      );
     }
     
     return response.json();
@@ -1469,7 +1537,12 @@ export const pendingLearnersAPI = {
     
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Erreur réseau' }));
-      throw new Error(error.message || `Erreur HTTP ${response.status}`);
+      throw new Error(
+        getUserFriendlyErrorMessage(
+          error,
+          'Impossible de rejeter la demande pour le moment.',
+        ),
+      );
     }
     
     return response.json();
@@ -1722,7 +1795,7 @@ export const handleApiError = (error: unknown): ApiError => {
     switch (status) {
       case 400:
         return {
-          message: data?.message || 'Données invalides',
+          message: getUserFriendlyErrorMessage(data, 'Données invalides'),
           statusCode: 400,
           details: data,
         };
@@ -1741,20 +1814,20 @@ export const handleApiError = (error: unknown): ApiError => {
       
       case 404:
         return {
-          message: data?.message || 'Ressource non trouvée',
+          message: getUserFriendlyErrorMessage(data, 'Ressource non trouvée'),
           statusCode: 404,
         };
       
       case 409:
         return {
-          message: data?.message || 'Conflit: Cette ressource existe déjà',
+          message: getUserFriendlyErrorMessage(data, 'Conflit: Cette ressource existe déjà'),
           statusCode: 409,
           details: data,
         };
       
       case 422:
         return {
-          message: data?.message || 'Erreur de validation',
+          message: getUserFriendlyErrorMessage(data, 'Erreur de validation'),
           statusCode: 422,
           details: data,
         };
@@ -1767,7 +1840,10 @@ export const handleApiError = (error: unknown): ApiError => {
       
       default:
         return {
-          message: data?.message || error.message || 'Une erreur est survenue',
+          message: getUserFriendlyErrorMessage(
+            data?.message || error.message || data,
+            'Une erreur est survenue',
+          ),
           statusCode: status,
           details: data,
         };
@@ -1777,7 +1853,7 @@ export const handleApiError = (error: unknown): ApiError => {
   // Erreur réseau ou autre
   if (error instanceof Error) {
     return {
-      message: error.message,
+      message: getUserFriendlyErrorMessage(error, 'Une erreur est survenue'),
     };
   }
 
@@ -2233,7 +2309,7 @@ export const attendanceAPI = {
       console.error('Error scanning learner QR:', error);
       return {
         success: false,
-        message: error.response?.data?.message || 'Erreur lors du scan'
+        message: getUserFriendlyErrorMessage(error, 'Erreur lors du scan')
       };
     }
   },
@@ -2261,7 +2337,7 @@ export const attendanceAPI = {
       console.error('Error scanning coach QR:', error);
       return {
         success: false,
-        message: error.response?.data?.message || 'Erreur lors du scan'
+        message: getUserFriendlyErrorMessage(error, 'Erreur lors du scan')
       };
     }
   },

@@ -33,7 +33,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
-    const token = authUtils.getValidToken();
+    const token = authUtils.getToken();
     if (!token) return;
 
     let mounted = true;
@@ -105,7 +105,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/${notificationId}/read`, {
         method: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${authUtils.getValidToken() || ''}`,
+          'Authorization': `Bearer ${authUtils.getToken() || ''}`,
         }
       });
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Calendar, Clock, TrendingUp, LogIn, LogOut, Download, ArrowLeft, Filter, X } from 'lucide-react';
 import { coachesAPI } from '@/lib/api';
 import { toast } from 'sonner';
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 
 interface CheckInInfo {
   time: string;
@@ -92,7 +93,7 @@ const loadData = async () => {
     setStats(statsData);
     setTodayAttendance(todayData);
   } catch (error) {
-    toast.error(`Erreur: ${error.message}`);
+    toast.error(getUserFriendlyErrorMessage(error, 'Erreur lors du chargement de votre présence'));
   } finally {
     setLoading(false);
   }

@@ -141,7 +141,7 @@ export default function QRScanner() {
       setError('');
     } catch (err) {
       console.error('Failed to start scanner:', err);
-      setError('Erreur d\'accès à la caméra. Veuillez vérifier vos permissions.');
+      setError('Impossible d’accéder à la caméra. Vérifiez les permissions puis réessayez.');
       setIsScanning(false);
     }
   };

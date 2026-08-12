@@ -10,6 +10,7 @@ import AddLearnerModal from '../components/modals/AddLearnerModal';
 import { toast } from "sonner";
 import { LearnerFormSubmitData } from '@/lib/types';
 import Link from 'next/link';
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -136,10 +137,7 @@ const [photoFile, setPhotoFile] = useState<File | null>(null);
       } else if (err.response?.status === 429) {
         setError('Trop de tentatives de connexion. Veuillez réessayer plus tard.');
       } else {
-        const errorMessage = err.response?.data?.message ||
-                            err.response?.data?.error || 
-                            'Une erreur est survenue lors de la connexion';
-        setError(errorMessage);
+        setError(getUserFriendlyErrorMessage(err, 'Une erreur est survenue lors de la connexion'));
       }
     } finally {
       setLoading(false);
@@ -206,9 +204,7 @@ async function handleRegisterSubmit(data: LearnerFormSubmitData) {
       setIsRegisterModalOpen(false);
     }
   } catch (error: any) {
-    const serverMessage = Array.isArray(error.response?.data?.message)
-      ? error.response.data.message.join(' | ')
-      : error.response?.data?.message || 'Erreur inconnue';
+    const serverMessage = getUserFriendlyErrorMessage(error, 'Impossible de finaliser votre inscription pour le moment.');
     
     console.error('=== ERREUR SERVEUR ===', serverMessage);
     

@@ -12,6 +12,7 @@ import { toast } from "sonner"
 import { Button } from "@headlessui/react"
 import { LearnerFormSubmitData } from "@/lib/types"
 import BulkImportModal from "../../../components/modals/BulkImportModal"
+import { getUserFriendlyErrorMessage } from "@/lib/error"
 
 const DEFAULT_STATUS_FILTER = ["ACTIVE", "REPLACEMENT"]
 const LEARNERS_FILTERS_STORAGE_KEY = "dashboard.learners.filters"
@@ -432,7 +433,7 @@ export default function LearnersPage() {
       }
     } catch (error: any) {
       toast.error("Erreur lors de l'ajout de l'apprenant", {
-        description: error.response?.data?.message || "Veuillez réessayer",
+        description: getUserFriendlyErrorMessage(error, "Veuillez réessayer"),
       })
     } finally {
       setIsSubmitting(false)

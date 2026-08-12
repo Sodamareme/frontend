@@ -1,5 +1,6 @@
 // src/lib/api/coaches.ts
 import api from './axios-config';
+import { getUserFriendlyErrorMessage } from './error';
 
 interface Coach {
   id: string;
@@ -49,7 +50,7 @@ const handleApiError = (error: any) => {
   if (error.response) {
     return {
       status: error.response.status,
-      message: error.response.data?.message || 'Erreur serveur',
+      message: getUserFriendlyErrorMessage(error, 'Erreur serveur'),
       data: error.response.data,
     };
   } else if (error.request) {
@@ -61,7 +62,7 @@ const handleApiError = (error: any) => {
   } else {
     return {
       status: 0,
-      message: error.message || 'Erreur inconnue',
+      message: getUserFriendlyErrorMessage(error, 'Erreur inconnue'),
       data: null,
     };
   }

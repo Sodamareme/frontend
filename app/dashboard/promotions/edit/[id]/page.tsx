@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { toast } from "sonner";
 import Image from "next/image";
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 
 interface PromotionFormData {
   name: string;
@@ -182,7 +183,7 @@ export default function EditPromotionPage() {
     } catch (error: any) {
       console.error('Error updating promotion:', error);
       toast.error('Erreur lors de la mise à jour', {
-        description: error.response?.data?.message || 'Impossible de mettre à jour la promotion'
+        description: getUserFriendlyErrorMessage(error, 'Impossible de mettre à jour la promotion')
       });
     } finally {
       setSaving(false);

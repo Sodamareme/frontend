@@ -5,6 +5,7 @@ import { Dialog } from '@headlessui/react';
 import { X, Upload, FileText, AlertCircle, CheckCircle, Download } from 'lucide-react';
 import { learnersAPI, ValidationResponse, BulkImportResponse } from '@/lib/api/learners';
 import { toast } from 'sonner';
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 
 interface BulkImportModalProps {
   isOpen: boolean;
@@ -55,7 +56,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
     } catch (error: any) {
       console.error('Validation error:', error);
       toast.error('Erreur de validation', {
-        description: error.message || 'Impossible de valider le fichier'
+        description: getUserFriendlyErrorMessage(error, 'Impossible de valider le fichier')
       });
       setValidationResult(null);
     } finally {
@@ -89,7 +90,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
     } catch (error: any) {
       console.error('Import error:', error);
       toast.error('Erreur lors de l\'import', {
-        description: error.message || 'Impossible d\'importer les apprenants'
+        description: getUserFriendlyErrorMessage(error, 'Impossible d\'importer les apprenants')
       });
     } finally {
       setIsUploading(false);
@@ -114,7 +115,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess }: BulkImpo
     } catch (error: any) {
       console.error('Template download error:', error);
       toast.error('Erreur lors du téléchargement du template', {
-        description: error.message
+        description: getUserFriendlyErrorMessage(error, 'Impossible de télécharger le template')
       });
     }
   };

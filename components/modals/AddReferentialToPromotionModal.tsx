@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Dialog } from '@headlessui/react';
 import { Loader2, X } from 'lucide-react';
 import { promotionsAPI, Referential, referentialsAPI } from '@/lib/api';
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 
 interface AddReferentialToPromotionModalProps {
   isOpen: boolean;
@@ -68,7 +69,7 @@ export default function AddReferentialToPromotionModal({
       onClose();
     } catch (err: any) {
       console.error('Error in handleSubmit:', err);
-      setError(err.response?.data?.message || 'Erreur lors de l\'ajout des référentiels');
+      setError(getUserFriendlyErrorMessage(err, 'Erreur lors de l\'ajout des référentiels'));
     } finally {
       setLoading(false);
     }

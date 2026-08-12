@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Dialog } from '@headlessui/react';
 import { X, Upload } from 'lucide-react';
 import { modulesAPI, referentialsAPI } from '@/lib/api';
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 
 // Add interface for Coach
 interface Coach {
@@ -71,7 +72,7 @@ export default function AddModuleModal({ isOpen, onClose, refId, onSuccess }: Ad
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Erreur lors de la création du module');
+      setError(getUserFriendlyErrorMessage(err, 'Erreur lors de la création du module'));
     } finally {
       setLoading(false);
     }

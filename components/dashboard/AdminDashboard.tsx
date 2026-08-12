@@ -139,7 +139,7 @@ export default function AdminDashboard() {
         setLoading(false)
       } catch (err) {
         console.error("Error fetching data:", err)
-        setError("Failed to load dashboard data")
+        setError("Impossible de charger les données du tableau de bord")
         setLoading(false)
         setMonthlyAttendanceData([])
       }
@@ -476,4 +476,3 @@ const StatsCard = ({ title, value, icon, loading }) => (
     </div>
   </div>
 );
-

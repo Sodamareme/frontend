@@ -7,6 +7,7 @@ import { Plus, Search, Calendar, Users, Clock, Check, Bookmark, ChevronLeft, Che
 import { toast } from "sonner";
 import EnhancedPromotionCard from '@/components/dashboard/EnhancedPromotionCard';
 import CreatePromotionModal from '@/components/dashboard/CreatePromotionModal';
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 
 export default function PromotionsPage() {
   const [promotions, setPromotions] = useState([]);
@@ -105,7 +106,7 @@ export default function PromotionsPage() {
       await fetchData();
     } catch (error: any) {
       toast.error("Erreur lors de la mise à jour", {
-        description: error.response?.data?.message || "Impossible de modifier le statut de la promotion",
+        description: getUserFriendlyErrorMessage(error, "Impossible de modifier le statut de la promotion"),
       });
     }
   }
@@ -122,7 +123,7 @@ export default function PromotionsPage() {
       setShowAddModal(false);
     } catch (error: any) {
       toast.error("Erreur lors de la création", {
-        description: error.response?.data?.message || "Impossible de créer la promotion",
+        description: getUserFriendlyErrorMessage(error, "Impossible de créer la promotion"),
       });
     }
   }
@@ -539,4 +540,3 @@ export default function PromotionsPage() {
     </div>
   );
 }
-

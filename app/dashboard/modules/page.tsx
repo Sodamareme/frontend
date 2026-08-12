@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import ModuleCard from '@/components/modules/ModuleCard';
 import { ModuleCardSkeleton } from '@/components/skeletons/ModuleSkeleton';
 import { toast } from "sonner";
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 
 export default function ModulesPage() {
   const router = useRouter();
@@ -102,14 +103,12 @@ export default function ModulesPage() {
     } catch (err: any) {
       console.error('Erreur lors de la suppression du module:', err);
       
-      if (err.response?.data?.message) {
-        toast.error(`Erreur: ${err.response.data.message}`);
-      } else if (err.response?.status === 404) {
+      if (err.response?.status === 404) {
         toast.error('Module non trouvé');
       } else if (err.response?.status === 403) {
         toast.error('Vous n\'avez pas les permissions pour supprimer ce module');
       } else {
-        toast.error('Erreur lors de la suppression du module');
+        toast.error(getUserFriendlyErrorMessage(err, 'Erreur lors de la suppression du module'));
       }
     } finally {
       setDeletingModuleId(null);

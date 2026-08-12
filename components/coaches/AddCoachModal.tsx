@@ -9,6 +9,7 @@ import * as z from 'zod';
 import { AlertCircle, User, Image, UserCircle, Check } from 'lucide-react';
 import { toast } from "sonner";
 import { ReferentialBasic } from '@/lib/api';
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 // Schéma de validation pour le coach
 const coachSchema = z.object({
   firstName: z.string().min(2, "Le prénom doit contenir au moins 2 caractères"),
@@ -153,7 +154,7 @@ export default function AddCoachModal({
       await onSubmit(data);
       // Le modal sera fermé par le composant parent après succès
     } catch (error: any) {
-      setError(error.message || "Une erreur est survenue lors de l'enregistrement");
+      setError(getUserFriendlyErrorMessage(error, "Une erreur est survenue lors de l'enregistrement"));
       console.error('Form submission error:', error);
     } finally {
       setIsSubmitting(false);

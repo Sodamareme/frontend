@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { learnersAPI } from '@/lib/api';
 import { ArrowLeft, Download, Share } from 'lucide-react';
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 
 export default function QRCodePage() {
   const [learner, setLearner] = useState<any>(null);
@@ -24,7 +25,7 @@ export default function QRCodePage() {
         setLoading(false);
       } catch (err) {
         console.error('Error fetching learner details:', err);
-        setError('Failed to load your QR code. Please try again later.');
+        setError(getUserFriendlyErrorMessage(err, 'Impossible de charger votre QR code pour le moment.'));
         setLoading(false);
       }
     };
@@ -135,4 +136,4 @@ export default function QRCodePage() {
       </div>
     </div>
   );
-} 
+}

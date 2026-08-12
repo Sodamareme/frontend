@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { authAPI } from '@/lib/api';
 import { jwtDecode } from 'jwt-decode';
 import { authUtils, SESSION_EXPIRED_EVENT } from '@/lib/auth';
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 
 // Define the user type
 type User = {
@@ -194,7 +195,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error: any) {
       // Handle login errors
-      setError(error.response?.data?.message || 'Échec de la connexion. Veuillez vérifier vos identifiants.');
+      setError(getUserFriendlyErrorMessage(error, 'Échec de la connexion. Veuillez vérifier vos identifiants.'));
     } finally {
       setIsLoading(false);
     }

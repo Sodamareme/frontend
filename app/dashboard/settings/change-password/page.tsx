@@ -6,6 +6,7 @@ import { Eye, EyeOff, Lock, CheckCircle2, AlertCircle, Loader2, ArrowLeft } from
 import { toast } from 'sonner';
 import { authAPI } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 
 export default function ChangePasswordPage() {
   const router = useRouter();
@@ -88,7 +89,7 @@ export default function ChangePasswordPage() {
       
     } catch (error: any) {
       console.error('Error changing password:', error);
-      const message = error.response?.data?.message || 'Erreur lors du changement de mot de passe';
+      const message = getUserFriendlyErrorMessage(error, 'Erreur lors du changement de mot de passe');
       toast.error(message);
     } finally {
       setLoading(false);

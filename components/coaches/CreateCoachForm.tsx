@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { coachesAPI } from '../../lib/api'; // Votre fichier API
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 
 interface CoachFormData {
   firstName: string;
@@ -99,12 +100,11 @@ export const CreateCoachForm = () => {
     } catch (error: any) {
       console.error('❌ Erreur lors de la création:', error);
       console.error('Détails de l\'erreur:', {
-        message: error.message,
-        response: error.response,
-        stack: error.stack
+        message: getUserFriendlyErrorMessage(error, 'Erreur inconnue'),
+        response: error.response
       });
       
-      setError(error.message || 'Une erreur est survenue');
+      setError(getUserFriendlyErrorMessage(error, 'Une erreur est survenue'));
     } finally {
       setLoading(false);
     }

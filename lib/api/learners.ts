@@ -1,5 +1,6 @@
 // API client pour les apprenants
 import { ApiClient } from '../../lib/api/base';
+import { getUserFriendlyErrorMessage } from '../error';
 
 export interface ValidationResponse {
   isValid: boolean;
@@ -90,7 +91,12 @@ class LearnersAPI extends ApiClient {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(
+        getUserFriendlyErrorMessage(
+          { message: `HTTP error! status: ${response.status}` },
+          'Impossible de télécharger le template pour le moment.',
+        ),
+      );
     }
 
     return response.text();

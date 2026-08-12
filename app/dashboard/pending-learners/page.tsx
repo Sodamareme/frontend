@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { pendingLearnersAPI } from '@/lib/api';
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 
 interface PendingLearner {
   id: string;
@@ -70,7 +71,7 @@ export default function PendingLearnersPage() {
       setPendingLearners(data);
     } catch (error: any) {
       toast.error('Erreur lors du chargement des demandes', {
-        description: error.message || 'Veuillez réessayer',
+        description: getUserFriendlyErrorMessage(error, 'Veuillez réessayer'),
       });
     } finally {
       setLoading(false);
@@ -95,7 +96,7 @@ export default function PendingLearnersPage() {
       setShowModal(false);
     } catch (error: any) {
       toast.error('Erreur lors de l\'approbation', {
-        description: error.message || 'Veuillez réessayer',
+        description: getUserFriendlyErrorMessage(error, 'Veuillez réessayer'),
       });
     } finally {
       setProcessingId(null);
@@ -123,7 +124,7 @@ export default function PendingLearnersPage() {
       setRejectReason('');
     } catch (error: any) {
       toast.error('Erreur lors du rejet', {
-        description: error.message || 'Veuillez réessayer',
+        description: getUserFriendlyErrorMessage(error, 'Veuillez réessayer'),
       });
     } finally {
       setProcessingId(null);

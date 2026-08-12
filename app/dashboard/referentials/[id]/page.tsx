@@ -9,6 +9,7 @@ import Image from 'next/image'
 import { ReferentialDetailsSkeleton } from '@/components/skeletons/ReferentialDetailsSkeleton';
 import AddModuleModal from '@/components/modals/AddModuleModal';
 import { toast } from 'sonner';
+import { getUserFriendlyErrorMessage } from '@/lib/error';
 
 export default function ReferentialDetailsPage() {
   const { id } = useParams() || {}
@@ -30,7 +31,7 @@ export default function ReferentialDetailsPage() {
       }
     } catch (err) {
       console.error('Error fetching referential:', err)
-      setError('Une erreur est survenue lors du chargement du référentiel')
+      setError(getUserFriendlyErrorMessage(err, 'Une erreur est survenue lors du chargement du référentiel'))
     } finally {
       setLoading(false)
     }
@@ -64,7 +65,7 @@ export default function ReferentialDetailsPage() {
       )
     } catch (err) {
       console.error('Error updating referential attendance closure:', err)
-      toast.error("Impossible de mettre à jour l'état de présence du référentiel")
+      toast.error(getUserFriendlyErrorMessage(err, "Impossible de mettre à jour l'état de présence du référentiel"))
     } finally {
       setIsUpdatingAttendanceClosure(false)
     }
@@ -96,7 +97,7 @@ export default function ReferentialDetailsPage() {
       )
     } catch (err) {
       console.error('Error updating session attendance closure:', err)
-      toast.error("Impossible de mettre à jour l'état de présence de la session")
+      toast.error(getUserFriendlyErrorMessage(err, "Impossible de mettre à jour l'état de présence de la session"))
     } finally {
       setIsUpdatingAttendanceClosure(false)
     }
