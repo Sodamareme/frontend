@@ -52,15 +52,11 @@ type ErrorState = {
   modules: string;
 };
 
-const REGULARITY_PERIOD_LABELS: Record<
-  LearnerRegularityLeaderboardResponse["period"],
-  string
-> = {
-  week: "Semaine",
-  month: "Mois",
-  quarter: "Trimestre",
-  year: "Année",
-  custom: "Personnalisée",
+type LearnerRegularityPeriod = "month" | "year";
+
+const REGULARITY_PERIOD_LABELS: Record<LearnerRegularityPeriod, string> = {
+  month: "Mensuel",
+  year: "Depuis le début",
 };
 
 type RegularityMessage = {
@@ -209,8 +205,7 @@ export default function LearnerDashboard() {
   });
   const [regularityLoading, setRegularityLoading] = useState(true);
   const [regularityError, setRegularityError] = useState("");
-  const [regularityPeriod, setRegularityPeriod] =
-    useState<LearnerRegularityLeaderboardResponse["period"]>("month");
+  const [regularityPeriod, setRegularityPeriod] = useState<LearnerRegularityPeriod>("year");
   const [showQRCode, setShowQRCode] = useState(false);
   const [modules, setModules] = useState<Module[]>([]);
 
@@ -316,9 +311,19 @@ export default function LearnerDashboard() {
         setRegularityLoading(true);
       }
 
-      const data = await attendanceAPI.getLearnerRegularityRanking({
-        period: regularityPeriod,
-      });
+      const promotionStartDate = learnerDetails?.promotion?.startDate;
+      const params =
+        regularityPeriod === "year" && promotionStartDate
+          ? {
+              period: "custom" as const,
+              startDate: promotionStartDate,
+              endDate: new Date().toISOString(),
+            }
+          : {
+              period: regularityPeriod,
+            };
+
+      const data = await attendanceAPI.getLearnerRegularityRanking(params);
       setRegularity(data);
       setRegularityError("");
     } catch (err) {
@@ -337,7 +342,7 @@ export default function LearnerDashboard() {
   useAutoRefresh(() => fetchData(true), { intervalMs: 20_000 });
   useEffect(() => {
     void fetchRegularity();
-  }, [regularityPeriod]);
+  }, [regularityPeriod, learnerDetails?.promotion?.startDate]);
   useAutoRefresh(() => fetchRegularity(true), { intervalMs: 30_000 });
 
   const attendanceRate = (() => {
@@ -475,7 +480,7 @@ export default function LearnerDashboard() {
                   <p className="text-sm font-medium text-[#F16E00]">Classement</p>
                   <h2 className="mt-2 text-xl font-semibold text-slate-900 sm:text-2xl">Assiduité</h2>
                   <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
-                    Votre position évolue avec vos pointages. Restez régulier, le podium n’est pas loin.
+                    Classement mensuel ou depuis le début de la promotion. Restez régulier, le podium n’est pas loin.
                   </p>
                 </div>
                 <motion.div
@@ -488,7 +493,7 @@ export default function LearnerDashboard() {
               </div>
 
               <div className="mt-5 flex flex-wrap gap-2">
-                {(["week", "month", "quarter"] as const).map((period) => (
+                {(["month", "year"] as const).map((period) => (
                   <button
                     key={period}
                     onClick={() => setRegularityPeriod(period)}
