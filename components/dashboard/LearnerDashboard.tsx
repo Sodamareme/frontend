@@ -260,6 +260,7 @@ export default function LearnerDashboard() {
           total: statsData.totalDays ?? 0,
           justifiedAbsentDays: statsData.justifiedAbsentDays ?? 0,
           unjustifiedAbsentDays: statsData.unjustifiedAbsentDays ?? 0,
+          attendanceRate: statsData.attendanceRate ?? 0,
         });
 
         if (details.referential?.id) {
@@ -350,8 +351,7 @@ export default function LearnerDashboard() {
 
   const attendanceRate = (() => {
     if (!attendanceStats) return 0;
-    const total = attendanceStats.present + attendanceStats.late + attendanceStats.absent;
-    return total > 0 ? Math.round((attendanceStats.present / total) * 100) : 0;
+    return Math.round(attendanceStats.attendanceRate ?? 0);
   })();
 
   const learnerRank = regularity?.learner?.rank ?? null;
