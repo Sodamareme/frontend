@@ -312,6 +312,9 @@ export default function LearnerDashboard() {
       }
 
       const promotionStartDate = learnerDetails?.promotion?.startDate;
+      if (regularityPeriod === "year" && !promotionStartDate) {
+        return;
+      }
       const params =
         regularityPeriod === "year" && promotionStartDate
           ? {
@@ -480,7 +483,7 @@ export default function LearnerDashboard() {
                   <p className="text-sm font-medium text-[#F16E00]">Classement</p>
                   <h2 className="mt-2 text-xl font-semibold text-slate-900 sm:text-2xl">Assiduité</h2>
                   <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
-                    Classement mensuel ou depuis le début de la promotion. Restez régulier, le podium n’est pas loin.
+                    Classement mensuel ou depuis le début de la promotion, trié d’abord par le moins d’absences, puis les retards, puis les présences.
                   </p>
                 </div>
                 <motion.div
