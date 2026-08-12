@@ -6,14 +6,26 @@ import { useSearchParams } from "next/navigation"
 import { attendanceAPI, promotionsAPI, referentialsAPI, type AtRiskLearnersResponse, type Promotion, type Referential } from "@/lib/api"
 import { AlertTriangle, Award, Clock3, TrendingDown, Users } from "lucide-react"
 
-type AnalyticsPeriod = "week" | "month" | "year" | "quarter"
+type AnalyticsPeriod = "week" | "month" | "year" | "quarter" | "custom"
 
 const PERIOD_OPTIONS: Array<{ value: AnalyticsPeriod; label: string }> = [
   { value: "week", label: "Cette semaine" },
   { value: "month", label: "Ce mois" },
   { value: "year", label: "Depuis le début de l'année" },
   { value: "quarter", label: "Ce trimestre" },
+  { value: "custom", label: "Période personnalisée" },
 ]
+
+const getDefaultCustomRange = () => {
+  const end = new Date()
+  const start = new Date()
+  start.setDate(start.getDate() - 30)
+
+  return {
+    startDate: start.toISOString().slice(0, 10),
+    endDate: end.toISOString().slice(0, 10),
+  }
+}
 
 const defaultAnalytics: AtRiskLearnersResponse = {
   period: "month",
@@ -112,12 +124,15 @@ export default function AttendanceAnalyticsPage() {
   const [referentials, setReferentials] = useState<Referential[]>([])
   const [period, setPeriod] = useState<AnalyticsPeriod>(() => {
     const value = searchParams.get("period")
-    return value === "week" || value === "month" || value === "year" || value === "quarter"
+    return value === "week" || value === "month" || value === "year" || value === "quarter" || value === "custom"
       ? value
       : "month"
   })
   const [promotionId, setPromotionId] = useState(() => searchParams.get("promotionId") || "")
   const [referentialId, setReferentialId] = useState(() => searchParams.get("referentialId") || "")
+  const defaultCustomRange = useMemo(getDefaultCustomRange, [])
+  const [customStartDate, setCustomStartDate] = useState(() => searchParams.get("startDate") || defaultCustomRange.startDate)
+  const [customEndDate, setCustomEndDate] = useState(() => searchParams.get("endDate") || defaultCustomRange.endDate)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
@@ -149,6 +164,7 @@ export default function AttendanceAnalyticsPage() {
           period,
           promotionId: promotionId || undefined,
           referentialId: referentialId || undefined,
+          ...(period === "custom" ? { startDate: customStartDate, endDate: customEndDate } : {}),
           limit: 10,
         })
 
@@ -162,7 +178,7 @@ export default function AttendanceAnalyticsPage() {
     }
 
     fetchAnalytics()
-  }, [period, promotionId, referentialId])
+  }, [period, promotionId, referentialId, customStartDate, customEndDate])
 
   const summary = useMemo(() => {
     const totalFlaggedLearners = new Set([
@@ -190,11 +206,16 @@ export default function AttendanceAnalyticsPage() {
       params.set("referentialId", referentialId)
     }
 
+    if (period === "custom") {
+      params.set("startDate", customStartDate)
+      params.set("endDate", customEndDate)
+    }
+
     const queryString = params.toString()
     return queryString
       ? `/dashboard/attendance/analytics?${queryString}`
       : "/dashboard/attendance/analytics"
-  }, [period, promotionId, referentialId])
+  }, [period, promotionId, referentialId, customStartDate, customEndDate])
 
   return (
     <div className="space-y-6 p-6 bg-gray-50 min-h-screen">
@@ -245,6 +266,9 @@ export default function AttendanceAnalyticsPage() {
           </div>
           <p className="mt-3 text-sm font-semibold text-gray-900">
             {formatDate(analytics.range.startDate)} au {formatDate(analytics.range.endDate)}
+          </p>
+          <p className="mt-2 text-xs text-gray-500">
+            Les classements ci-dessous affichent le top 10 de la période choisie.
           </p>
         </div>
       </div>
@@ -298,6 +322,31 @@ export default function AttendanceAnalyticsPage() {
             </select>
           </div>
         </div>
+
+        {period === "custom" && (
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700">Date de début</label>
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(event) => setCustomStartDate(event.target.value)}
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-800 focus:border-orange-400 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700">Date de fin</label>
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(event) => setCustomEndDate(event.target.value)}
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-800 focus:border-orange-400 focus:outline-none"
+              />
+            </div>
+          </div>
+        )}
+
         <p className="mt-4 text-xs text-gray-500">
           Classement assidus: moins d&apos;absences d&apos;abord, puis moins de retards,
           ensuite plus de présences, et enfin meilleur taux de présence.
