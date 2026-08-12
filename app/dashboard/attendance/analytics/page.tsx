@@ -6,11 +6,12 @@ import { useSearchParams } from "next/navigation"
 import { attendanceAPI, promotionsAPI, referentialsAPI, type AtRiskLearnersResponse, type Promotion, type Referential } from "@/lib/api"
 import { AlertTriangle, Award, Clock3, TrendingDown, Users } from "lucide-react"
 
-type AnalyticsPeriod = "week" | "month" | "quarter"
+type AnalyticsPeriod = "week" | "month" | "year" | "quarter"
 
 const PERIOD_OPTIONS: Array<{ value: AnalyticsPeriod; label: string }> = [
   { value: "week", label: "Cette semaine" },
   { value: "month", label: "Ce mois" },
+  { value: "year", label: "Depuis le début de l'année" },
   { value: "quarter", label: "Ce trimestre" },
 ]
 
@@ -111,7 +112,9 @@ export default function AttendanceAnalyticsPage() {
   const [referentials, setReferentials] = useState<Referential[]>([])
   const [period, setPeriod] = useState<AnalyticsPeriod>(() => {
     const value = searchParams.get("period")
-    return value === "week" || value === "quarter" ? value : "month"
+    return value === "week" || value === "month" || value === "year" || value === "quarter"
+      ? value
+      : "month"
   })
   const [promotionId, setPromotionId] = useState(() => searchParams.get("promotionId") || "")
   const [referentialId, setReferentialId] = useState(() => searchParams.get("referentialId") || "")
@@ -295,6 +298,10 @@ export default function AttendanceAnalyticsPage() {
             </select>
           </div>
         </div>
+        <p className="mt-4 text-xs text-gray-500">
+          Classement assidus: moins d&apos;absences d&apos;abord, puis moins de retards,
+          ensuite plus de présences, et enfin meilleur taux de présence.
+        </p>
       </section>
 
       {loading ? (

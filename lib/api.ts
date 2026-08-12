@@ -228,7 +228,7 @@ export interface AtRiskLearner {
 }
 
 export interface AtRiskLearnersResponse {
-  period: 'week' | 'month' | 'quarter';
+  period: 'week' | 'month' | 'quarter' | 'year' | 'custom';
   range: {
     startDate: string;
     endDate: string;
@@ -2139,7 +2139,7 @@ export const attendanceAPI = {
   },
 
   getAtRiskLearners: async (params?: {
-    period?: 'week' | 'month' | 'quarter';
+    period?: 'week' | 'month' | 'quarter' | 'year' | 'custom';
     promotionId?: string;
     referentialId?: string;
     limit?: number;
