@@ -88,7 +88,7 @@ export interface LearnerDetails {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
 // Fonction utilitaire pour récupérer le token (standardisée)
 const getAuthToken = () => {
-  return authUtils.getValidToken();
+  return authUtils.getToken();
 }
 
 // Fonction utilitaire pour définir le token (standardisée)
@@ -291,10 +291,6 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = getAuthToken();
-    if (!token) {
-      return Promise.reject(createSessionExpiredError());
-    }
-
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -324,10 +320,6 @@ api.interceptors.request.use(
 api.interceptors.request.use(
   (config) => {
     const token = getAuthToken();
-    if (!token) {
-      return Promise.reject(createSessionExpiredError());
-    }
-
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -346,8 +338,11 @@ api.interceptors.response.use(
       const failingUrl = error.config?.url || 'unknown-url';
       console.warn(`Unauthorized axios request ignored for session continuity: ${failingUrl}`);
 
+      const hadAuthHeader = Boolean(
+        error.config?.headers?.Authorization || error.config?.headers?.authorization,
+      );
       const token = authUtils.getToken();
-      if (!token || authUtils.isTokenExpired(token)) {
+      if (hadAuthHeader && (!token || authUtils.isTokenExpired(token))) {
         authUtils.expireSession();
       }
     }

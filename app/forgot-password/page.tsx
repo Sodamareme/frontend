@@ -5,27 +5,25 @@ import { useState } from 'react';
 import { Mail, ArrowLeft, CheckCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { authAPI } from '@/lib/api';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 export default function ForgotPasswordPage() {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [token, setToken] = useState(''); // Pour le développement
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!email) {
+  const requestReset = async (rawEmail: string) => {
+    const normalizedEmail = rawEmail.trim();
+
+    if (!normalizedEmail) {
       toast.error('Veuillez entrer votre adresse email');
       return;
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       toast.error('Veuillez entrer une adresse email valide');
       return;
     }
@@ -33,13 +31,14 @@ export default function ForgotPasswordPage() {
     try {
       setLoading(true);
       
-      const response = await authAPI.forgotPassword(email);
+      const response = await authAPI.forgotPassword(normalizedEmail);
       
       // En développement, le token est retourné
       if (response.token) {
         setToken(response.token);
       }
       
+      setEmail(normalizedEmail);
       setEmailSent(true);
       toast.success('Email envoyé avec succès');
       
@@ -50,6 +49,15 @@ export default function ForgotPasswordPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await requestReset(email);
+  };
+
+  const handleResend = async () => {
+    await requestReset(email);
   };
 
   if (emailSent) {
@@ -103,13 +111,11 @@ export default function ForgotPasswordPage() {
               Vous n'avez pas reçu l'email ? Vérifiez vos spams ou
             </p>
             <button
-              onClick={() => {
-                setEmailSent(false);
-                setEmail('');
-              }}
-              className="w-full text-orange-500 hover:text-orange-600 font-medium text-sm"
+              onClick={handleResend}
+              disabled={loading || !email}
+              className="w-full text-orange-500 hover:text-orange-600 font-medium text-sm disabled:opacity-50"
             >
-              Renvoyer l'email
+              {loading ? 'Renvoi en cours...' : "Renvoyer l'email"}
             </button>
           </div>
 
