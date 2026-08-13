@@ -1,4 +1,4 @@
-import { PowerIcon, Calendar, Users, ChevronRight } from "lucide-react";
+import { PowerIcon, Calendar, Users, ChevronRight, UserPlus, UserX } from "lucide-react";
 import Link from "next/link";
 
 interface EnhancedPromotionCardProps {
@@ -9,12 +9,14 @@ interface EnhancedPromotionCardProps {
     startDate: string;
     endDate: string;
     photoUrl?: string;
+    registrationOpen?: boolean;
     learnerCount: number;
   };
   onToggleStatus: (id: string, status: string) => void;
+  onToggleRegistration: (id: string, registrationOpen: boolean) => void;
 }
 
-const EnhancedPromotionCard = ({ promotion, onToggleStatus }: EnhancedPromotionCardProps) => {
+const EnhancedPromotionCard = ({ promotion, onToggleStatus, onToggleRegistration }: EnhancedPromotionCardProps) => {
   const getStatusColor = (status: string) => {
     return status === 'ACTIVE' 
       ? 'bg-green-100 text-green-700 border-green-200' 
@@ -42,7 +44,7 @@ const EnhancedPromotionCard = ({ promotion, onToggleStatus }: EnhancedPromotionC
     <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100">
       <div className="relative p-6">
         {/* Status Badge and Toggle Button */}
-        <div className="absolute top-4 right-4 flex items-center">
+        <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
           <div className="flex items-center bg-white rounded-full shadow-sm border border-gray-100 p-1">
             <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border mr-2 ${getStatusColor(promotion.status)}`}>
               {getStatusLabel(promotion.status)}
@@ -59,10 +61,22 @@ const EnhancedPromotionCard = ({ promotion, onToggleStatus }: EnhancedPromotionC
               <PowerIcon size={16} />
             </button>
           </div>
+          <button
+            onClick={() => onToggleRegistration(promotion.id, promotion.registrationOpen !== false)}
+            className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold shadow-sm border transition-colors ${
+              promotion.registrationOpen !== false
+                ? 'bg-teal-50 text-teal-700 border-teal-100 hover:bg-teal-100'
+                : 'bg-orange-50 text-orange-700 border-orange-100 hover:bg-orange-100'
+            }`}
+            title={promotion.registrationOpen !== false ? 'Fermer les inscriptions' : 'Ouvrir les inscriptions'}
+          >
+            {promotion.registrationOpen !== false ? <UserPlus size={14} /> : <UserX size={14} />}
+            {promotion.registrationOpen !== false ? 'Inscriptions ouvertes' : 'Inscriptions fermées'}
+          </button>
         </div>
 
         {/* Card Content */}
-        <div className="mt-12">
+        <div className="mt-24">
           {/* Header with Image/Year */}
           <div className="flex items-center mb-4">
             <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mr-4">

@@ -25,6 +25,7 @@ export interface Promotion {
   endDate: string;
   photoUrl?: string;
   status: 'ACTIVE' | 'INACTIVE';
+  registrationOpen?: boolean;
   learnerCount: number;
   learners?: Learner[];
   referentials?: ReferentialExtended[];
@@ -543,6 +544,7 @@ export interface PromotionExtended {
   endDate: string;
   photoUrl?: string;
   status: 'ACTIVE' | 'INACTIVE';
+  registrationOpen?: boolean;
   learnerCount: number;
   referentials: ReferentialExtended[];
   learners?: Learner[];
@@ -2564,6 +2566,20 @@ export const promotionsAPI = {
       return response.data;
     } catch (error) {
       console.error('Error updating promotion status:', error);
+      throw error;
+    }
+  },
+  updatePromotionRegistration: async (promotionId: string, registrationOpen: boolean) => {
+    try {
+      const response = await api.patch(`/promotions/${promotionId}/registration`, { registrationOpen });
+
+      if (!response.data) {
+        throw new Error('No data received from server');
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('Error updating promotion registration:', error);
       throw error;
     }
   },

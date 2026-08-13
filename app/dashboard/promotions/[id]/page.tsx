@@ -18,6 +18,8 @@ import {
   Mail,
   User,
   UserCheck,
+  UserPlus,
+  UserX,
   GraduationCap,
   Building,
   AlertCircle
@@ -34,6 +36,7 @@ interface Promotion {
   endDate: string;
   photoUrl?: string;
   learnerCount: number;
+  registrationOpen?: boolean;
   referentials?: string[];
   description?: string;
   location?: string;
@@ -140,6 +143,30 @@ export default function PromotionDetailsPage() {
 
   const handleViewSchedule = () => {
     router.push(`/dashboard/promotions/${promotionId}/schedule`);
+  };
+
+  const handleRegistrationToggle = async () => {
+    if (!promotion) return;
+
+    try {
+      setIsUpdating(true);
+      const nextRegistrationOpen = promotion.registrationOpen === false;
+      const statusText = nextRegistrationOpen ? 'ouvertes' : 'fermées';
+
+      await promotionsAPI.updatePromotionRegistration(promotion.id, nextRegistrationOpen);
+
+      toast.success(`Inscriptions ${statusText}`, {
+        description: `Le formulaire public est maintenant ${nextRegistrationOpen ? 'disponible' : 'masqué'} pour cette promotion.`,
+      });
+
+      setPromotion(prev => prev ? { ...prev, registrationOpen: nextRegistrationOpen } : null);
+    } catch (error: any) {
+      toast.error("Erreur lors de la mise à jour", {
+        description: getUserFriendlyErrorMessage(error, "Impossible de modifier l'ouverture des inscriptions"),
+      });
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -297,6 +324,20 @@ export default function PromotionDetailsPage() {
               <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium border ${getStatusColor(promotion.status)}`}>
                 {getStatusLabel(promotion.status)}
               </span>
+
+              <button
+                onClick={handleRegistrationToggle}
+                disabled={isUpdating}
+                className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold border transition-colors ${
+                  promotion.registrationOpen !== false
+                    ? 'bg-teal-50 text-teal-700 border-teal-100 hover:bg-teal-100'
+                    : 'bg-orange-50 text-orange-700 border-orange-100 hover:bg-orange-100'
+                } ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                title={promotion.registrationOpen !== false ? 'Fermer les inscriptions' : 'Ouvrir les inscriptions'}
+              >
+                {promotion.registrationOpen !== false ? <UserPlus size={16} /> : <UserX size={16} />}
+                {promotion.registrationOpen !== false ? 'Inscriptions ouvertes' : 'Inscriptions fermées'}
+              </button>
               
               <button
                 onClick={handleStatusToggle}

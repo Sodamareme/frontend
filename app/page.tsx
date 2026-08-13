@@ -33,9 +33,29 @@ export default function LoginPage() {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [referentials, setReferentials] = useState<Referential[]>([]);
   const [loadingData, setLoadingData] = useState(false);
+  const [registrationStatusLoaded, setRegistrationStatusLoaded] = useState(false);
   const [dataError, setDataError] = useState<string>('');
 // page.tsx — ajouter ce state en haut du composant, avec les autres useState
 const [photoFile, setPhotoFile] = useState<File | null>(null);
+
+  const activePromotion = promotions.find(p => p.status === 'ACTIVE');
+  const registrationOpen = Boolean(activePromotion && activePromotion.registrationOpen !== false);
+
+  useEffect(() => {
+    const loadRegistrationStatus = async () => {
+      try {
+        const promotionsData = await promotionsAPI.getAllPromotions();
+        setPromotions(promotionsData);
+      } catch (error) {
+        console.error('Erreur lors du chargement du statut des inscriptions:', error);
+      } finally {
+        setRegistrationStatusLoaded(true);
+      }
+    };
+
+    loadRegistrationStatus();
+  }, []);
+
   useEffect(() => {
     const loadData = async () => {
       if (!isRegisterModalOpen) return;
@@ -58,11 +78,13 @@ const [photoFile, setPhotoFile] = useState<File | null>(null);
         setPromotions(promotionsData);
         setReferentials(referentialsData);
         
-        const hasActivePromotion = promotionsData.some(p => p.status === 'ACTIVE');
-        if (!hasActivePromotion && promotionsData.length > 0) {
+        const activePromotionData = promotionsData.find(p => p.status === 'ACTIVE');
+        if (!activePromotionData && promotionsData.length > 0) {
           setDataError('Aucune promotion active trouvée');
         } else if (promotionsData.length === 0) {
           setDataError('Aucune promotion disponible. Veuillez contacter l\'administrateur.');
+        } else if (activePromotionData?.registrationOpen === false) {
+          setDataError('Les inscriptions sont fermées pour le moment.');
         }
         
         if (referentialsData.length === 0) {
@@ -495,18 +517,24 @@ async function handleRegisterSubmit(data: LearnerFormSubmitData) {
                 ) : 'Se connecter'}
               </motion.button>
 
-              <motion.button
-                type="button"
-                onClick={() => setIsRegisterModalOpen(true)}
-                className="w-full bg-teal-500 text-white py-2 rounded-lg hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-1 transition-all duration-200 font-medium text-sm shadow-md flex items-center justify-center gap-2"
-                variants={buttonVariants}
-                initial="idle"
-                whileHover="hover"
-                whileTap="tap"
-              >
-                <UserPlus size={16} />
-                Inscrire un apprenant
-              </motion.button>
+              {registrationOpen ? (
+                <motion.button
+                  type="button"
+                  onClick={() => setIsRegisterModalOpen(true)}
+                  className="w-full bg-teal-500 text-white py-2 rounded-lg hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-1 transition-all duration-200 font-medium text-sm shadow-md flex items-center justify-center gap-2"
+                  variants={buttonVariants}
+                  initial="idle"
+                  whileHover="hover"
+                  whileTap="tap"
+                >
+                  <UserPlus size={16} />
+                  Inscrire un apprenant
+                </motion.button>
+              ) : registrationStatusLoaded ? (
+                <div className="rounded-lg border border-orange-100 bg-orange-50 px-3 py-2 text-center text-xs font-medium text-orange-700">
+                  Les inscriptions sont fermées pour le moment.
+                </div>
+              ) : null}
             </form>
             
             <motion.div

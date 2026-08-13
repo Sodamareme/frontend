@@ -651,6 +651,11 @@ useEffect(() => {
     
     const isStepValid = await trigger(fieldsToValidate);
 
+    if (activePromotion?.registrationOpen === false) {
+      setError('Les inscriptions sont fermées pour le moment.');
+      return;
+    }
+
     if (registrationBlockReason) {
       setError(registrationBlockReason);
       return;
@@ -820,7 +825,7 @@ useEffect(() => {
                   type="button"
                   onClick={handleNext}
                   className="flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white ml-auto"
-                  disabled={!activePromotion || Boolean(registrationBlockReason)}
+                  disabled={!activePromotion || activePromotion.registrationOpen === false || Boolean(registrationBlockReason)}
                 >
                   Suivant
                   <ArrowRight className="w-4 h-4" />

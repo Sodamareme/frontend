@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { promotionsAPI } from '@/lib/api';
-import { Plus, Search, Calendar, Users, Clock, Check, Bookmark, ChevronLeft, ChevronRight, MoreVertical, Filter, PowerIcon, Folder, Book } from 'lucide-react';
+import { Plus, Search, Calendar, Users, Clock, Check, Bookmark, ChevronLeft, ChevronRight, MoreVertical, Filter, PowerIcon, Folder, Book, UserPlus, UserX } from 'lucide-react';
 import { toast } from "sonner";
 import EnhancedPromotionCard from '@/components/dashboard/EnhancedPromotionCard';
 import CreatePromotionModal from '@/components/dashboard/CreatePromotionModal';
@@ -107,6 +107,25 @@ export default function PromotionsPage() {
     } catch (error: any) {
       toast.error("Erreur lors de la mise à jour", {
         description: getUserFriendlyErrorMessage(error, "Impossible de modifier le statut de la promotion"),
+      });
+    }
+  }
+
+  async function handleRegistrationToggle(promotionId: string, currentRegistrationOpen: boolean) {
+    try {
+      const nextRegistrationOpen = !currentRegistrationOpen;
+      const statusText = nextRegistrationOpen ? 'ouvertes' : 'fermées';
+
+      await promotionsAPI.updatePromotionRegistration(promotionId, nextRegistrationOpen);
+
+      toast.success(`Inscriptions ${statusText}`, {
+        description: `Le formulaire public est maintenant ${nextRegistrationOpen ? 'disponible' : 'masqué'} pour cette promotion.`,
+      });
+
+      await fetchData();
+    } catch (error: any) {
+      toast.error("Erreur lors de la mise à jour", {
+        description: getUserFriendlyErrorMessage(error, "Impossible de modifier l'ouverture des inscriptions"),
       });
     }
   }
@@ -353,6 +372,7 @@ export default function PromotionsPage() {
               key={promotion.id} 
               promotion={promotion}
               onToggleStatus={handleStatusToggle}
+              onToggleRegistration={handleRegistrationToggle}
             />
           ))}
         </div>
@@ -431,7 +451,8 @@ export default function PromotionsPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-3">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center space-x-3">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         promotion.status === 'ACTIVE' 
                           ? 'bg-green-100 text-green-800 border border-green-200' 
@@ -449,6 +470,19 @@ export default function PromotionsPage() {
                         title={promotion.status === 'ACTIVE' ? 'Désactiver' : 'Activer'}
                       >
                         <PowerIcon size={14} />
+                      </button>
+                      </div>
+                      <button
+                        onClick={() => handleRegistrationToggle(promotion.id, promotion.registrationOpen !== false)}
+                        className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium border transition-colors ${
+                          promotion.registrationOpen !== false
+                            ? 'bg-teal-50 text-teal-700 border-teal-100 hover:bg-teal-100'
+                            : 'bg-orange-50 text-orange-700 border-orange-100 hover:bg-orange-100'
+                        }`}
+                        title={promotion.registrationOpen !== false ? 'Fermer les inscriptions' : 'Ouvrir les inscriptions'}
+                      >
+                        {promotion.registrationOpen !== false ? <UserPlus size={13} /> : <UserX size={13} />}
+                        {promotion.registrationOpen !== false ? 'Ouvertes' : 'Fermées'}
                       </button>
                     </div>
                   </td>
