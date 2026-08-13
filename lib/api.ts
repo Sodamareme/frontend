@@ -37,6 +37,9 @@ export interface Referential {
   photoUrl?: string
   capacity: number
   attendanceClosedAt?: string | null
+  numberOfSessions?: number
+  sessionLength?: number | null
+  sessions?: Session[]
   category: string
   status: string
   modules?: Module[]

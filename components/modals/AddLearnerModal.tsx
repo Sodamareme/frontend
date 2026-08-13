@@ -129,7 +129,12 @@ const LearnerForm = ({
   const [loadingSessions, setLoadingSessions] = useState(false);
   const openSessions = sessions.filter((session) => !session.attendanceClosedAt);
   const hasClosedSessions = sessions.some((session) => session.attendanceClosedAt);
-  const isSelectedReferentialClosed = Boolean(selectedReferentialClosedAt || selectedRef?.attendanceClosedAt);
+  const isSessionBasedReferential = Boolean(
+    sessions.length > 0 || selectedRef?.numberOfSessions && selectedRef.numberOfSessions > 1,
+  );
+  const isSelectedReferentialClosed = Boolean(
+    selectedReferentialClosedAt && !isSessionBasedReferential,
+  );
 
   // Fetch les sessions quand le référentiel change
   useEffect(() => {
@@ -140,14 +145,7 @@ const LearnerForm = ({
       return;
     }
 
-    const knownClosedAt = selectedRef?.attendanceClosedAt || null;
-    setSelectedReferentialClosedAt(knownClosedAt);
-
-    if (knownClosedAt) {
-      setSessions([]);
-      setValue('sessionId', undefined);
-      return;
-    }
+    setSelectedReferentialClosedAt(null);
 
     const fetchSessions = async () => {
       try {
@@ -157,7 +155,7 @@ const LearnerForm = ({
         const ref = await referentialsAPI.getPublicReferentialById(selectedRefId);
         setSelectedReferentialClosedAt(ref.attendanceClosedAt || null);
 
-        if (ref.attendanceClosedAt) {
+        if (ref.attendanceClosedAt && !ref.sessions?.length) {
           setSessions([]);
           return;
         }
@@ -388,17 +386,21 @@ const LearnerForm = ({
             >
               <option value="">Sélectionner un référentiel</option>
               {availableReferentials.map(ref => (
-                <option key={ref.id} value={ref.id} disabled={Boolean(ref.attendanceClosedAt)}>
+                <option
+                  key={ref.id}
+                  value={ref.id}
+                  disabled={Boolean(ref.attendanceClosedAt && (!ref.numberOfSessions || ref.numberOfSessions <= 1))}
+                >
                   {ref.name}
-                  {ref.attendanceClosedAt
-                    ? ` (inscriptions fermées)`
+                  {ref.attendanceClosedAt && (!ref.numberOfSessions || ref.numberOfSessions <= 1)
+                    ? ' (inscriptions fermées)'
                     : ''}
                 </option>
               ))}
             </select>
-            {availableReferentials.some(ref => ref.attendanceClosedAt) && (
+            {availableReferentials.some(ref => ref.attendanceClosedAt || (ref.sessions || []).some(session => session.attendanceClosedAt)) && (
               <p className="text-xs text-gray-500">
-                Les référentiels clôturés restent visibles, mais ne peuvent plus recevoir de nouvelles inscriptions.
+                Si un référentiel a plusieurs sessions, seules les sessions clôturées sont bloquées.
               </p>
             )}
           </Field>
