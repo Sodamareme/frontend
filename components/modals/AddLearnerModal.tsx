@@ -15,6 +15,15 @@ import { Toast } from '@/components/ui/toast';
 import { toast } from "sonner";
 import { getUserFriendlyErrorMessage } from '@/lib/error';
 
+const requiredEnum = <T extends [string, ...string[]]>(values: T, message: string) =>
+  z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.enum(values, {
+      required_error: message,
+      invalid_type_error: message,
+    }),
+  );
+
 // Schéma de validation amélioré
 const learnerSchema = z.object({
   firstName: z.string().min(2, "Le prénom doit contenir au moins 2 caractères"),
@@ -24,10 +33,13 @@ const learnerSchema = z.object({
     .min(9, "Le numéro doit contenir au moins 9 chiffres")
     .regex(/^[0-9+]+$/, "Format de numéro invalide"),
   address: z.string().min(5, "L'adresse doit contenir au moins 5 caractères"),
-  gender: z.enum(["MALE", "FEMALE"], {
-    required_error: "Veuillez sélectionner un genre"
-  }),
-  birthDate: z.string().refine(date => {
+  gender: requiredEnum(["MALE", "FEMALE"], "Veuillez sélectionner un genre"),
+  birthDate: z.string()
+    .min(1, "La date de naissance est requise")
+    .refine(date => !Number.isNaN(new Date(date).getTime()), {
+      message: "La date de naissance est invalide",
+    })
+    .refine(date => {
     const birthDate = new Date(date);
     const today = new Date();
     const age = today.getFullYear() - birthDate.getFullYear();
@@ -37,9 +49,7 @@ const learnerSchema = z.object({
   promotionId: z.string().min(1, "La promotion est requise"),
   refId: z.string().min(1, "Le référentiel est requis"),
   sessionId: z.string().optional(),
-  status: z.enum(["ACTIVE", "WAITING"], {
-    required_error: "Le statut est requis"
-  }),
+  status: requiredEnum(["ACTIVE", "WAITING"], "Veuillez sélectionner un statut"),
   tutor: z.object({
     firstName: z.string().min(2, "Le prénom du tuteur est requis"),
     lastName: z.string().min(2, "Le nom du tuteur est requis"),
@@ -120,6 +130,7 @@ const LearnerForm = ({
   onRegistrationAvailabilityChange,
 }) => {
   const selectedRefId = watch("refId");
+  const selectedSessionId = watch("sessionId");
   const selectedRef = availableReferentials.find(ref => ref.id === selectedRefId);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedReferentialClosedAt, setSelectedReferentialClosedAt] = useState<string | null>(null);
@@ -189,6 +200,8 @@ const LearnerForm = ({
       blockReason = 'Chargement des sessions disponibles...';
     } else if (selectedRefId && sessions.length > 0 && openSessions.length === 0) {
       blockReason = 'Toutes les sessions de ce référentiel sont clôturées.';
+    } else if (selectedRefId && sessions.length > 1 && openSessions.length > 0 && !selectedSessionId) {
+      blockReason = 'Veuillez sélectionner une session ouverte.';
     }
 
     onRegistrationAvailabilityChange?.(Boolean(blockReason), blockReason);
@@ -198,6 +211,7 @@ const LearnerForm = ({
     onRegistrationAvailabilityChange,
     openSessions.length,
     selectedRefId,
+    selectedSessionId,
     sessions.length,
   ]);
 
