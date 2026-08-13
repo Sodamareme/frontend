@@ -297,7 +297,7 @@ export default function AttendanceAnalyticsPage() {
               onChange={(event) => setPromotionId(event.target.value)}
               className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-800 focus:border-orange-400 focus:outline-none"
             >
-              <option value="">Toutes les promotions</option>
+              <option value="">Promotion active</option>
               {promotions.map((promotion) => (
                 <option key={promotion.id} value={promotion.id}>
                   {promotion.name}

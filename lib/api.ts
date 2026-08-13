@@ -2132,9 +2132,11 @@ export const attendanceAPI = {
     }
   },
   
- getAbsentsByReferential: async (date: string, referentialId: string) => {
+ getAbsentsByReferential: async (date: string, referentialId: string, promotionId?: string) => {
     try {
-      const response = await api.get(`/attendance/absents/${referentialId}?date=${date}`);
+      const response = await api.get(`/attendance/absents/${referentialId}`, {
+        params: { date, promotionId },
+      });
       return response.data;
     } catch (error) {
       console.error('Error fetching absents by referential:', error);
@@ -2142,23 +2144,22 @@ export const attendanceAPI = {
     }
   },
 
-  getDailyStats: async (date: string, referentialId?: string) => {
+  getDailyStats: async (date: string, referentialId?: string, promotionId?: string) => {
     try {
-      const url = referentialId 
-        ? `/attendance/stats/daily?date=${date}&referentialId=${referentialId}`
-        : `/attendance/stats/daily?date=${date}`;
-      const response = await api.get(url);
+      const response = await api.get('/attendance/stats/daily', {
+        params: { date, referentialId, promotionId },
+      });
       return response.data;
     } catch (error) {
       console.error('Error fetching daily stats:', error);
       throw error;
     }
   },
-  getWeeklyStats: async (date: string): Promise<AttendanceStats> => {
+  getWeeklyStats: async (date: string, promotionId?: string): Promise<AttendanceStats> => {
     try {
       const [year, week] = date.split('-W');
       const response = await api.get('/attendance/stats/weekly', {
-        params: { year: parseInt(year), week: parseInt(week) }
+        params: { year: parseInt(year), week: parseInt(week), promotionId }
       });
 
       const weekStats = response.data.weeks[parseInt(week) - 1] || {
@@ -2181,9 +2182,9 @@ export const attendanceAPI = {
     }
   },
 
-  getMonthlyStats: async (year: number, month: number): Promise<AttendanceStats> => {
+  getMonthlyStats: async (year: number, month: number, promotionId?: string): Promise<AttendanceStats> => {
     const response = await api.get('/attendance/stats/monthly', {
-      params: { year, month }
+      params: { year, month, promotionId }
     });
     return response.data;
   },
@@ -2199,9 +2200,9 @@ export const attendanceAPI = {
     return response.data;
   },
 
-  getYearlyStats: async (year: number): Promise<AttendanceStats> => {
+  getYearlyStats: async (year: number, promotionId?: string): Promise<AttendanceStats> => {
     const response = await api.get('/attendance/stats/yearly', {
-      params: { year }
+      params: { year, promotionId }
     });
     return response.data;
   },
@@ -2210,6 +2211,7 @@ export const attendanceAPI = {
     startDate: string;
     endDate: string;
     referentialId?: string;
+    promotionId?: string;
   }): Promise<AttendanceRangeRecord[]> => {
     const response = await api.get('/attendance/records', {
       params,
@@ -2221,6 +2223,8 @@ export const attendanceAPI = {
     period?: 'week' | 'month' | 'quarter' | 'year' | 'custom';
     promotionId?: string;
     referentialId?: string;
+    startDate?: string;
+    endDate?: string;
     limit?: number;
   }): Promise<AtRiskLearnersResponse> => {
     const response = await api.get('/attendance/stats/at-risk-learners', {
