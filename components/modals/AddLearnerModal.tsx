@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -116,21 +116,34 @@ const LearnerForm = ({
   availableReferentials, 
   watch,
   setValue,
-  onPhotoChange 
+  onPhotoChange,
+  onRegistrationAvailabilityChange,
 }) => {
   const selectedRefId = watch("refId");
   const selectedRef = availableReferentials.find(ref => ref.id === selectedRefId);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedReferentialClosedAt, setSelectedReferentialClosedAt] = useState<string | null>(null);
 
   // États pour la gestion des sessions
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
   const openSessions = sessions.filter((session) => !session.attendanceClosedAt);
   const hasClosedSessions = sessions.some((session) => session.attendanceClosedAt);
+  const isSelectedReferentialClosed = Boolean(selectedReferentialClosedAt || selectedRef?.attendanceClosedAt);
 
   // Fetch les sessions quand le référentiel change
   useEffect(() => {
     if (!selectedRefId) {
+      setSessions([]);
+      setSelectedReferentialClosedAt(null);
+      setValue('sessionId', undefined);
+      return;
+    }
+
+    const knownClosedAt = selectedRef?.attendanceClosedAt || null;
+    setSelectedReferentialClosedAt(knownClosedAt);
+
+    if (knownClosedAt) {
       setSessions([]);
       setValue('sessionId', undefined);
       return;
@@ -142,6 +155,13 @@ const LearnerForm = ({
         setValue('sessionId', undefined);
 
         const ref = await referentialsAPI.getPublicReferentialById(selectedRefId);
+        setSelectedReferentialClosedAt(ref.attendanceClosedAt || null);
+
+        if (ref.attendanceClosedAt) {
+          setSessions([]);
+          return;
+        }
+
         const refSessions: Session[] = ref.sessions || [];
         setSessions(refSessions);
 
@@ -160,7 +180,28 @@ const LearnerForm = ({
     };
 
     fetchSessions();
-  }, [selectedRefId, setValue]);
+  }, [selectedRefId, selectedRef?.attendanceClosedAt, setValue]);
+
+  useEffect(() => {
+    let blockReason = '';
+
+    if (isSelectedReferentialClosed) {
+      blockReason = 'Les inscriptions sont fermées pour ce référentiel.';
+    } else if (selectedRefId && loadingSessions) {
+      blockReason = 'Chargement des sessions disponibles...';
+    } else if (selectedRefId && sessions.length > 0 && openSessions.length === 0) {
+      blockReason = 'Toutes les sessions de ce référentiel sont clôturées.';
+    }
+
+    onRegistrationAvailabilityChange?.(Boolean(blockReason), blockReason);
+  }, [
+    isSelectedReferentialClosed,
+    loadingSessions,
+    onRegistrationAvailabilityChange,
+    openSessions.length,
+    selectedRefId,
+    sessions.length,
+  ]);
 
   const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -347,11 +388,19 @@ const LearnerForm = ({
             >
               <option value="">Sélectionner un référentiel</option>
               {availableReferentials.map(ref => (
-                <option key={ref.id} value={ref.id}>
+                <option key={ref.id} value={ref.id} disabled={Boolean(ref.attendanceClosedAt)}>
                   {ref.name}
+                  {ref.attendanceClosedAt
+                    ? ` (inscriptions fermées)`
+                    : ''}
                 </option>
               ))}
             </select>
+            {availableReferentials.some(ref => ref.attendanceClosedAt) && (
+              <p className="text-xs text-gray-500">
+                Les référentiels clôturés restent visibles, mais ne peuvent plus recevoir de nouvelles inscriptions.
+              </p>
+            )}
           </Field>
 
           {/* Indicateur de chargement des sessions */}
@@ -402,9 +451,13 @@ const LearnerForm = ({
 
           {/* Info sur le référentiel sélectionné */}
           {selectedRef && !loadingSessions && (
-            <div className="mt-4 p-3 bg-blue-50 rounded-md text-blue-800 text-sm">
+            <div className={`mt-4 p-3 rounded-md text-sm ${isSelectedReferentialClosed ? 'bg-orange-50 text-orange-800' : 'bg-blue-50 text-blue-800'}`}>
               <div className="font-medium mb-1">Détails du référentiel</div>
-              <div>{selectedRef.description}</div>
+              {isSelectedReferentialClosed ? (
+                <div>Les inscriptions sont fermées pour ce référentiel.</div>
+              ) : (
+                <div>{selectedRef.description}</div>
+              )}
               <div className="mt-2">
                 <span className="font-medium">Durée:</span> {selectedRef.duration} mois
               </div>
@@ -499,6 +552,13 @@ export default function AddLearnerModal({
   const [availableReferentials, setAvailableReferentials] = useState<Referential[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [registrationBlockReason, setRegistrationBlockReason] = useState('');
+  const handleRegistrationAvailabilityChange = useCallback((blocked: boolean, reason?: string) => {
+    setRegistrationBlockReason(blocked ? reason || 'Inscription indisponible.' : '');
+    if (!blocked) {
+      setError(null);
+    }
+  }, []);
 
   const { 
     register, 
@@ -531,6 +591,7 @@ export default function AddLearnerModal({
     if (isOpen) {
       setStep(1);
       setError(null);
+      setRegistrationBlockReason('');
       reset();
     }
   }, [isOpen, reset]);
@@ -541,7 +602,17 @@ export default function AddLearnerModal({
     setActivePromotion(active || null);
 
     if (active && active.referentials) {
-      setAvailableReferentials(active.referentials);
+      const referentialsById = new Map(referentials.map((ref) => [ref.id, ref]));
+      setAvailableReferentials(
+        active.referentials.map((ref) => {
+          const fullReferential = referentialsById.get(ref.id);
+          return {
+            ...fullReferential,
+            ...ref,
+            attendanceClosedAt: ref.attendanceClosedAt ?? fullReferential?.attendanceClosedAt ?? null,
+          } as Referential;
+        }),
+      );
     } else if (active) {
       setAvailableReferentials(referentials);
     } else {
@@ -549,22 +620,11 @@ export default function AddLearnerModal({
     }
   }, [promotions, referentials]);
 
-// ✅ Remplacer ce useEffect
-useEffect(() => {
-  if (activePromotion) {
-    reset({
-      ...watch(),
-      promotionId: activePromotion.id
-    });
-  }
-}, [activePromotion, reset, watch]);
-
-// Par celui-ci — setValue ciblé, ne touche pas aux autres champs
 useEffect(() => {
   if (activePromotion) {
     setValue('promotionId', activePromotion.id);
   }
-}, [activePromotion]);
+}, [activePromotion, setValue]);
 
   // Fonction pour passer à l'étape suivante
   const handleNext = async () => {
@@ -574,6 +634,11 @@ useEffect(() => {
     ];
     
     const isStepValid = await trigger(fieldsToValidate);
+
+    if (registrationBlockReason) {
+      setError(registrationBlockReason);
+      return;
+    }
     
     if (isStepValid) {
       setStep(2);
@@ -684,6 +749,7 @@ useEffect(() => {
                     watch={watch}
                     setValue={setValue}
                     onPhotoChange={onPhotoChange}
+                    onRegistrationAvailabilityChange={handleRegistrationAvailabilityChange}
                   />
                 </motion.div>
               ) : (
@@ -738,7 +804,7 @@ useEffect(() => {
                   type="button"
                   onClick={handleNext}
                   className="flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white ml-auto"
-                  disabled={!activePromotion}
+                  disabled={!activePromotion || Boolean(registrationBlockReason)}
                 >
                   Suivant
                   <ArrowRight className="w-4 h-4" />
