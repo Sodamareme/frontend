@@ -256,12 +256,13 @@ const referentialsAPI = {
 };
 
 const learnersAPI = {
-  async getAllLearners(): Promise<any[]> {
-    const res = await fetch(`${API_BASE_URL}/learners`, {
+  async getTotalLearners(): Promise<number> {
+    const res = await fetch(`${API_BASE_URL}/learners/reference-list?limit=1`, {
       headers: { accept: '*/*', Authorization: `Bearer ${getAuthToken()}` },
     });
     if (!res.ok) throw new Error(`Erreur API: ${res.status}`);
-    return res.json();
+    const data = await res.json();
+    return Number(data?.pagination?.totalItems ?? data?.items?.length ?? 0);
   },
 };
 
@@ -913,8 +914,7 @@ export default function RestaurateurDashboard() {
   const fetchTotalLearners = async () => {
     setLoading(prev => ({ ...prev, learners: true }));
     try {
-      const data = await learnersAPI.getAllLearners();
-      setTotalLearners(data.length);
+      setTotalLearners(await learnersAPI.getTotalLearners());
     } catch {}
     finally { setLoading(prev => ({ ...prev, learners: false })); }
   };
