@@ -55,6 +55,7 @@ function LeaderboardCard({
   rows,
   accentClass,
   valueLabel,
+  metaLabel,
   returnTo,
 }: {
   title: string
@@ -63,6 +64,7 @@ function LeaderboardCard({
   rows: AtRiskLearnersResponse["mostAbsent"]
   accentClass: string
   valueLabel: (row: AtRiskLearnersResponse["mostAbsent"][number]) => string
+  metaLabel?: (row: AtRiskLearnersResponse["mostAbsent"][number]) => string
   returnTo: string
 }) {
   return (
@@ -100,7 +102,7 @@ function LeaderboardCard({
               <div className="flex items-center gap-4 shrink-0">
                 <div className="text-right">
                   <p className="text-sm font-semibold text-gray-900">{valueLabel(row)}</p>
-                  <p className="text-xs text-gray-500">{row.attendanceRate}% de présence</p>
+                  <p className="text-xs text-gray-500">{metaLabel ? metaLabel(row) : `${row.attendanceRate}% de présence`}</p>
                 </div>
                 <Link
                   href={`/dashboard/learners/${row.learnerId}?returnTo=${encodeURIComponent(returnTo)}`}
@@ -349,7 +351,7 @@ export default function AttendanceAnalyticsPage() {
 
         <p className="mt-4 text-xs text-gray-500">
           Classement assidus: moins d&apos;absences d&apos;abord, puis moins de retards,
-          ensuite plus de présences, et enfin meilleur taux de présence.
+          ensuite meilleur taux de présence, plus de présences, puis scan moyen le plus tôt.
         </p>
       </section>
 
@@ -370,6 +372,7 @@ export default function AttendanceAnalyticsPage() {
             rows={analytics.mostRegular}
             accentClass="bg-orange-100 text-orange-700"
             valueLabel={(row) => `${row.presentCount} présence${row.presentCount > 1 ? "s" : ""}`}
+            metaLabel={(row) => `${row.attendanceRate}% • scan moyen ${row.averageScanTime || "—"}`}
             returnTo={returnTo}
           />
 

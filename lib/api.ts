@@ -205,6 +205,8 @@ export interface LearnerRegularityRankedLearner {
   presentCount: number;
   totalRecords: number;
   attendanceRate: number;
+  averageScanTimeMinutes?: number | null;
+  averageScanTime?: string | null;
   rank?: number;
 }
 
@@ -233,6 +235,8 @@ export interface AtRiskLearner {
   presentCount: number;
   totalRecords: number;
   attendanceRate: number;
+  averageScanTimeMinutes?: number | null;
+  averageScanTime?: string | null;
 }
 
 export interface AtRiskLearnersResponse {

@@ -483,7 +483,7 @@ export default function LearnerDashboard() {
                   <p className="text-sm font-medium text-[#F16E00]">Classement</p>
                   <h2 className="mt-2 text-xl font-semibold text-slate-900 sm:text-2xl">Assiduité</h2>
                   <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
-                    Classement mensuel ou depuis le début de la promotion, trié d’abord par le moins d’absences, puis les retards, puis les présences.
+                    Classement mensuel ou depuis le début, trié par absences, retards, taux de présence, puis scan moyen le plus tôt.
                   </p>
                 </div>
                 <motion.div
@@ -663,6 +663,10 @@ export default function LearnerDashboard() {
                                 <span className="inline-flex w-full items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] text-slate-600 shadow-sm sm:w-auto sm:text-xs">
                                   <XCircle className="h-3.5 w-3.5 text-red-500" />
                                   {learner.absenceCount} absences
+                                </span>
+                                <span className="inline-flex w-full items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] text-slate-600 shadow-sm sm:w-auto sm:text-xs">
+                                  <Clock3 className="h-3.5 w-3.5 text-sky-500" />
+                                  Scan moyen {learner.averageScanTime || "—"}
                                 </span>
                               </div>
                             </div>
