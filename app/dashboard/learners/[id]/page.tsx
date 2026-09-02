@@ -51,13 +51,36 @@ const learnerStatusOptions: Array<{ value: LearnerStatus; label: string }> = [
   { value: "ABANDONED", label: "Abandon" },
 ];
 
+const kitOptions = [
+  {
+    key: "laptop",
+    label: "Laptop",
+    iconPath: "M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z",
+  },
+  {
+    key: "charger",
+    label: "Chargeur",
+    iconPath: "M13 10V3L4 14h7v7l9-11h-7z",
+  },
+  {
+    key: "bag",
+    label: "Sac",
+    iconPath: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
+  },
+  {
+    key: "polo",
+    label: "Polo",
+    iconPath: "M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z M3 6h18 M16 10a4 4 0 01-8 0",
+  },
+] as const;
+
 export default function LearnerDetailsPage() {
   const { id } = useParams() || {}
   const learnerId = Array.isArray(id) ? id[0] : id
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user } = useAuth()
-  const canManageLearnerStatus = user?.role === "ADMIN"
+  const canManageLearner = user?.role === "ADMIN"
 
   const [learner, setLearner] = useState<Learner | null>(null)
   const [attendanceStats, setAttendanceStats] = useState<AttendanceStats | null>(null)
@@ -68,6 +91,10 @@ export default function LearnerDetailsPage() {
   const [isSavingLearner, setIsSavingLearner] = useState(false)
   const [isEditingStatus, setIsEditingStatus] = useState(false)
   const [isSavingStatus, setIsSavingStatus] = useState(false)
+  const [isEditingTutor, setIsEditingTutor] = useState(false)
+  const [isSavingTutor, setIsSavingTutor] = useState(false)
+  const [isEditingKit, setIsEditingKit] = useState(false)
+  const [isSavingKit, setIsSavingKit] = useState(false)
   const [selectedStatus, setSelectedStatus] = useState<LearnerStatus>("ACTIVE")
   const [learnerForm, setLearnerForm] = useState({
     firstName: "",
@@ -77,6 +104,19 @@ export default function LearnerDetailsPage() {
     birthPlace: "",
     address: "",
     phone: "",
+  })
+  const [tutorForm, setTutorForm] = useState({
+    firstName: "",
+    lastName: "",
+    phone: "",
+    email: "",
+    address: "",
+  })
+  const [kitForm, setKitForm] = useState({
+    laptop: false,
+    charger: false,
+    bag: false,
+    polo: false,
   })
 
   const returnTo = searchParams.get("returnTo")
@@ -103,6 +143,19 @@ export default function LearnerDetailsPage() {
 
         setLearner(learnerData);
         setSelectedStatus(learnerData.status);
+        setTutorForm({
+          firstName: learnerData.tutor?.firstName || "",
+          lastName: learnerData.tutor?.lastName || "",
+          phone: learnerData.tutor?.phone || "",
+          email: learnerData.tutor?.email || "",
+          address: learnerData.tutor?.address || "",
+        })
+        setKitForm({
+          laptop: Boolean(learnerData.kit?.laptop),
+          charger: Boolean(learnerData.kit?.charger),
+          bag: Boolean(learnerData.kit?.bag),
+          polo: Boolean(learnerData.kit?.polo),
+        })
         setLearnerForm({
           firstName: learnerData.firstName || "",
           lastName: learnerData.lastName || "",
@@ -220,6 +273,20 @@ export default function LearnerDetailsPage() {
     }))
   }
 
+  const handleTutorFormChange = (field: keyof typeof tutorForm, value: string) => {
+    setTutorForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
+
+  const handleKitFormChange = (field: keyof typeof kitForm, value: boolean) => {
+    setKitForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
+
   const handleCancelEditLearner = () => {
     if (!learner) return
 
@@ -267,6 +334,82 @@ export default function LearnerDetailsPage() {
       toast.error(getUserFriendlyErrorMessage(error, "Erreur lors de la mise à jour de l'apprenant"))
     } finally {
       setIsSavingLearner(false)
+    }
+  }
+
+  const handleCancelEditTutor = () => {
+    if (!learner) return
+
+    setTutorForm({
+      firstName: learner.tutor?.firstName || "",
+      lastName: learner.tutor?.lastName || "",
+      phone: learner.tutor?.phone || "",
+      email: learner.tutor?.email || "",
+      address: learner.tutor?.address || "",
+    })
+    setIsEditingTutor(false)
+  }
+
+  const handleSaveTutor = async () => {
+    if (!learner) return
+
+    try {
+      setIsSavingTutor(true)
+      const updatedLearner = await learnersAPI.updateLearner(learner.id, {
+        tutor: {
+          firstName: tutorForm.firstName.trim(),
+          lastName: tutorForm.lastName.trim(),
+          phone: tutorForm.phone.trim(),
+          email: tutorForm.email.trim(),
+          address: tutorForm.address.trim(),
+        },
+      } as any)
+
+      setLearner(updatedLearner as Learner)
+      setTutorForm({
+        firstName: updatedLearner.tutor?.firstName || "",
+        lastName: updatedLearner.tutor?.lastName || "",
+        phone: updatedLearner.tutor?.phone || "",
+        email: updatedLearner.tutor?.email || "",
+        address: updatedLearner.tutor?.address || "",
+      })
+      setIsEditingTutor(false)
+      toast.success("Informations du tuteur mises à jour")
+    } catch (error: any) {
+      toast.error(getUserFriendlyErrorMessage(error, "Impossible de modifier les informations du tuteur"))
+    } finally {
+      setIsSavingTutor(false)
+    }
+  }
+
+  const handleCancelEditKit = () => {
+    if (!learner) return
+
+    setKitForm({
+      laptop: Boolean(learner.kit?.laptop),
+      charger: Boolean(learner.kit?.charger),
+      bag: Boolean(learner.kit?.bag),
+      polo: Boolean(learner.kit?.polo),
+    })
+    setIsEditingKit(false)
+  }
+
+  const handleSaveKit = async () => {
+    if (!learner) return
+
+    try {
+      setIsSavingKit(true)
+      const updatedLearner = await learnersAPI.updateLearnerKit(learner.id, kitForm)
+
+      setLearner((currentLearner) =>
+        currentLearner ? { ...currentLearner, kit: updatedLearner.kit || kitForm } : (updatedLearner as Learner)
+      )
+      setIsEditingKit(false)
+      toast.success("Kit de l'apprenant mis à jour")
+    } catch (error: any) {
+      toast.error(getUserFriendlyErrorMessage(error, "Impossible de modifier le kit de l'apprenant"))
+    } finally {
+      setIsSavingKit(false)
     }
   }
 
@@ -390,7 +533,7 @@ export default function LearnerDetailsPage() {
                   </div>
 
                   {/* Right side with action button */}
-                  {learner.status === 'ACTIVE' && (
+                  {canManageLearner && learner.status === 'ACTIVE' && (
                     <button
                       onClick={() => router.push(`/dashboard/learners/${learner.id}/replace`)}
                       className="inline-flex items-center px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg transition-colors"
@@ -465,7 +608,7 @@ export default function LearnerDetailsPage() {
               </div>
             </div>
 
-            {canManageLearnerStatus && (
+            {canManageLearner && (
               <div className="bg-white rounded-lg shadow-sm mb-6 border border-orange-100">
                 <div className="p-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
@@ -533,7 +676,7 @@ export default function LearnerDetailsPage() {
             <div className="bg-white rounded-lg shadow-sm mb-6">
               <div className="p-6 flex items-center justify-between border-b border-gray-100">
                 <h2 className="text-xl font-bold text-gray-800">Informations de l'apprenant</h2>
-                {isEditingLearner ? (
+                {canManageLearner && (isEditingLearner ? (
                   <div className="flex items-center gap-2">
                     <button
                       onClick={handleSaveLearner}
@@ -558,9 +701,9 @@ export default function LearnerDetailsPage() {
                     className="text-gray-400 hover:text-gray-600"
                     title="Modifier les informations"
                   >
-                    <Edit size={18} />
-                  </button>
-                )}
+                      <Edit size={18} />
+                    </button>
+                ))}
               </div>
 
               <div className="p-6">
@@ -683,9 +826,34 @@ export default function LearnerDetailsPage() {
             <div className="bg-white rounded-lg shadow-sm mb-6">
               <div className="p-6 flex items-center justify-between border-b border-gray-100">
                 <h2 className="text-xl font-bold text-gray-800">Informations du tuteur</h2>
-                <button className="text-gray-400 hover:text-gray-600">
-                  <Edit size={18} />
-                </button>
+                {canManageLearner && (isEditingTutor ? (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleSaveTutor}
+                      disabled={isSavingTutor}
+                      className="inline-flex items-center rounded-lg bg-orange-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <Save size={16} className="mr-2" />
+                      {isSavingTutor ? "Enregistrement..." : "Enregistrer"}
+                    </button>
+                    <button
+                      onClick={handleCancelEditTutor}
+                      disabled={isSavingTutor}
+                      className="inline-flex items-center rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <X size={16} className="mr-2" />
+                      Annuler
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setIsEditingTutor(true)}
+                    className="text-gray-400 hover:text-gray-600"
+                    title="Modifier les informations du tuteur"
+                  >
+                    <Edit size={18} />
+                  </button>
+                ))}
               </div>
 
               <div className="p-6">
@@ -693,37 +861,80 @@ export default function LearnerDetailsPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm text-gray-500 mb-1">Prénom(s)</label>
-                      <div className="p-3 bg-gray-50 rounded-md text-gray-700">
-                      {learner.tutor?.firstName || "Non renseigné"}
-                      </div>
+                      {isEditingTutor ? (
+                        <input
+                          type="text"
+                          value={tutorForm.firstName}
+                          onChange={(event) => handleTutorFormChange("firstName", event.target.value)}
+                          className="w-full rounded-md border border-gray-200 bg-white p-3 text-gray-700 focus:border-orange-400 focus:outline-none"
+                        />
+                      ) : (
+                        <div className="p-3 bg-gray-50 rounded-md text-gray-700">
+                          {learner.tutor?.firstName || "Non renseigné"}
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm text-gray-500 mb-1">Nom</label>
-                      <div className="p-3 bg-gray-50 rounded-md text-gray-700">
-                      {learner.tutor?.lastName || "Non renseigné"}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-500 mb-1">Lien de parenté</label>
-                      <div className="p-3 bg-gray-50 rounded-md text-gray-700">
-                        {learner.tutor?.relationship || "Non renseigné"}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm text-gray-500 mb-1">Adresse</label>
-                      <div className="p-3 bg-gray-50 rounded-md text-gray-700">
-                        {learner.tutor?.address || "Non renseigné"}
-                      </div>
+                      {isEditingTutor ? (
+                        <input
+                          type="text"
+                          value={tutorForm.lastName}
+                          onChange={(event) => handleTutorFormChange("lastName", event.target.value)}
+                          className="w-full rounded-md border border-gray-200 bg-white p-3 text-gray-700 focus:border-orange-400 focus:outline-none"
+                        />
+                      ) : (
+                        <div className="p-3 bg-gray-50 rounded-md text-gray-700">
+                          {learner.tutor?.lastName || "Non renseigné"}
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm text-gray-500 mb-1">Téléphone</label>
-                      <div className="p-3 bg-gray-50 rounded-md text-gray-700">
-                        {learner.tutor?.phone || "Non renseigné"}
-                      </div>
+                      {isEditingTutor ? (
+                        <input
+                          type="tel"
+                          value={tutorForm.phone}
+                          onChange={(event) => handleTutorFormChange("phone", event.target.value)}
+                          className="w-full rounded-md border border-gray-200 bg-white p-3 text-gray-700 focus:border-orange-400 focus:outline-none"
+                        />
+                      ) : (
+                        <div className="p-3 bg-gray-50 rounded-md text-gray-700">
+                          {learner.tutor?.phone || "Non renseigné"}
+                        </div>
+                      )}
                     </div>
+                    <div>
+                      <label className="block text-sm text-gray-500 mb-1">Email</label>
+                      {isEditingTutor ? (
+                        <input
+                          type="email"
+                          value={tutorForm.email}
+                          onChange={(event) => handleTutorFormChange("email", event.target.value)}
+                          className="w-full rounded-md border border-gray-200 bg-white p-3 text-gray-700 focus:border-orange-400 focus:outline-none"
+                        />
+                      ) : (
+                        <div className="p-3 bg-gray-50 rounded-md text-gray-700">
+                          {learner.tutor?.email || "Non renseigné"}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm text-gray-500 mb-1">Adresse</label>
+                    {isEditingTutor ? (
+                      <input
+                        type="text"
+                        value={tutorForm.address}
+                        onChange={(event) => handleTutorFormChange("address", event.target.value)}
+                        className="w-full rounded-md border border-gray-200 bg-white p-3 text-gray-700 focus:border-orange-400 focus:outline-none"
+                      />
+                    ) : (
+                      <div className="p-3 bg-gray-50 rounded-md text-gray-700">
+                        {learner.tutor?.address || "Non renseigné"}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -733,124 +944,84 @@ export default function LearnerDetailsPage() {
             <div className="bg-white rounded-lg shadow-sm mb-6">
               <div className="p-6 flex items-center justify-between border-b border-gray-100">
                 <h2 className="text-xl font-bold text-gray-800">Kit de l'apprenant</h2>
-                <button className="text-gray-400 hover:text-gray-600">
-                  <Edit size={18} />
-                </button>
+                {canManageLearner && (isEditingKit ? (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleSaveKit}
+                      disabled={isSavingKit}
+                      className="inline-flex items-center rounded-lg bg-orange-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <Save size={16} className="mr-2" />
+                      {isSavingKit ? "Enregistrement..." : "Enregistrer"}
+                    </button>
+                    <button
+                      onClick={handleCancelEditKit}
+                      disabled={isSavingKit}
+                      className="inline-flex items-center rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <X size={16} className="mr-2" />
+                      Annuler
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setKitForm({
+                        laptop: Boolean(learner.kit?.laptop),
+                        charger: Boolean(learner.kit?.charger),
+                        bag: Boolean(learner.kit?.bag),
+                        polo: Boolean(learner.kit?.polo),
+                      })
+                      setIsEditingKit(true)
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                    title="Modifier le kit"
+                  >
+                    <Edit size={18} />
+                  </button>
+                ))}
               </div>
 
               <div className="p-6">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {/* Laptop */}
-                  <div className={`p-4 rounded-lg border-2 ${
-                    learner.kit?.laptop 
-                    ? 'border-green-500 bg-green-50' 
-                    : 'border-red-500 bg-red-50'
-                  }`}>
-                    <div className="flex items-center space-x-3">
-                      <svg 
-                        className={`w-8 h-8 ${
-                          learner.kit?.laptop ? 'text-green-500' : 'text-red-500'
-                        }`} 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                      <div>
-                        <p className="font-medium text-gray-700">Laptop</p>
-                        <p className={`text-sm ${
-                          learner.kit?.laptop ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {learner.kit?.laptop ? 'Reçu' : 'Non reçu'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                  {kitOptions.map((item) => {
+                    const received = isEditingKit ? kitForm[item.key] : Boolean(learner.kit?.[item.key]);
 
-                  {/* Charger */}
-                  <div className={`p-4 rounded-lg border-2 ${
-                    learner.kit?.charger 
-                    ? 'border-green-500 bg-green-50' 
-                    : 'border-red-500 bg-red-50'
-                  }`}>
-                    <div className="flex items-center space-x-3">
-                      <svg 
-                        className={`w-8 h-8 ${
-                          learner.kit?.charger ? 'text-green-500' : 'text-red-500'
-                        }`} 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
+                    return (
+                      <label
+                        key={item.key}
+                        className={`block rounded-lg border-2 p-4 transition-colors ${
+                          received ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'
+                        } ${isEditingKit ? 'cursor-pointer hover:border-orange-400' : ''}`}
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                      <div>
-                        <p className="font-medium text-gray-700">Chargeur</p>
-                        <p className={`text-sm ${
-                          learner.kit?.charger ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {learner.kit?.charger ? 'Reçu' : 'Non reçu'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Bag */}
-                  <div className={`p-4 rounded-lg border-2 ${
-                    learner.kit?.bag 
-                    ? 'border-green-500 bg-green-50' 
-                    : 'border-red-500 bg-red-50'
-                  }`}>
-                    <div className="flex items-center space-x-3">
-                      <svg 
-                        className={`w-8 h-8 ${
-                          learner.kit?.bag ? 'text-green-500' : 'text-red-500'
-                        }`} 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                      </svg>
-                      <div>
-                        <p className="font-medium text-gray-700">Sac</p>
-                        <p className={`text-sm ${
-                          learner.kit?.bag ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {learner.kit?.bag ? 'Reçu' : 'Non reçu'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Polo */}
-                  <div className={`p-4 rounded-lg border-2 ${
-                    learner.kit?.polo 
-                    ? 'border-green-500 bg-green-50' 
-                    : 'border-red-500 bg-red-50'
-                  }`}>
-                    <div className="flex items-center space-x-3">
-                      <svg 
-                        className={`w-8 h-8 ${
-                          learner.kit?.polo ? 'text-green-500' : 'text-red-500'
-                        }`} 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z M3 6h18 M16 10a4 4 0 01-8 0" />
-                      </svg>
-                      <div>
-                        <p className="font-medium text-gray-700">Polo</p>
-                        <p className={`text-sm ${
-                          learner.kit?.polo ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {learner.kit?.polo ? 'Reçu' : 'Non reçu'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                        <div className="flex items-center space-x-3">
+                          <svg
+                            className={`w-8 h-8 ${received ? 'text-green-500' : 'text-red-500'}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.iconPath} />
+                          </svg>
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-700">{item.label}</p>
+                            <p className={`text-sm ${received ? 'text-green-600' : 'text-red-600'}`}>
+                              {received ? 'Reçu' : 'Non reçu'}
+                            </p>
+                          </div>
+                          {isEditingKit && (
+                            <input
+                              type="checkbox"
+                              checked={received}
+                              onChange={(event) => handleKitFormChange(item.key, event.target.checked)}
+                              disabled={isSavingKit}
+                              className="h-5 w-5 rounded border-gray-300 text-orange-500 focus:ring-orange-400"
+                            />
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
             </div>
