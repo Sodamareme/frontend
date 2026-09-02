@@ -771,9 +771,10 @@ export const learnersAPI = {
     }
   },
   
-  updateLearnerStatus: async (id: string, status: string, reason?: string) => {
+  updateLearnerStatus: async (id: string, status: LearnerStatus, reason?: string) => {
     try {
-      const response = await api.patch(`/learners/${id}/status`, { status, reason });
+      const payload = reason ? { status, reason } : { status };
+      const response = await api.patch(`/learners/${id}/status`, payload);
       return response.data;
     } catch (error) {
       throw error;

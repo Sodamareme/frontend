@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
-import { learnersAPI, type Learner, type AttendanceStats, attendanceAPI, LearnerAttendance } from "@/lib/api"
+import { learnersAPI, type Learner, type AttendanceStats, attendanceAPI, LearnerAttendance, type LearnerStatus } from "@/lib/api"
 import { Calendar, CheckCircle, Clock, Edit, AlertTriangle, ArrowLeft, Save, X } from "lucide-react"
 import { toast } from "sonner"
 import { getUserFriendlyErrorMessage } from "@/lib/error"
+import { useAuth } from "@/components/providers/auth-provider"
 
 // Add these helper functions at the top of your component
 const getReferentialBadgeClass = (referentialName: string) => {
@@ -42,11 +43,21 @@ const getReferentialAlias = (referentialName: string) => {
   }
 };
 
+const learnerStatusOptions: Array<{ value: LearnerStatus; label: string }> = [
+  { value: "ACTIVE", label: "Actif" },
+  { value: "WAITING", label: "En attente" },
+  { value: "REPLACEMENT", label: "Remplaçant" },
+  { value: "REPLACED", label: "Remplacé" },
+  { value: "ABANDONED", label: "Abandon" },
+];
+
 export default function LearnerDetailsPage() {
   const { id } = useParams() || {}
   const learnerId = Array.isArray(id) ? id[0] : id
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { user } = useAuth()
+  const canManageLearnerStatus = user?.role === "ADMIN"
 
   const [learner, setLearner] = useState<Learner | null>(null)
   const [attendanceStats, setAttendanceStats] = useState<AttendanceStats | null>(null)
@@ -55,6 +66,9 @@ export default function LearnerDetailsPage() {
   const [attendances, setAttendances] = useState<LearnerAttendance[]>([])
   const [isEditingLearner, setIsEditingLearner] = useState(false)
   const [isSavingLearner, setIsSavingLearner] = useState(false)
+  const [isEditingStatus, setIsEditingStatus] = useState(false)
+  const [isSavingStatus, setIsSavingStatus] = useState(false)
+  const [selectedStatus, setSelectedStatus] = useState<LearnerStatus>("ACTIVE")
   const [learnerForm, setLearnerForm] = useState({
     firstName: "",
     lastName: "",
@@ -88,6 +102,7 @@ export default function LearnerDetailsPage() {
         ]);
 
         setLearner(learnerData);
+        setSelectedStatus(learnerData.status);
         setLearnerForm({
           firstName: learnerData.firstName || "",
           lastName: learnerData.lastName || "",
@@ -168,14 +183,14 @@ export default function LearnerDetailsPage() {
     switch (status) {
       case "ACTIVE":
         return "Actif"
-      case "INACTIVE":
-        return "Inactif"
-      case "SUSPENDED":
-        return "Suspendu"
+      case "WAITING":
+        return "En attente"
+      case "REPLACEMENT":
+        return "Remplaçant"
       case "REPLACED":
         return "Remplacé"
-      case "WAITING_LIST":
-        return "Liste d'attente"
+      case "ABANDONED":
+        return "Abandon"
       default:
         return status
     }
@@ -185,14 +200,14 @@ export default function LearnerDetailsPage() {
     switch (status) {
       case "ACTIVE":
         return "bg-green-100 text-green-800"
-      case "INACTIVE":
-        return "bg-gray-100 text-gray-800"
-      case "SUSPENDED":
-        return "bg-yellow-100 text-yellow-800"
+      case "WAITING":
+        return "bg-blue-100 text-blue-800"
+      case "REPLACEMENT":
+        return "bg-teal-100 text-teal-800"
       case "REPLACED":
         return "bg-orange-100 text-orange-800"
-      case "WAITING_LIST":
-        return "bg-blue-100 text-blue-800"
+      case "ABANDONED":
+        return "bg-red-100 text-red-800"
       default:
         return "bg-gray-100 text-gray-800"
     }
@@ -252,6 +267,39 @@ export default function LearnerDetailsPage() {
       toast.error(getUserFriendlyErrorMessage(error, "Erreur lors de la mise à jour de l'apprenant"))
     } finally {
       setIsSavingLearner(false)
+    }
+  }
+
+  const handleCancelEditStatus = () => {
+    if (learner) {
+      setSelectedStatus(learner.status)
+    }
+    setIsEditingStatus(false)
+  }
+
+  const handleSaveStatus = async () => {
+    if (!learner) return
+
+    if (selectedStatus === learner.status) {
+      setIsEditingStatus(false)
+      return
+    }
+
+    try {
+      setIsSavingStatus(true)
+      const updatedLearner = await learnersAPI.updateLearnerStatus(learner.id, selectedStatus)
+      const nextStatus = (updatedLearner?.status || selectedStatus) as LearnerStatus
+
+      setLearner((currentLearner) =>
+        currentLearner ? { ...currentLearner, status: nextStatus } : (updatedLearner as Learner)
+      )
+      setSelectedStatus(nextStatus)
+      setIsEditingStatus(false)
+      toast.success("Statut de l'apprenant mis à jour")
+    } catch (error: any) {
+      toast.error(getUserFriendlyErrorMessage(error, "Impossible de modifier le statut de l'apprenant"))
+    } finally {
+      setIsSavingStatus(false)
     }
   }
 
@@ -416,6 +464,70 @@ export default function LearnerDetailsPage() {
                 </div>
               </div>
             </div>
+
+            {canManageLearnerStatus && (
+              <div className="bg-white rounded-lg shadow-sm mb-6 border border-orange-100">
+                <div className="p-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-medium uppercase tracking-wide text-orange-500">Statut administratif</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-3">
+                      <span className={`inline-flex rounded-lg px-3 py-1 text-sm font-semibold ${getStatusColor(learner.status)}`}>
+                        {getStatusLabel(learner.status)}
+                      </span>
+                      <p className="text-sm text-gray-500">
+                        L'admin peut changer le statut de cet apprenant directement ici.
+                      </p>
+                    </div>
+                  </div>
+
+                  {isEditingStatus ? (
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                      <select
+                        value={selectedStatus}
+                        onChange={(event) => setSelectedStatus(event.target.value as LearnerStatus)}
+                        disabled={isSavingStatus}
+                        className="min-w-48 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 focus:border-orange-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {learnerStatusOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={handleSaveStatus}
+                          disabled={isSavingStatus}
+                          className="inline-flex items-center rounded-lg bg-orange-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <Save size={16} className="mr-2" />
+                          {isSavingStatus ? "Enregistrement..." : "Enregistrer"}
+                        </button>
+                        <button
+                          onClick={handleCancelEditStatus}
+                          disabled={isSavingStatus}
+                          className="inline-flex items-center rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <X size={16} className="mr-2" />
+                          Annuler
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setSelectedStatus(learner.status)
+                        setIsEditingStatus(true)
+                      }}
+                      className="inline-flex items-center justify-center rounded-lg border border-orange-200 px-4 py-2 text-sm font-medium text-orange-600 transition-colors hover:bg-orange-50"
+                    >
+                      <Edit size={16} className="mr-2" />
+                      Modifier le statut
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Learner personal information */}
             <div className="bg-white rounded-lg shadow-sm mb-6">
